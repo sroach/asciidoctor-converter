@@ -1,1 +1,104 @@
 = asciidoctor-converter
+
+== Changelog
+
+All notable changes to the AsciiDoctor Converter project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+=== [Unreleased]
+
+==== Added
+- User tracking functionality in generated HTML documents
+- Cookie-based unique user identification system
+- Session tracking and visit counting
+- Analytics data collection with console logging
+- Privacy-compliant tracking implementation
+
+==== Changed
+- Enhanced HTML output with embedded JavaScript tracking
+- Improved docinfo integration for automatic script injection
+
+=== [0.0.1-SNAPSHOT] - 2025-01-20
+
+=== Added
+- Initial project setup with Spring Boot 3.5.3
+- Kotlin 2.1.21 support with coroutines
+- AsciiDoctor Java integration (asciidoctorj 3.0.0)
+- AsciiDoctor Diagram support (asciidoctorj-diagram 2.3.2)
+- PDF generation capabilities (asciidoctorj-pdf 2.3.19)
+- EPUB3 generation support (asciidoctorj-epub3 2.2.0)
+- GitHub API integration (github-api 2.0-rc.3)
+- Virtual threads support (enabled in Spring Boot)
+- Spring Boot Actuator endpoints for monitoring
+- RESTful API endpoints for document conversion
+- File dependency tracking system
+- Incremental conversion based on file changes
+- Include directive parsing and dependency resolution
+- Automatic cleanup of deleted files
+- Support for non-AsciiDoc file copying
+- Comprehensive conversion statistics tracking
+- Configurable converter settings
+- Source code highlighting with highlight.js
+- URI read permissions for external resources
+- Data URI embedding for self-contained HTML
+- CSS copying and embedding
+- Unsafe mode for full AsciiDoctor features
+- Comprehensive logging with SLF4J
+- Maven-based build system
+- CycloneDX SBOM generation
+- Spring Boot Maven plugin integration
+- Kotlin Maven plugin with Spring support
+
+==== Project Structure
+- Created main application entry point (`App.kt`)
+- Implemented core converter service (`AsciiDoctorConverter.kt`)
+- Added GitHub client integration (`GithubClient.kt`)
+- Created REST controller for web endpoints (`MainController`)
+- Established configuration management (`ConverterSettings`)
+- Set up resource management with application.yml
+- Added docinfo directory for HTML customization
+- Implemented comprehensive test structure
+
+==== Configuration
+- Server running on port 7202 with `/converter` context path
+- GitHub API integration with token authentication
+- Panel server integration at localhost:8010
+- Local debug mode enabled
+- Actuator endpoints exposed for monitoring
+- Virtual threads enabled for improved performance
+
+==== Dependencies
+- Spring Boot Starter Web
+- Spring Boot Starter Actuator
+- Jackson Kotlin Module
+- Kotlin Reflect and Standard Library
+- AsciiDoctor Java with all major extensions
+- DocOps Extension Plugin (2025.00)
+- GitHub API client
+- Comprehensive test dependencies
+
+==== Features
+- Convert individual AsciiDoc files to HTML
+- Batch conversion of entire directories
+- Dependency tracking between files via include directives
+- Incremental conversion (only convert changed files)
+- Automatic parent file re-conversion when includes change
+- Copy non-AsciiDoc files to output directory
+- Clean up deleted files from output directory
+- Detailed conversion statistics and reporting
+- Error handling and logging for failed conversions
+- Flexible output directory configuration
+- Support for AsciiDoctor attributes and options
+- Integration with external services via configuration
+
+==== Technical Highlights
+- Built with modern Java 21 and Kotlin 2.1
+- Utilizes Spring Boot 3.5.3 with virtual threads
+- Comprehensive Maven build configuration
+- Production-ready with actuator endpoints
+- Extensible architecture for future enhancements
+- Thread-safe operations for concurrent processing
+- Memory-efficient file processing
+- Robust error handling and recovery
