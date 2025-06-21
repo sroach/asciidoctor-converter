@@ -269,6 +269,10 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
     }
 
     private fun buildAttributes(): Attributes {
+        // Get the docinfo directory from resources
+        val docinfoDir = this::class.java.classLoader.getResource("docinfo")?.path
+            ?: "src/main/resources/docinfo"
+
         return Attributes.builder()
             .sourceHighlighter("highlightjs")
             .allowUriRead(true)
@@ -279,7 +283,10 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
             .dataUri(true)
             .copyCss(true)
             .noFooter(true)
+            .attribute("docinfodir", docinfoDir)
+            .attribute("docinfo", "shared")
             .build()
+
     }
     private fun buildOptions(attrs: Attributes): Options {
         return  Options.builder()
