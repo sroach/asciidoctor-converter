@@ -1,0 +1,25 @@
+server:
+  port: 7202
+  servlet:
+    context-path: /converter
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, loggers,metrics,beans,mappings,threaddump,heapdump,swagger-ui,sbom
+
+github:
+  api:
+    base-url: https://api.github.com
+    token: ${GITHUB_TOKEN:}
+
+converter:
+  panel-server: http://localhost:8010/extension
+  panel-webserver: http://localhost:8010/extension
+  local-debug: true
+
+spring:
+  threads:
+    virtual:
+      enabled: true
