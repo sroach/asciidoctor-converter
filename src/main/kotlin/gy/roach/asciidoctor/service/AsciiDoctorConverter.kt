@@ -12,7 +12,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Pattern
+import kotlin.concurrent.thread
 
 data class ConversionStats(
     var filesNeedingConversion: Int = 0,
@@ -101,7 +105,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
 
     /**
      * Converts a list of .adoc files to HTML in the target directory and copies any non-AsciiDoc files
-     * from the same source directory.
+     * from the same source directory. Uses virtual threads for parallel processing.
      *
      * @param files List of .adoc files to convert
      * @param toDir The directory where converted files will be written
@@ -111,9 +115,15 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
         val stats = ConversionStats()
         val targetDir = File(toDir)
 
-        // Check if target directory exists
-        if (!targetDir.exists() || !targetDir.isDirectory) {
-            logger.warn("Target directory does not exist: $toDir")
+        // Create target directory if it doesn't exist
+        if (!targetDir.exists()) {
+            logger.info("Creating target directory: $toDir")
+            if (!targetDir.mkdirs()) {
+                logger.error("Failed to create target directory: $toDir")
+                return stats
+            }
+        } else if (!targetDir.isDirectory) {
+            logger.error("Target path exists but is not a directory: $toDir")
             return stats
         }
 
@@ -139,51 +149,86 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
         // Set to track files that need conversion
         val filesToConvert = mutableSetOf<File>()
 
-        // First pass: identify files that need conversion based on content changes
-        files.forEach { file ->
-            val targetFile = File(toDir, file.name)
-            val targetHtmlFile = File(toDir, file.nameWithoutExtension + ".html")
+        // First pass: identify files that need conversion based on content changes using virtual threads
+        val identificationExecutor = Executors.newVirtualThreadPerTaskExecutor()
+        val filesToConvertSet = ConcurrentHashMap.newKeySet<File>()
 
-            if (shouldConvertFile(file, targetFile, targetHtmlFile)) {
-                filesToConvert.add(file)
-                stats.filesNeedingConversion++
-            }
-        }
+        val identificationTasks = files.map { file ->
+            identificationExecutor.submit {
+                val targetFile = File(toDir, file.name)
+                val targetHtmlFile = File(toDir, file.nameWithoutExtension + ".html")
 
-        // Second pass: add parent files that need conversion due to changed includes
-        val additionalFiles = mutableSetOf<File>()
-        filesToConvert.forEach { changedFile ->
-            // If this file is included by other files, those files also need conversion
-            reverseDependencies[changedFile]?.forEach { parentFile ->
-                if (!filesToConvert.contains(parentFile)) {
-                    additionalFiles.add(parentFile)
-                    stats.filesNeedingConversion++
-                    logger.info("Adding ${parentFile.name} for conversion because included file ${changedFile.name} has changed")
+                if (shouldConvertFile(file, targetFile, targetHtmlFile)) {
+                    filesToConvertSet.add(file)
+                    synchronized(stats) {
+                        stats.filesNeedingConversion++
+                    }
                 }
             }
         }
-        filesToConvert.addAll(additionalFiles)
 
-        // Convert all files that need conversion
-        filesToConvert.forEach { file ->
-            val targetFile = File(toDir, file.name)
-            try {
-                val options = buildOptions(buildAttributes())
-                options.setMkDirs(true)
-                options.setToDir(toDir)
-                asciidoctor.convertFile(file, options)
+        // Wait for all identification tasks to complete
+        identificationTasks.forEach { it.get() }
+        identificationExecutor.close()
 
-                // Copy the source .adoc file to the target directory
-                Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        filesToConvert.addAll(filesToConvertSet)
 
-                stats.filesConverted++
-                logger.info("Successfully converted file: ${file.name}")
-            } catch (e: Exception) {
-                stats.filesFailed++
-                stats.failedFiles.add(file.name)
-                logger.error("Failed to convert file: ${file.name}", e)
+        // Second pass: add parent files that need conversion due to changed includes using virtual threads
+        val additionalFilesSet = ConcurrentHashMap.newKeySet<File>()
+        val dependencyExecutor = Executors.newVirtualThreadPerTaskExecutor()
+
+        val dependencyTasks = filesToConvert.map { changedFile ->
+            dependencyExecutor.submit {
+                // If this file is included by other files, those files also need conversion
+                reverseDependencies[changedFile]?.forEach { parentFile ->
+                    if (!filesToConvert.contains(parentFile) && !additionalFilesSet.contains(parentFile)) {
+                        additionalFilesSet.add(parentFile)
+                        synchronized(stats) {
+                            stats.filesNeedingConversion++
+                        }
+                        logger.info("Adding ${parentFile.name} for conversion because included file ${changedFile.name} has changed")
+                    }
+                }
             }
         }
+
+        // Wait for all dependency tasks to complete
+        dependencyTasks.forEach { it.get() }
+        dependencyExecutor.close()
+
+        filesToConvert.addAll(additionalFilesSet)
+
+        // Convert all files that need conversion using virtual threads
+        val executor = Executors.newVirtualThreadPerTaskExecutor()
+        val tasks = filesToConvert.map { file ->
+            executor.submit {
+                val targetFile = File(toDir, file.name)
+                try {
+                    val options = buildOptions(buildAttributes())
+                    options.setMkDirs(true)
+                    options.setToDir(toDir)
+                    asciidoctor.convertFile(file, options)
+
+                    // Copy the source .adoc file to the target directory
+                    Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+
+                    synchronized(stats) {
+                        stats.filesConverted++
+                    }
+                    logger.info("Successfully converted file: ${file.name}")
+                } catch (e: Exception) {
+                    synchronized(stats) {
+                        stats.filesFailed++
+                        stats.failedFiles.add(file.name)
+                    }
+                    logger.error("Failed to convert file: ${file.name}", e)
+                }
+            }
+        }
+
+        // Wait for all tasks to complete
+        tasks.forEach { it.get() }
+        executor.close()
 
         // Copy non-AsciiDoc files to the target directory
         if (nonAdocFiles.isNotEmpty()) {
@@ -296,8 +341,14 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
             return stats
         }
 
-        if (!targetDir.exists() || !targetDir.isDirectory) {
-            logger.warn("Target directory does not exist: $toDir")
+        if (!targetDir.exists()) {
+            logger.info("Creating target directory: $toDir")
+            if (!targetDir.mkdirs()) {
+                logger.error("Failed to create target directory: $toDir")
+                return stats
+            }
+        } else if (!targetDir.isDirectory) {
+            logger.error("Target path exists but is not a directory: $toDir")
             return stats
         }
 
@@ -315,51 +366,86 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
         // Set to track files that need conversion
         val filesToConvert = mutableSetOf<File>()
 
-        // First pass: identify files that need conversion based on content changes
-        adocFiles.forEach { file ->
-            val targetFile = File(toDir, file.name)
-            val targetHtmlFile = File(toDir, file.nameWithoutExtension + ".html")
+        // First pass: identify files that need conversion based on content changes using virtual threads
+        val identificationExecutor = Executors.newVirtualThreadPerTaskExecutor()
+        val filesToConvertSet = ConcurrentHashMap.newKeySet<File>()
 
-            if (shouldConvertFile(file, targetFile, targetHtmlFile)) {
-                filesToConvert.add(file)
-                stats.filesNeedingConversion++
-            }
-        }
+        val identificationTasks = adocFiles.map { file ->
+            identificationExecutor.submit {
+                val targetFile = File(toDir, file.name)
+                val targetHtmlFile = File(toDir, file.nameWithoutExtension + ".html")
 
-        // Second pass: add parent files that need conversion due to changed includes
-        val additionalFiles = mutableSetOf<File>()
-        filesToConvert.forEach { changedFile ->
-            // If this file is included by other files, those files also need conversion
-            reverseDependencies[changedFile]?.forEach { parentFile ->
-                if (!filesToConvert.contains(parentFile)) {
-                    additionalFiles.add(parentFile)
-                    stats.filesNeedingConversion++
-                    logger.info("Adding ${parentFile.name} for conversion because included file ${changedFile.name} has changed")
+                if (shouldConvertFile(file, targetFile, targetHtmlFile)) {
+                    filesToConvertSet.add(file)
+                    synchronized(stats) {
+                        stats.filesNeedingConversion++
+                    }
                 }
             }
         }
-        filesToConvert.addAll(additionalFiles)
 
-        // Convert all files that need conversion
-        filesToConvert.forEach { file ->
-            val targetFile = File(toDir, file.name)
-            try {
-                val options = buildOptions(buildAttributes())
-                options.setMkDirs(true)
-                options.setToDir(toDir)
-                asciidoctor.convertFile(file, options)
+        // Wait for all identification tasks to complete
+        identificationTasks.forEach { it.get() }
+        identificationExecutor.close()
 
-                // Copy the source .adoc file to the target directory
-                Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        filesToConvert.addAll(filesToConvertSet)
 
-                stats.filesConverted++
-                logger.info("Successfully converted file: ${file.name}")
-            } catch (e: Exception) {
-                stats.filesFailed++
-                stats.failedFiles.add(file.name)
-                logger.error("Failed to convert file: ${file.name}", e)
+        // Second pass: add parent files that need conversion due to changed includes using virtual threads
+        val additionalFilesSet = ConcurrentHashMap.newKeySet<File>()
+        val dependencyExecutor = Executors.newVirtualThreadPerTaskExecutor()
+
+        val dependencyTasks = filesToConvert.map { changedFile ->
+            dependencyExecutor.submit {
+                // If this file is included by other files, those files also need conversion
+                reverseDependencies[changedFile]?.forEach { parentFile ->
+                    if (!filesToConvert.contains(parentFile) && !additionalFilesSet.contains(parentFile)) {
+                        additionalFilesSet.add(parentFile)
+                        synchronized(stats) {
+                            stats.filesNeedingConversion++
+                        }
+                        logger.info("Adding ${parentFile.name} for conversion because included file ${changedFile.name} has changed")
+                    }
+                }
             }
         }
+
+        // Wait for all dependency tasks to complete
+        dependencyTasks.forEach { it.get() }
+        dependencyExecutor.close()
+
+        filesToConvert.addAll(additionalFilesSet)
+
+        // Convert all files that need conversion using virtual threads
+        val executor = Executors.newVirtualThreadPerTaskExecutor()
+        val tasks = filesToConvert.map { file ->
+            executor.submit {
+                val targetFile = File(toDir, file.name)
+                try {
+                    val options = buildOptions(buildAttributes())
+                    options.setMkDirs(true)
+                    options.setToDir(toDir)
+                    asciidoctor.convertFile(file, options)
+
+                    // Copy the source .adoc file to the target directory
+                    Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+
+                    synchronized(stats) {
+                        stats.filesConverted++
+                    }
+                    logger.info("Successfully converted file: ${file.name}")
+                } catch (e: Exception) {
+                    synchronized(stats) {
+                        stats.filesFailed++
+                        stats.failedFiles.add(file.name)
+                    }
+                    logger.error("Failed to convert file: ${file.name}", e)
+                }
+            }
+        }
+
+        // Wait for all tasks to complete
+        tasks.forEach { it.get() }
+        executor.close()
 
         // Copy non-AsciiDoc files to the target directory
         copyNonAdocFiles(nonAdocFiles, toDir, stats)
@@ -371,7 +457,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
     }
 
     /**
-     * Copies non-AsciiDoc files from source to target directory.
+     * Copies non-AsciiDoc files from source to target directory using virtual threads.
      * Only copies files that don't exist in the target directory or have different content.
      *
      * @param files List of non-AsciiDoc files to copy
@@ -381,31 +467,47 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
     private fun copyNonAdocFiles(files: List<File>, toDir: String, stats: ConversionStats) {
         val targetDir = File(toDir)
 
-        // Check if target directory exists
-        if (!targetDir.exists() || !targetDir.isDirectory) {
-            logger.warn("Target directory does not exist: $toDir")
+        // Create target directory if it doesn't exist
+        if (!targetDir.exists()) {
+            logger.info("Creating target directory: $toDir")
+            if (!targetDir.mkdirs()) {
+                logger.error("Failed to create target directory: $toDir")
+                return
+            }
+        } else if (!targetDir.isDirectory) {
+            logger.error("Target path exists but is not a directory: $toDir")
             return
         }
 
-        files.forEach { file ->
-            val targetFile = File(toDir, file.name)
+        // Use virtual threads for parallel file copying
+        val executor = Executors.newVirtualThreadPerTaskExecutor()
+        val tasks = files.map { file ->
+            executor.submit {
+                val targetFile = File(toDir, file.name)
 
-            // Check if the file needs to be copied (doesn't exist or content differs)
-            val needsCopy = !targetFile.exists() || 
-                            Files.mismatch(file.toPath(), targetFile.toPath()) != -1L
+                // Check if the file needs to be copied (doesn't exist or content differs)
+                val needsCopy = !targetFile.exists() || 
+                                Files.mismatch(file.toPath(), targetFile.toPath()) != -1L
 
-            if (needsCopy) {
-                try {
-                    // Copy the file to the target directory
-                    Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                    stats.filesCopied++
-                    stats.copiedFiles.add(file.name)
-                    logger.info("Copied file: ${file.name}")
-                } catch (e: Exception) {
-                    logger.error("Failed to copy file: ${file.name}", e)
+                if (needsCopy) {
+                    try {
+                        // Copy the file to the target directory
+                        Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                        synchronized(stats) {
+                            stats.filesCopied++
+                            stats.copiedFiles.add(file.name)
+                        }
+                        logger.info("Copied file: ${file.name}")
+                    } catch (e: Exception) {
+                        logger.error("Failed to copy file: ${file.name}", e)
+                    }
                 }
             }
         }
+
+        // Wait for all tasks to complete
+        tasks.forEach { it.get() }
+        executor.close()
 
         if (stats.filesCopied > 0) {
             logger.info("Copied ${stats.filesCopied} non-AsciiDoc files")
@@ -413,7 +515,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
     }
 
     /**
-     * Cleans up files in the target directory that no longer exist in the source.
+     * Cleans up files in the target directory that no longer exist in the source using virtual threads.
      * This includes both .adoc files and their corresponding .html files,
      * as well as any other files that were copied from source to target.
      * 
@@ -440,35 +542,41 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
             sourceFileNames
         }
 
-        // Check each target file to see if it still exists in source
-        targetFiles.forEach { targetFile ->
-            if (!allSourceFileNames.contains(targetFile.name)) {
-                // Skip HTML files as they are handled separately for .adoc files
-                if (targetFile.extension == "html") {
-                    // Only delete HTML files if they don't have a corresponding .adoc file
-                    val correspondingAdocFile = File(targetDir, targetFile.nameWithoutExtension + ".adoc")
-                    if (correspondingAdocFile.exists()) {
-                        return@forEach
-                    }
-                }
-
-                try {
-                    // Delete the file
-                    if (targetFile.delete()) {
-                        stats.filesDeleted++
-                        stats.deletedFiles.add(targetFile.name)
-                        logger.info("Deleted file: ${targetFile.name}")
-                    } else {
-                        logger.warn("Failed to delete file: ${targetFile.name}")
-                    }
-                } catch (e: Exception) {
-                    logger.error("Error deleting file: ${targetFile.name}", e)
-                }
-            }
+        // Filter files that need to be deleted
+        val filesToDelete = targetFiles.filter { targetFile ->
+            !allSourceFileNames.contains(targetFile.name) && 
+            !(targetFile.extension == "html" && File(targetDir, targetFile.nameWithoutExtension + ".adoc").exists())
         }
 
-        if (stats.filesDeleted > 0) {
-            logger.info("Cleaned up ${stats.filesDeleted} deleted files")
+        // Use virtual threads for parallel file deletion
+        if (filesToDelete.isNotEmpty()) {
+            val executor = Executors.newVirtualThreadPerTaskExecutor()
+            val tasks = filesToDelete.map { targetFile ->
+                executor.submit {
+                    try {
+                        // Delete the file
+                        if (targetFile.delete()) {
+                            synchronized(stats) {
+                                stats.filesDeleted++
+                                stats.deletedFiles.add(targetFile.name)
+                            }
+                            logger.info("Deleted file: ${targetFile.name}")
+                        } else {
+                            logger.warn("Failed to delete file: ${targetFile.name}")
+                        }
+                    } catch (e: Exception) {
+                        logger.error("Error deleting file: ${targetFile.name}", e)
+                    }
+                }
+            }
+
+            // Wait for all tasks to complete
+            tasks.forEach { it.get() }
+            executor.close()
+
+            if (stats.filesDeleted > 0) {
+                logger.info("Cleaned up ${stats.filesDeleted} deleted files")
+            }
         }
     }
 }
