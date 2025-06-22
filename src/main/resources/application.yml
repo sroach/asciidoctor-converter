@@ -19,6 +19,10 @@ converter:
   panel-webserver: http://localhost:8010/extension
   local-debug: true
 
+app:
+  execution-history:
+    max-size: 10
+
 spring:
   threads:
     virtual:
