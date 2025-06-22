@@ -25,3 +25,10 @@ data class ExecutionSummary(
     val totalFilesDeleted: Int,
     val lastExecution: ExecutionRecord?
 )
+
+data class ActiveConversion(
+    val sourceDirectory: String,
+    val outputDirectory: String,
+    val startTime: LocalDateTime,
+    val executionId: String
+)

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 
 @Controller
@@ -27,6 +28,9 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     // Thread-safe deque to store execution history
     private val executionHistory = ConcurrentLinkedDeque<ExecutionRecord>()
+
+    // Thread-safe map to track active conversions by normalized source directory path
+    private val activeConversions = ConcurrentHashMap<String, ActiveConversion>()
 
     // Define allowed base directories for security
     private val allowedBasePaths = listOf(
@@ -79,6 +83,36 @@ class MainController(private val convert: AsciiDoctorConverter,
             return ResponseEntity.badRequest().body(buildErrorResponseMessage(errorMessage, startTimestamp, duration))
 
         }
+        // Check if conversion is already in progress for this source directory
+        val normalizedSourcePath = validatedSourceDir.toString()
+        val existingConversion = activeConversions[normalizedSourcePath]
+
+        if (existingConversion != null) {
+            val conflictMessage = "Conversion already in progress for source directory: $normalizedSourcePath (started at ${existingConversion.startTime})"
+            logger.warn(conflictMessage)
+            val endTime = System.currentTimeMillis()
+            val duration = endTime - startTime
+
+            recordExecution(startTimestamp, sourceDirectory, outputDirectory, duration, ConversionStats(), false, conflictMessage)
+
+            return ResponseEntity.status(409) // HTTP 409 Conflict
+                .header("Content-Type", "text/html; charset=UTF-8")
+                .body(buildConflictResponseMessage(conflictMessage, existingConversion, startTimestamp, duration))
+        }
+
+        // Generate execution ID for this conversion
+        val executionId = java.util.UUID.randomUUID().toString()
+
+        // Register this conversion as active
+        val activeConversion = ActiveConversion(
+            sourceDirectory = normalizedSourcePath,
+            outputDirectory = validatedOutputDir.toString(),
+            startTime = startTimestamp,
+            executionId = executionId
+        )
+
+        activeConversions[normalizedSourcePath] = activeConversion
+        logger.info("Started conversion for source directory: $normalizedSourcePath (execution ID: $executionId)")
 
         try {
             // Convert files and get statistics
@@ -95,11 +129,12 @@ class MainController(private val convert: AsciiDoctorConverter,
             val responseMessage = buildResponseMessage(stats, startTimestamp, duration)
 
 
-            logger.info("Conversion completed successfully for source: ${validatedSourceDir}")
+            logger.info("Conversion completed successfully for source: ${validatedSourceDir} in ${duration}ms (execution ID: $executionId)")
 
             return ResponseEntity.ok()
                 .header("Content-Type", "text/html; charset=UTF-8")
                 .body(responseMessage)
+
         } catch (e: Exception) {
             val endTime = System.currentTimeMillis()
             val duration = endTime - startTime
@@ -108,13 +143,19 @@ class MainController(private val convert: AsciiDoctorConverter,
             recordExecution(startTimestamp, sourceDirectory, outputDirectory, duration, ConversionStats(), false, e.message)
 
             val errorMessage = buildErrorResponseMessage("Conversion failed: ${e.message}", startTimestamp, duration)
-            logger.error("Conversion error after ${duration}ms", e)
+            logger.error("Conversion error after ${duration}ms (execution ID: $executionId)", e)
             return ResponseEntity.internalServerError()
                 .header("Content-Type", "text/html; charset=UTF-8")
                 .body(errorMessage)
 
 
+
+        }finally {
+            // Always remove the active conversion when done (success or failure)
+            activeConversions.remove(normalizedSourcePath)
+            logger.debug("Removed active conversion for source directory: $normalizedSourcePath (execution ID: $executionId)")
         }
+
     }
 
     private fun validateAndSanitizePath(inputPath: String): Path? {
@@ -482,103 +523,8 @@ class MainController(private val convert: AsciiDoctorConverter,
         }
     }
 
-    @GetMapping("/stats", produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getStatsJson(): ResponseEntity<Map<String, Any>> {
-        val history = executionHistory.toList()
-        val summary = calculateSummary(history)
 
-        return ResponseEntity.ok(mapOf(
-            "summary" to summary,
-            "executions" to history,
-        "maxHistorySize" to historyConfig.maxSize
-        ))
-    }
 
-    @GetMapping("/stats/html", produces = ["text/html"])
-    fun getStatsHtml(): ResponseEntity<String> {
-        val history = executionHistory.toList()
-        val summary = calculateSummary(history)
-
-        return ResponseEntity.ok()
-            .header("Content-Type", "text/html; charset=UTF-8")
-            .body(buildStatsResponseMessage(summary, history))
-    }
-
-    @GetMapping("/stats/{executionId}", produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getExecutionDetails(@PathVariable executionId: String): ResponseEntity<ExecutionRecord> {
-        val execution = executionHistory.find { it.id == executionId }
-        return if (execution != null) {
-            ResponseEntity.ok(execution)
-        } else {
-            ResponseEntity.notFound().build()
-        }
-    }
-
-    @GetMapping("/stats/{executionId}/html", produces = ["text/html"])
-    fun getExecutionDetailsHtml(@PathVariable executionId: String): ResponseEntity<String> {
-        val execution = executionHistory.find { it.id == executionId }
-        return if (execution != null) {
-            ResponseEntity.ok()
-                .header("Content-Type", "text/html; charset=UTF-8")
-                .body(buildExecutionDetailsResponseMessage(execution))
-        } else {
-            ResponseEntity.notFound().build()
-        }
-    }
-
-    private fun recordExecution(
-        timestamp: LocalDateTime,
-        sourceDir: String,
-        outputDir: String,
-        duration: Long,
-        stats: ConversionStats,
-        success: Boolean,
-        errorMessage: String? = null
-    ) {
-        val record = ExecutionRecord(
-            timestamp = timestamp,
-            sourceDirectory = sourceDir,
-            outputDirectory = outputDir,
-            durationMs = duration,
-            stats = stats,
-            success = success,
-            errorMessage = errorMessage
-        )
-
-        // Add to the front of the deque (most recent first)
-        executionHistory.addFirst(record)
-
-        // Remove oldest entries if we exceed max size
-        while (executionHistory.size > historyConfig.maxSize) {
-            executionHistory.removeLast()
-        }
-
-        logger.debug("Recorded execution: ${record.id} - Success: $success")
-    }
-
-    private fun calculateSummary(history: List<ExecutionRecord>): ExecutionSummary {
-        if (history.isEmpty()) {
-            return ExecutionSummary(0, 0, 0, 0, 0, 0, 0, null)
-        }
-
-        val successfulExecutions = history.count { it.success }
-        val failedExecutions = history.count { !it.success }
-        val averageDuration = if (history.isNotEmpty()) history.map { it.durationMs }.average().toLong() else 0L
-        val totalFilesConverted = history.sumOf { it.stats.filesConverted }
-        val totalFilesCopied = history.sumOf { it.stats.filesCopied }
-        val totalFilesDeleted = history.sumOf { it.stats.filesDeleted }
-
-        return ExecutionSummary(
-            totalExecutions = history.size,
-            successfulExecutions = successfulExecutions,
-            failedExecutions = failedExecutions,
-            averageDurationMs = averageDuration,
-            totalFilesConverted = totalFilesConverted,
-            totalFilesCopied = totalFilesCopied,
-            totalFilesDeleted = totalFilesDeleted,
-            lastExecution = history.firstOrNull()
-        )
-    }
     private fun buildStatsResponseMessage(summary: ExecutionSummary, history: List<ExecutionRecord>): String {
         val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
@@ -820,6 +766,426 @@ class MainController(private val convert: AsciiDoctorConverter,
 
         return buildResponseMessage(execution.stats, execution.timestamp, execution.durationMs)
     }
+    @GetMapping("/active-conversions", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getActiveConversions(): ResponseEntity<Map<String, Any>> {
+        val active = activeConversions.values.toList()
+        return ResponseEntity.ok(mapOf(
+            "activeConversions" to active,
+            "count" to active.size
+        ))
+    }
 
+    @GetMapping("/active-conversions/html", produces = ["text/html"])
+    fun getActiveConversionsHtml(): ResponseEntity<String> {
+        val active = activeConversions.values.toList()
+        return ResponseEntity.ok()
+            .header("Content-Type", "text/html; charset=UTF-8")
+            .body(buildActiveConversionsResponseMessage(active))
+    }
+
+    @GetMapping("/stats", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getStatsJson(): ResponseEntity<Map<String, Any>> {
+        val history = executionHistory.toList()
+        val summary = calculateSummary(history)
+
+        return ResponseEntity.ok(mapOf(
+            "summary" to summary,
+            "executions" to history,
+        "maxHistorySize" to historyConfig.maxSize
+        ))
+    }
+
+    @GetMapping("/stats/html", produces = ["text/html"])
+    fun getStatsHtml(): ResponseEntity<String> {
+        val history = executionHistory.toList()
+        val summary = calculateSummary(history)
+
+        return ResponseEntity.ok()
+            .header("Content-Type", "text/html; charset=UTF-8")
+            .body(buildStatsResponseMessage(summary, history))
+    }
+
+    @GetMapping("/stats/{executionId}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getExecutionDetails(@PathVariable executionId: String): ResponseEntity<ExecutionRecord> {
+        val execution = executionHistory.find { it.id == executionId }
+        return if (execution != null) {
+            ResponseEntity.ok(execution)
+        } else {
+            ResponseEntity.notFound().build()
+        }
+    }
+
+    @GetMapping("/stats/{executionId}/html", produces = ["text/html"])
+    fun getExecutionDetailsHtml(@PathVariable executionId: String): ResponseEntity<String> {
+        val execution = executionHistory.find { it.id == executionId }
+        return if (execution != null) {
+            ResponseEntity.ok()
+                .header("Content-Type", "text/html; charset=UTF-8")
+                .body(buildExecutionDetailsResponseMessage(execution))
+        } else {
+            ResponseEntity.notFound().build()
+        }
+    }
+    private fun buildConflictResponseMessage(
+        conflictMessage: String,
+        existingConversion: ActiveConversion,
+        startTimestamp: LocalDateTime,
+        durationMs: Long
+    ): String {
+        val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        val formattedTimestamp = startTimestamp.format(formatter)
+        val formattedExistingStart = existingConversion.startTime.format(formatter)
+        val durationFormatted = formatDuration(durationMs)
+
+        return """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Conversion Conflict</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+                    margin: 0;
+                    padding: 20px;
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .container {
+                    background: white;
+                    border-radius: 20px;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                    padding: 40px;
+                    max-width: 600px;
+                    width: 100%;
+                    text-align: center;
+                }
+                .conflict-icon {
+                    font-size: 48px;
+                    margin-bottom: 20px;
+                }
+                .conflict-title {
+                    color: #c05621;
+                    font-size: 24px;
+                    font-weight: 600;
+                    margin-bottom: 15px;
+                }
+                .conflict-message {
+                    color: #4a5568;
+                    font-size: 16px;
+                    line-height: 1.5;
+                    margin-bottom: 20px;
+                }
+                .existing-conversion-info {
+                    background: #fef5e7;
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin: 20px 0;
+                    border-left: 4px solid #ed8936;
+                }
+                .info-item {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 10px;
+                    font-size: 14px;
+                }
+                .info-label {
+                    color: #718096;
+                    font-weight: 500;
+                }
+                .info-value {
+                    color: #2d3748;
+                    font-weight: 600;
+                    font-family: monospace;
+                }
+                .timing-info {
+                    background: #f7fafc;
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin-top: 20px;
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                }
+                .timing-item {
+                    text-align: center;
+                }
+                .timing-label {
+                    color: #718096;
+                    font-size: 14px;
+                    font-weight: 500;
+                    margin-bottom: 8px;
+                }
+                .timing-value {
+                    color: #2d3748;
+                    font-size: 16px;
+                    font-weight: 600;
+                }
+                .retry-info {
+                    background: #edf2f7;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin-top: 20px;
+                    font-size: 14px;
+                    color: #4a5568;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="conflict-icon">⚠️</div>
+                <div class="conflict-title">Conversion Already In Progress</div>
+                <div class="conflict-message">
+                    A conversion is currently running for the requested source directory. 
+                    Please wait for it to complete before starting a new conversion.
+                </div>
+                
+                <div class="existing-conversion-info">
+                    <div class="info-item">
+                        <span class="info-label">Execution ID:</span>
+                        <span class="info-value">${existingConversion.executionId}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Started At:</span>
+                        <span class="info-value">$formattedExistingStart</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Source Directory:</span>
+                        <span class="info-value">${existingConversion.sourceDirectory}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Output Directory:</span>
+                        <span class="info-value">${existingConversion.outputDirectory}</span>
+                    </div>
+                </div>
+                
+                <div class="timing-info">
+                    <div class="timing-item">
+                        <div class="timing-label">🕐 Your Request Time</div>
+                        <div class="timing-value">$formattedTimestamp</div>
+                    </div>
+                    <div class="timing-item">
+                        <div class="timing-label">⏱️ Response Time</div>
+                        <div class="timing-value">$durationFormatted</div>
+                    </div>
+                </div>
+                
+                <div class="retry-info">
+                    💡 <strong>Tip:</strong> You can check active conversions at 
+                    <code>/api/active-conversions</code> or retry your request once the current conversion completes.
+                </div>
+            </div>
+        </body>
+        </html>
+        """.trimIndent()
+    }
+
+    private fun buildActiveConversionsResponseMessage(activeConversions: List<ActiveConversion>): String {
+        val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+        return """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Active Conversions</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    margin: 0;
+                    padding: 20px;
+                    min-height: 100vh;
+                }
+                .container {
+                    background: white;
+                    border-radius: 20px;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                    padding: 40px;
+                    max-width: 1000px;
+                    margin: 0 auto;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                }
+                .header h1 {
+                    color: #2d3748;
+                    font-size: 32px;
+                    margin-bottom: 10px;
+                    font-weight: 600;
+                }
+                .count-badge {
+                    background: linear-gradient(45deg, #48bb78, #38a169);
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 20px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    display: inline-block;
+                }
+                .refresh-button {
+                    background: linear-gradient(45deg, #4299e1, #3182ce);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    margin-left: 10px;
+                }
+                .refresh-button:hover {
+                    background: linear-gradient(45deg, #3182ce, #2c5aa0);
+                }
+                .conversion-item {
+                    background: #f7fafc;
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin-bottom: 15px;
+                    border-left: 4px solid #ed8936;
+                }
+                .conversion-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 15px;
+                }
+                .execution-id {
+                    font-family: monospace;
+                    font-size: 12px;
+                    color: #718096;
+                }
+                .start-time {
+                    color: #4a5568;
+                    font-size: 14px;
+                }
+                .conversion-details {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 15px;
+                    font-size: 14px;
+                    color: #4a5568;
+                }
+                .detail-item {
+                    display: flex;
+                    flex-direction: column;
+                }
+                .detail-label {
+                    color: #718096;
+                    font-size: 12px;
+                    font-weight: 500;
+                    margin-bottom: 4px;
+                }
+                .detail-value {
+                    color: #2d3748;
+                    font-family: monospace;
+                    font-size: 13px;
+                    word-break: break-all;
+                }
+                .no-active {
+                    text-align: center;
+                    color: #718096;
+                    padding: 40px;
+                    font-size: 16px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🔄 Active Conversions</h1>
+                    <span class="count-badge">${activeConversions.size} Active</span>
+                    <button class="refresh-button" onclick="location.reload()">🔄 Refresh</button>
+                </div>
+                
+                ${if (activeConversions.isEmpty()) """
+                    <div class="no-active">
+                        No conversions currently in progress
+                    </div>
+                """ else activeConversions.joinToString("") { conversion ->
+            """
+                    <div class="conversion-item">
+                        <div class="conversion-header">
+                            <div class="execution-id">ID: ${conversion.executionId}</div>
+                            <div class="start-time">Started: ${conversion.startTime.format(formatter)}</div>
+                        </div>
+                        <div class="conversion-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Source Directory</div>
+                                <div class="detail-value">${conversion.sourceDirectory}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Output Directory</div>
+                                <div class="detail-value">${conversion.outputDirectory}</div>
+                            </div>
+                        </div>
+                    </div>
+                    """
+        }}
+            </div>
+        </body>
+        </html>
+        """.trimIndent()
+    }
+
+    private fun recordExecution(
+        timestamp: LocalDateTime,
+        sourceDir: String,
+        outputDir: String,
+        duration: Long,
+        stats: ConversionStats,
+        success: Boolean,
+        errorMessage: String? = null
+    ) {
+        val record = ExecutionRecord(
+            timestamp = timestamp,
+            sourceDirectory = sourceDir,
+            outputDirectory = outputDir,
+            durationMs = duration,
+            stats = stats,
+            success = success,
+            errorMessage = errorMessage
+        )
+
+        // Add to the front of the deque (most recent first)
+        executionHistory.addFirst(record)
+
+        // Remove oldest entries if we exceed max size
+        while (executionHistory.size > historyConfig.maxSize) {
+            executionHistory.removeLast()
+        }
+
+        logger.debug("Recorded execution: ${record.id} - Success: $success")
+    }
+
+    private fun calculateSummary(history: List<ExecutionRecord>): ExecutionSummary {
+        if (history.isEmpty()) {
+            return ExecutionSummary(0, 0, 0, 0, 0, 0, 0, null)
+        }
+
+        val successfulExecutions = history.count { it.success }
+        val failedExecutions = history.count { !it.success }
+        val averageDuration = if (history.isNotEmpty()) history.map { it.durationMs }.average().toLong() else 0L
+        val totalFilesConverted = history.sumOf { it.stats.filesConverted }
+        val totalFilesCopied = history.sumOf { it.stats.filesCopied }
+        val totalFilesDeleted = history.sumOf { it.stats.filesDeleted }
+
+        return ExecutionSummary(
+            totalExecutions = history.size,
+            successfulExecutions = successfulExecutions,
+            failedExecutions = failedExecutions,
+            averageDurationMs = averageDuration,
+            totalFilesConverted = totalFilesConverted,
+            totalFilesCopied = totalFilesCopied,
+            totalFilesDeleted = totalFilesDeleted,
+            lastExecution = history.firstOrNull()
+        )
+    }
 
 }
