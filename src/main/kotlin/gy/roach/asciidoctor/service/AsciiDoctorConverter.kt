@@ -486,28 +486,53 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
             return
         }
 
+        // Get the source directory from the first file to calculate relative paths
+        val sourceDir = files.firstOrNull()?.let { firstFile ->
+            // Find the common root directory by walking up the directory tree
+            var currentDir = firstFile.parentFile
+            while (currentDir != null && !files.all { it.absolutePath.startsWith(currentDir.absolutePath) }) {
+                currentDir = currentDir.parentFile
+            }
+            currentDir
+        }
+
+        if (sourceDir == null) {
+            logger.warn("Could not determine source directory for copying non-AsciiDoc files")
+            return
+        }
+
         // Use virtual threads for parallel file copying
         val executor = Executors.newVirtualThreadPerTaskExecutor()
         val tasks = files.map { file ->
             executor.submit {
-                val targetFile = File(toDir, file.name)
+                try {
+                    // Calculate relative path from source directory
+                    val relativePath = sourceDir.toPath().relativize(file.toPath())
+                    val targetFile = targetDir.toPath().resolve(relativePath).toFile()
 
-                // Check if the file needs to be copied (doesn't exist or content differs)
-                val needsCopy = !targetFile.exists() || 
-                                Files.mismatch(file.toPath(), targetFile.toPath()) != -1L
+                    // Create parent directories if they don't exist
+                    targetFile.parentFile?.let { parentDir ->
+                        if (!parentDir.exists() && !parentDir.mkdirs()) {
+                            logger.error("Failed to create parent directory: ${parentDir.absolutePath}")
+                            return@submit
+                        }
+                    }
 
-                if (needsCopy) {
-                    try {
-                        // Copy the file to the target directory
+                    // Check if the file needs to be copied (doesn't exist or content differs)
+                    val needsCopy = !targetFile.exists() ||
+                            Files.mismatch(file.toPath(), targetFile.toPath()) != -1L
+
+                    if (needsCopy) {
+                        // Copy the file to the target directory preserving directory structure
                         Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
                         synchronized(stats) {
                             stats.filesCopied++
-                            stats.copiedFiles.add(file.name)
+                            stats.copiedFiles.add(relativePath.toString())
                         }
-                        logger.info("Copied file: ${file.name}")
-                    } catch (e: Exception) {
-                        logger.error("Failed to copy file: ${file.name}", e)
+                        logger.info("Copied file: ${relativePath}")
                     }
+                } catch (e: Exception) {
+                    logger.error("Failed to copy file: ${file.name}", e)
                 }
             }
         }
@@ -517,42 +542,61 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
         executor.close()
 
         if (stats.filesCopied > 0) {
-            logger.info("Copied ${stats.filesCopied} non-AsciiDoc files")
+            logger.info("Copied ${stats.filesCopied} non-AsciiDoc files with directory structure preserved")
         }
     }
+
 
     /**
      * Cleans up files in the target directory that no longer exist in the source using virtual threads.
      * This includes both .adoc files and their corresponding .html files,
      * as well as any other files that were copied from source to target.
-     * 
-     * @param sourceFiles List of source .adoc files or source directory
+     * Handles directory structure preservation.
+     *
+     * @param sourceFiles List of source files
      * @param targetDir Target directory
      * @param stats ConversionStats to update with deletion information
      */
     private fun cleanupDeletedFiles(sourceFiles: List<File>, targetDir: File, stats: ConversionStats) {
-        // Get all files in the target directory
-        val targetFiles = targetDir.listFiles { file -> file.isFile } ?: return
-
-        // Create a set of source file names for efficient lookup
-        val sourceFileNames = sourceFiles.map { it.name }.toSet()
-
         // Get the source directory from the first source file (if available)
-        val sourceDir = sourceFiles.firstOrNull()?.parentFile
+        val sourceDir = sourceFiles.firstOrNull()?.let { firstFile ->
+            var currentDir = firstFile.parentFile
+            while (currentDir != null && !sourceFiles.all { it.absolutePath.startsWith(currentDir.absolutePath) }) {
+                currentDir = currentDir.parentFile
+            }
+            currentDir
+        } ?: return
 
-        // If we have a source directory, get all non-AsciiDoc files as well
-        val allSourceFileNames = if (sourceDir != null) {
-            val nonAdocFiles = getNonAdocFiles(sourceDir)
-            val allFiles = sourceFiles + nonAdocFiles
-            allFiles.map { it.name }.toSet()
+        // Get all source files (including non-AsciiDoc files)
+        val nonAdocFiles = getNonAdocFiles(sourceDir)
+        val allSourceFiles = sourceFiles + nonAdocFiles
+
+        // Create a set of relative paths for efficient lookup
+        val sourceRelativePaths = allSourceFiles.map { file ->
+            sourceDir.toPath().relativize(file.toPath()).toString()
+        }.toSet()
+
+        // Get all files in the target directory recursively
+        val targetFiles = if (targetDir.exists()) {
+            targetDir.walkTopDown()
+                .filter { it.isFile }
+                .toList()
         } else {
-            sourceFileNames
+            emptyList()
         }
 
         // Filter files that need to be deleted
         val filesToDelete = targetFiles.filter { targetFile ->
-            !allSourceFileNames.contains(targetFile.name) && 
-            !(targetFile.extension == "html" && File(targetDir, targetFile.nameWithoutExtension + ".adoc").exists())
+            val relativePath = targetDir.toPath().relativize(targetFile.toPath()).toString()
+
+            // Don't delete if:
+            // 1. The file exists in source
+            // 2. It's an HTML file with a corresponding .adoc file in source
+            val hasSourceFile = sourceRelativePaths.contains(relativePath)
+            val isHtmlWithAdocSource = targetFile.extension == "html" &&
+                    sourceRelativePaths.contains(relativePath.replace(".html", ".adoc"))
+
+            !hasSourceFile && !isHtmlWithAdocSource
         }
 
         // Use virtual threads for parallel file deletion
@@ -561,15 +605,15 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
             val tasks = filesToDelete.map { targetFile ->
                 executor.submit {
                     try {
-                        // Delete the file
+                        val relativePath = targetDir.toPath().relativize(targetFile.toPath()).toString()
                         if (targetFile.delete()) {
                             synchronized(stats) {
                                 stats.filesDeleted++
-                                stats.deletedFiles.add(targetFile.name)
+                                stats.deletedFiles.add(relativePath)
                             }
-                            logger.info("Deleted file: ${targetFile.name}")
+                            logger.info("Deleted file: $relativePath")
                         } else {
-                            logger.warn("Failed to delete file: ${targetFile.name}")
+                            logger.warn("Failed to delete file: $relativePath")
                         }
                     } catch (e: Exception) {
                         logger.error("Error deleting file: ${targetFile.name}", e)
