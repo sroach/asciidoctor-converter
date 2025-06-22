@@ -440,6 +440,17 @@ class HtmlTemplateService {
                     display: flex;
                     justify-content: space-between;
                 }
+                .source-directory {
+                    grid-column: 1 / -1;
+                    background: #edf2f7;
+                    border-radius: 6px;
+                    padding: 10px;
+                    margin-top: 10px;
+                    font-family: monospace;
+                    font-size: 12px;
+                    color: #4a5568;
+                    word-break: break-all;
+                }
                 .badge {
                     padding: 4px 12px;
                     border-radius: 12px;
@@ -543,6 +554,9 @@ class HtmlTemplateService {
                                     <span>Failed:</span>
                                     <span>${execution.stats.filesFailed}</span>
                                 </div>
+                                <div class="source-directory">
+                                    📁 Source: ${execution.sourceDirectory}
+                                </div>
                                 ${if (!execution.success && execution.errorMessage != null) """
                                 <div class="stat-item" style="grid-column: 1 / -1; color: #e53e3e;">
                                     <span>Error:</span>
@@ -559,7 +573,6 @@ class HtmlTemplateService {
         </html>
         """.trimIndent()
     }
-
     fun buildConflictResponseMessage(
         conflictMessage: String,
         existingConversion: ActiveConversion,

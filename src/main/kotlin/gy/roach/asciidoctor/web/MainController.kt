@@ -31,6 +31,9 @@ class MainController(private val convert: AsciiDoctorConverter,
     // Thread-safe map to track active conversions by normalized source directory path
     private val activeConversions = ConcurrentHashMap<String, ActiveConversion>()
 
+    // Counter for total executions (including those removed from history)
+    private var totalExecutionCount = 0
+
     // Define allowed base directories for security
     private val allowedBasePaths = listOf(
         "/Users/steveroach/IdeaProjects",
@@ -273,6 +276,9 @@ class MainController(private val convert: AsciiDoctorConverter,
         // Add to the front of the deque (most recent first)
         executionHistory.addFirst(record)
 
+        // Increment total execution count
+        totalExecutionCount++
+
         // Remove oldest entries if we exceed max size
         while (executionHistory.size > historyConfig.maxSize) {
             executionHistory.removeLast()
@@ -283,7 +289,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     private fun calculateSummary(history: List<ExecutionRecord>): ExecutionSummary {
         if (history.isEmpty()) {
-            return ExecutionSummary(0, 0, 0, 0, 0, 0, 0, null)
+            return ExecutionSummary(totalExecutionCount, 0, 0, 0, 0, 0, 0, null)
         }
 
         val successfulExecutions = history.count { it.success }
@@ -294,7 +300,7 @@ class MainController(private val convert: AsciiDoctorConverter,
         val totalFilesDeleted = history.sumOf { it.stats.filesDeleted }
 
         return ExecutionSummary(
-            totalExecutions = history.size,
+            totalExecutions = totalExecutionCount,
             successfulExecutions = successfulExecutions,
             failedExecutions = failedExecutions,
             averageDurationMs = averageDuration,
