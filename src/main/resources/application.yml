@@ -22,8 +22,36 @@ converter:
 app:
   execution-history:
     max-size: 10
+  security:
+    allowed-base-paths:
+      - "Users/steveroach/IdeaProjects"
+      - "/tmp/asciidoc-conversion"
+      - "/usr/local/docops/stage/docops.io"
 
 spring:
   threads:
     virtual:
       enabled: true
+
+logging:
+  file:
+    name: logs/application.log
+    # OR use path (but not both)
+    # path: logs/
+  level:
+    root: INFO
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      # Rotate when file reaches this size
+      max-file-size: 5MB
+      # Keep this many historical files
+      max-history: 10
+      # Total size of all log files combined
+      total-size-cap: 250MB
+      # Pattern for archived file names
+      file-name-pattern: logs/application-%d{yyyy-MM-dd}.%i.log.gz
+      # Clean up old files on application startup
+      clean-history-on-start: true

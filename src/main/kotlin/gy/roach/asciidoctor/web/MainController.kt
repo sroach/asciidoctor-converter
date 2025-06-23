@@ -1,5 +1,6 @@
 package gy.roach.asciidoctor.web
 
+import gy.roach.asciidoctor.config.AllowedPathsConfig
 import gy.roach.asciidoctor.config.ExecutionHistoryConfig
 import gy.roach.asciidoctor.service.AsciiDoctorConverter
 import gy.roach.asciidoctor.service.ConversionStats
@@ -21,6 +22,7 @@ import java.util.concurrent.ConcurrentLinkedDeque
 @RequestMapping("/api")
 class MainController(private val convert: AsciiDoctorConverter,
                      private val historyConfig: ExecutionHistoryConfig,
+                     private val allowedPathsConfig: AllowedPathsConfig,
                      private val htmlTemplateService: gy.roach.asciidoctor.service.HtmlTemplateService
 ) {
     private val logger = LoggerFactory.getLogger(MainController::class.java)
@@ -34,12 +36,7 @@ class MainController(private val convert: AsciiDoctorConverter,
     // Counter for total executions (including those removed from history)
     private var totalExecutionCount = 0
 
-    // Define allowed base directories for security
-    private val allowedBasePaths = listOf(
-        "/Users/steveroach/IdeaProjects",
-        "/tmp/asciidoc-conversion",
-        // Add other allowed base paths as needed
-    )
+
 
     @GetMapping("/test", produces = ["text/html"])
     fun localTest(
@@ -177,7 +174,7 @@ class MainController(private val convert: AsciiDoctorConverter,
             val normalizedPath = Paths.get(inputPath).normalize().toAbsolutePath()
 
             // Check if the normalized path is within allowed base paths
-            val isAllowed = allowedBasePaths.any { basePath ->
+            val isAllowed = allowedPathsConfig.allowedBasePaths.any { basePath ->
                 normalizedPath.startsWith(Paths.get(basePath).normalize().toAbsolutePath())
             }
 
