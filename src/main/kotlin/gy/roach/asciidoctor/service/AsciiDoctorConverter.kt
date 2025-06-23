@@ -128,7 +128,14 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
         }
 
         // Get the source directory from the first file (if available)
-        val sourceDir = files.firstOrNull()?.parentFile
+        val sourceDir = files.firstOrNull()?.let { firstFile ->
+            // Find the common root directory by walking up the directory tree
+            var currentDir = firstFile.parentFile
+            while (currentDir != null && !files.all { it.absolutePath.startsWith(currentDir.absolutePath) }) {
+                currentDir = currentDir.parentFile
+            }
+            currentDir
+        }
 
         // Get non-AsciiDoc files if we have a source directory
         val nonAdocFiles = if (sourceDir != null) {
@@ -155,8 +162,20 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
 
         val identificationTasks = files.map { file ->
             identificationExecutor.submit {
-                val targetFile = File(toDir, file.name)
-                val targetHtmlFile = File(toDir, file.nameWithoutExtension + ".html")
+                // Calculate relative path from source directory
+                val relativePath = if (sourceDir != null) {
+                    sourceDir.toPath().relativize(file.toPath())
+                } else {
+                    Paths.get(file.name)
+                }
+
+                val targetFile = targetDir.toPath().resolve(relativePath).toFile()
+                val targetHtmlFile = targetDir.toPath().resolve(
+                    relativePath.resolveSibling(relativePath.fileName.toString().replace(".adoc", ".html"))
+                ).toFile()
+
+                // Create parent directories if they don't exist
+                targetFile.parentFile?.mkdirs()
 
                 if (shouldConvertFile(file, targetFile, targetHtmlFile)) {
                     filesToConvertSet.add(file)
@@ -202,11 +221,29 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
         val executor = Executors.newVirtualThreadPerTaskExecutor()
         val tasks = filesToConvert.map { file ->
             executor.submit {
-                val targetFile = File(toDir, file.name)
+                // Calculate relative path from source directory
+                val relativePath = if (sourceDir != null) {
+                    sourceDir.toPath().relativize(file.toPath())
+                } else {
+                    Paths.get(file.name)
+                }
+
+                val targetFile = targetDir.toPath().resolve(relativePath).toFile()
+                val targetHtmlFile = targetDir.toPath().resolve(
+                    relativePath.resolveSibling(relativePath.fileName.toString().replace(".adoc", ".html"))
+                ).toFile()
+
                 try {
+                    // Create parent directories if they don't exist
+                    targetFile.parentFile?.mkdirs()
+
                     val options = buildOptions(buildAttributes())
                     options.setMkDirs(true)
-                    options.setToDir(toDir)
+
+                    // Set the output directory to the parent directory of the target file
+                    // to preserve the directory structure
+                    options.setToDir(targetFile.parentFile.absolutePath)
+
                     asciidoctor.convertFile(file, options)
 
                     // Copy the source .adoc file to the target directory
@@ -215,13 +252,13 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
                     synchronized(stats) {
                         stats.filesConverted++
                     }
-                    logger.info("Successfully converted file: ${file.name}")
+                    logger.info("Successfully converted file: ${relativePath}")
                 } catch (e: Exception) {
                     synchronized(stats) {
                         stats.filesFailed++
-                        stats.failedFiles.add(file.name)
+                        stats.failedFiles.add(relativePath.toString())
                     }
-                    logger.error("Failed to convert file: ${file.name}", e)
+                    logger.error("Failed to convert file: ${relativePath}", e)
                 }
             }
         }
@@ -379,8 +416,16 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
 
         val identificationTasks = adocFiles.map { file ->
             identificationExecutor.submit {
-                val targetFile = File(toDir, file.name)
-                val targetHtmlFile = File(toDir, file.nameWithoutExtension + ".html")
+                // Calculate relative path from source directory
+                val relativePath = sourceDir.toPath().relativize(file.toPath())
+
+                val targetFile = targetDir.toPath().resolve(relativePath).toFile()
+                val targetHtmlFile = targetDir.toPath().resolve(
+                    relativePath.resolveSibling(relativePath.fileName.toString().replace(".adoc", ".html"))
+                ).toFile()
+
+                // Create parent directories if they don't exist
+                targetFile.parentFile?.mkdirs()
 
                 if (shouldConvertFile(file, targetFile, targetHtmlFile)) {
                     filesToConvertSet.add(file)
@@ -426,11 +471,25 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
         val executor = Executors.newVirtualThreadPerTaskExecutor()
         val tasks = filesToConvert.map { file ->
             executor.submit {
-                val targetFile = File(toDir, file.name)
+                // Calculate relative path from source directory
+                val relativePath = sourceDir.toPath().relativize(file.toPath())
+
+                val targetFile = targetDir.toPath().resolve(relativePath).toFile()
+                val targetHtmlFile = targetDir.toPath().resolve(
+                    relativePath.resolveSibling(relativePath.fileName.toString().replace(".adoc", ".html"))
+                ).toFile()
+
                 try {
+                    // Create parent directories if they don't exist
+                    targetFile.parentFile?.mkdirs()
+
                     val options = buildOptions(buildAttributes())
                     options.setMkDirs(true)
-                    options.setToDir(toDir)
+
+                    // Set the output directory to the parent directory of the target file
+                    // to preserve the directory structure
+                    options.setToDir(targetFile.parentFile.absolutePath)
+
                     asciidoctor.convertFile(file, options)
 
                     // Copy the source .adoc file to the target directory
@@ -439,13 +498,13 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
                     synchronized(stats) {
                         stats.filesConverted++
                     }
-                    logger.info("Successfully converted file: ${file.name}")
+                    logger.info("Successfully converted file: ${relativePath}")
                 } catch (e: Exception) {
                     synchronized(stats) {
                         stats.filesFailed++
-                        stats.failedFiles.add(file.name)
+                        stats.failedFiles.add(relativePath.toString())
                     }
-                    logger.error("Failed to convert file: ${file.name}", e)
+                    logger.error("Failed to convert file: ${relativePath}", e)
                 }
             }
         }
@@ -552,6 +611,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
      * This includes both .adoc files and their corresponding .html files,
      * as well as any other files that were copied from source to target.
      * Handles directory structure preservation.
+     * Also removes target directories that don't have corresponding source directories.
      *
      * @param sourceFiles List of source files
      * @param targetDir Target directory
@@ -575,6 +635,16 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
         val sourceRelativePaths = allSourceFiles.map { file ->
             sourceDir.toPath().relativize(file.toPath()).toString()
         }.toSet()
+
+        // Create a set of source directory paths for efficient lookup
+        val sourceDirectoryPaths = mutableSetOf<String>()
+        allSourceFiles.forEach { file ->
+            var parent = file.parentFile
+            while (parent != null && parent.absolutePath.startsWith(sourceDir.absolutePath)) {
+                sourceDirectoryPaths.add(sourceDir.toPath().relativize(parent.toPath()).toString())
+                parent = parent.parentFile
+            }
+        }
 
         // Get all files in the target directory recursively
         val targetFiles = if (targetDir.exists()) {
@@ -627,6 +697,59 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
 
             if (stats.filesDeleted > 0) {
                 logger.info("Cleaned up ${stats.filesDeleted} deleted files")
+            }
+        }
+
+        // Get all directories in the target directory
+        val targetDirectories = if (targetDir.exists()) {
+            targetDir.walkTopDown()
+                .filter { it.isDirectory && it != targetDir }
+                .toList()
+        } else {
+            emptyList()
+        }
+
+        // Filter directories that need to be deleted (those that don't have corresponding source directories)
+        val directoriesToDelete = targetDirectories.filter { targetDirectory ->
+            val relativePath = targetDir.toPath().relativize(targetDirectory.toPath()).toString()
+            !sourceDirectoryPaths.contains(relativePath)
+        }
+
+        // Sort directories by depth (deepest first) to ensure we delete child directories before parent directories
+        val sortedDirectoriesToDelete = directoriesToDelete.sortedByDescending { 
+            it.absolutePath.count { c -> c == File.separatorChar } 
+        }
+
+        // Delete directories
+        if (sortedDirectoriesToDelete.isNotEmpty()) {
+            val directoriesDeleted = AtomicInteger(0)
+            val executor = Executors.newVirtualThreadPerTaskExecutor()
+            val tasks = sortedDirectoriesToDelete.map { directory ->
+                executor.submit {
+                    try {
+                        val relativePath = targetDir.toPath().relativize(directory.toPath()).toString()
+                        if (directory.delete()) {
+                            synchronized(stats) {
+                                stats.filesDeleted++
+                                stats.deletedFiles.add("directory: $relativePath")
+                            }
+                            directoriesDeleted.incrementAndGet()
+                            logger.info("Deleted directory: $relativePath")
+                        } else {
+                            logger.warn("Failed to delete directory: $relativePath")
+                        }
+                    } catch (e: Exception) {
+                        logger.error("Error deleting directory: ${directory.name}", e)
+                    }
+                }
+            }
+
+            // Wait for all tasks to complete
+            tasks.forEach { it.get() }
+            executor.close()
+
+            if (directoriesDeleted.get() > 0) {
+                logger.info("Cleaned up ${directoriesDeleted.get()} deleted directories")
             }
         }
     }
