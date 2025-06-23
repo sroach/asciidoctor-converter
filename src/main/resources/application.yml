@@ -24,7 +24,7 @@ app:
     max-size: 10
   security:
     allowed-base-paths:
-      - "Users/steveroach/IdeaProjects"
+      - "/Users/steveroach/IdeaProjects"
       - "/tmp/asciidoc-conversion"
       - "/usr/local/docops/stage/docops.io"
 
