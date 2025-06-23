@@ -3,6 +3,8 @@ package gy.roach.asciidoctor.web
 import gy.roach.asciidoctor.config.AllowedPathsConfig
 import gy.roach.asciidoctor.config.ExecutionHistoryConfig
 import gy.roach.asciidoctor.service.AsciiDoctorConverter
+import gy.roach.asciidoctor.service.ConversionJob
+import gy.roach.asciidoctor.service.ConversionJobService
 import gy.roach.asciidoctor.service.ConversionStats
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
@@ -10,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import java.nio.file.Path
@@ -23,7 +26,8 @@ import java.util.concurrent.ConcurrentLinkedDeque
 class MainController(private val convert: AsciiDoctorConverter,
                      private val historyConfig: ExecutionHistoryConfig,
                      private val allowedPathsConfig: AllowedPathsConfig,
-                     private val htmlTemplateService: gy.roach.asciidoctor.service.HtmlTemplateService
+                     private val htmlTemplateService: gy.roach.asciidoctor.service.HtmlTemplateService,
+                     private val conversionJobService: ConversionJobService
 ) {
     private val logger = LoggerFactory.getLogger(MainController::class.java)
 
@@ -308,4 +312,142 @@ class MainController(private val convert: AsciiDoctorConverter,
         )
     }
 
+    /**
+     * Start a PDF conversion job
+     * 
+     * @param sourceDirectory Source directory containing AsciiDoc files
+     * @param outputDirectory Output directory for PDF files
+     * @return Job ID
+     */
+    @PostMapping("/pdf/convert", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun convertToPdf(
+        @RequestParam("sourceDir") sourceDirectory: String,
+        @RequestParam("outputDir") outputDirectory: String
+    ): ResponseEntity<Map<String, Any>> {
+        // Validate and sanitize the source directory
+        val validatedSourceDir = validateAndSanitizePath(sourceDirectory)
+        if (validatedSourceDir == null) {
+            logger.warn("Path traversal attempt detected for source directory: $sourceDirectory")
+            return ResponseEntity.badRequest().body(mapOf(
+                "error" to "Invalid or unauthorized source directory path"
+            ))
+        }
+
+        // Validate and sanitize the output directory
+        val validatedOutputDir = validateAndSanitizePath(outputDirectory)
+        if (validatedOutputDir == null) {
+            logger.warn("Path traversal attempt detected for output directory: $outputDirectory")
+            return ResponseEntity.badRequest().body(mapOf(
+                "error" to "Invalid or unauthorized output directory path"
+            ))
+        }
+
+        val localDirectory = validatedSourceDir.toFile()
+
+        // Validate that the source directory exists and is a directory
+        if (!localDirectory.exists() || !localDirectory.isDirectory) {
+            logger.error("Source directory validation failed: $validatedSourceDir")
+            return ResponseEntity.badRequest().body(mapOf(
+                "error" to "Source directory does not exist or is not a directory"
+            ))
+        }
+
+        // Get all AsciiDoc files from the source directory
+        val adocFiles = localDirectory.walkTopDown()
+            .filter { it.isFile && it.extension == "adoc" }
+            .toList()
+
+        if (adocFiles.isEmpty()) {
+            logger.warn("No AsciiDoc files found in source directory: $validatedSourceDir")
+            return ResponseEntity.badRequest().body(mapOf(
+                "error" to "No AsciiDoc files found in source directory"
+            ))
+        }
+
+        // Start the conversion job
+        val jobId = conversionJobService.startPdfConversion(adocFiles, validatedOutputDir.toString())
+        logger.info("Started PDF conversion job: $jobId for source directory: $validatedSourceDir")
+
+        return ResponseEntity.ok(mapOf(
+            "jobId" to jobId,
+            "status" to "QUEUED",
+            "message" to "PDF conversion job started",
+            "files" to adocFiles.size
+        ))
+    }
+
+    /**
+     * Get the status of a PDF conversion job
+     * 
+     * @param jobId Job ID
+     * @return Job status
+     */
+    @GetMapping("/pdf/status/{jobId}", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getPdfConversionStatus(@PathVariable jobId: String): ResponseEntity<Map<String, Any>> {
+        val job = conversionJobService.getJobStatus(jobId)
+
+        if (job == null) {
+            logger.warn("Job not found: $jobId")
+            return ResponseEntity.notFound().build()
+        }
+
+        val response = mutableMapOf<String, Any>(
+            "jobId" to job.id,
+            "status" to job.status.toString(),
+            "progress" to job.progress
+        )
+
+        // Add stats if available
+        job.stats?.let { stats ->
+            response["stats"] = mapOf(
+                "filesConverted" to stats.filesConverted,
+                "filesFailed" to stats.filesFailed,
+                "failedFiles" to stats.failedFiles
+            )
+        }
+
+        // Add error message if available
+        job.errorMessage?.let { errorMessage ->
+            response["error"] = errorMessage
+        }
+
+        return ResponseEntity.ok(response)
+    }
+
+    /**
+     * Get all PDF conversion jobs
+     * 
+     * @return List of jobs
+     */
+    @GetMapping("/pdf/jobs", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getAllPdfConversionJobs(): ResponseEntity<Map<String, Any>> {
+        val jobs = conversionJobService.getAllJobs()
+
+        val jobsData = jobs.map { (jobId, job) ->
+            val jobData = mutableMapOf<String, Any>(
+                "jobId" to job.id,
+                "status" to job.status.toString(),
+                "progress" to job.progress
+            )
+
+            // Add stats if available
+            job.stats?.let { stats ->
+                jobData["stats"] = mapOf(
+                    "filesConverted" to stats.filesConverted,
+                    "filesFailed" to stats.filesFailed
+                )
+            }
+
+            // Add error message if available
+            job.errorMessage?.let { errorMessage ->
+                jobData["error"] = errorMessage
+            }
+
+            jobId to jobData
+        }.toMap()
+
+        return ResponseEntity.ok(mapOf(
+            "jobs" to jobsData
+        ))
+    }
 }

@@ -6,14 +6,17 @@ import org.asciidoctor.Attributes
 import org.asciidoctor.Options
 import org.asciidoctor.SafeMode
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Pattern
 import kotlin.concurrent.thread
@@ -331,6 +334,137 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
             .attributes(attrs)
             .safe(SafeMode.UNSAFE)
             .build()
+    }
+
+    private fun buildPdfOptions(attrs: Attributes): Options {
+        return Options.builder()
+            .backend("pdf")
+            .attributes(attrs)
+            .safe(SafeMode.UNSAFE)
+            .build()
+    }
+
+    /**
+     * Asynchronously converts a file to PDF format.
+     * 
+     * @param file The AsciiDoc file to convert
+     * @param toDir The directory where the PDF will be written
+     * @return A CompletableFuture that will complete when the conversion is done
+     */
+    @Async
+    fun convertFileToPdfAsync(file: File, toDir: String): CompletableFuture<File> {
+        val future = CompletableFuture<File>()
+
+        try {
+            val targetDir = File(toDir)
+            if (!targetDir.exists()) {
+                targetDir.mkdirs()
+            }
+
+            // Calculate the output PDF file path
+            val pdfFileName = file.nameWithoutExtension + ".pdf"
+            val targetFile = File(targetDir, pdfFileName)
+
+            // Create parent directories if they don't exist
+            targetFile.parentFile?.mkdirs()
+
+            val options = buildPdfOptions(buildAttributes())
+            options.setMkDirs(true)
+
+            // Set the output directory to the parent directory of the target file
+            options.setToDir(targetFile.parentFile.absolutePath)
+
+            // Convert the file with a timeout
+            val asciidoctor = org.asciidoctor.Asciidoctor.Factory.create()
+            asciidoctor.convertFile(file, options)
+
+            logger.info("Successfully converted file to PDF: ${file.name}")
+            future.complete(targetFile)
+        } catch (e: Exception) {
+            logger.error("Failed to convert file to PDF: ${file.name}", e)
+            future.completeExceptionally(e)
+        }
+
+        return future
+    }
+
+    /**
+     * Asynchronously converts a list of files to PDF format.
+     * 
+     * @param files The list of AsciiDoc files to convert
+     * @param toDir The directory where the PDFs will be written
+     * @return A CompletableFuture that will complete when all conversions are done
+     */
+    @Async
+    fun convertToPdfAsync(files: List<File>, toDir: String): CompletableFuture<ConversionStats> {
+        val stats = ConversionStats()
+        val future = CompletableFuture<ConversionStats>()
+
+        try {
+            // Limit the number of concurrent PDF conversions to avoid memory issues
+            val maxConcurrentConversions = 2
+            val executor = Executors.newFixedThreadPool(maxConcurrentConversions)
+
+            val futures = files.map { file ->
+                CompletableFuture.supplyAsync({
+                    try {
+                        val targetDir = File(toDir)
+                        if (!targetDir.exists()) {
+                            targetDir.mkdirs()
+                        }
+
+                        // Calculate the output PDF file path
+                        val pdfFileName = file.nameWithoutExtension + ".pdf"
+                        val targetFile = File(targetDir, pdfFileName)
+
+                        // Create parent directories if they don't exist
+                        targetFile.parentFile?.mkdirs()
+
+                        val options = buildPdfOptions(buildAttributes())
+                        options.setMkDirs(true)
+
+                        // Set the output directory to the parent directory of the target file
+                        options.setToDir(targetFile.parentFile.absolutePath)
+
+                        // Convert the file with a timeout
+                        val asciidoctor = org.asciidoctor.Asciidoctor.Factory.create()
+                        asciidoctor.convertFile(file, options)
+
+                        synchronized(stats) {
+                            stats.filesConverted++
+                        }
+                        logger.info("Successfully converted file to PDF: ${file.name}")
+                        true
+                    } catch (e: Exception) {
+                        synchronized(stats) {
+                            stats.filesFailed++
+                            stats.failedFiles.add(file.name)
+                        }
+                        logger.error("Failed to convert file to PDF: ${file.name}", e)
+                        false
+                    }
+                }, executor)
+            }
+
+            // Wait for all conversions to complete with a timeout
+            CompletableFuture.allOf(*futures.toTypedArray())
+                .orTimeout(30, TimeUnit.MINUTES)
+                .whenComplete { _, throwable ->
+                    executor.shutdown()
+                    if (throwable != null) {
+                        logger.error("PDF conversion failed", throwable)
+                        future.completeExceptionally(throwable)
+                    } else {
+                        logger.info("PDF conversion completed: ${stats.filesConverted} files converted, ${stats.filesFailed} files failed")
+                        future.complete(stats)
+                    }
+                }
+        } catch (e: Exception) {
+            logger.error("PDF conversion failed", e)
+            future.completeExceptionally(e)
+        }
+
+        return future
     }
 
     /**
