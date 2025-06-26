@@ -83,11 +83,11 @@
             <version>2.2.0</version>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>io.docops</groupId>
             <artifactId>docops-extension-plugin</artifactId>
             <version>2025.00</version>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
