@@ -112,7 +112,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
           image = convert_svg_to_base64_image(image, attrs)
         end
 
-        html = if show_controls
+        html = if show_controls && !use_base64
                  generate_svg_viewer_html(image, id, title, show_controls,
                                           allow_copy, allow_zoom, allow_expand, theme, role)
                else
