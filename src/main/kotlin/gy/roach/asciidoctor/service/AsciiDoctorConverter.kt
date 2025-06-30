@@ -1,6 +1,7 @@
 package gy.roach.asciidoctor.service
 
 import gy.roach.asciidoctor.config.ConverterSettings
+import gy.roach.asciidoctor.tabs.BlockSwitchDocinfoProcessor
 import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
 import org.asciidoctor.Options
@@ -40,6 +41,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
 
     init {
         asciidoctor.requireLibrary("asciidoctor-diagram")
+        asciidoctor.javaExtensionRegistry().docinfoProcessor(BlockSwitchDocinfoProcessor::class.java)
         asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
     }
 

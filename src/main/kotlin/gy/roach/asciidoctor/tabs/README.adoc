@@ -1,0 +1,8 @@
+= BlockSwitch
+
+== Modified version
+
+All this is ported from
+https://github.com/spring-io/spring-asciidoctor-extensions/tree/main
+
+As I didn't know how to style for my use case.

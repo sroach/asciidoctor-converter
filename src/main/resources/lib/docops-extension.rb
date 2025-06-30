@@ -5,6 +5,7 @@ require 'json'
 require 'zlib'
 require 'base64'
 require 'cgi'
+require 'securerandom'
 
 
 
@@ -89,7 +90,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
       scale = attrs.fetch('scale', '1.0')
       title = attrs.fetch('title', 'Title')
       lines = []
-      use_base64 = attrs.fetch('base64', 'true') == 'true'
+      use_base64 = attrs.fetch('base64', 'true') == 'false'
 
       if type == 'PDF'
         link = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&title=#{CGI.escape(title)}&type=SVG&useDark=#{use_dark}&backend=#{backend}&filename=docops.svg"
@@ -146,7 +147,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
   end
 
   def generate_id(attrs)
-    attrs['id'] || "svgviewer-#{Time.now.to_i}"
+    attrs['id'] || "svgviewer-#{SecureRandom.hex(8)}"
   end
 
   def build_object_tag(data_url, attrs)
@@ -299,30 +300,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     # Returns the same CSS and JavaScript as in the Kotlin version
     # (truncated for brevity - would include the full CSS and JS from the original)
     <<~ASSETS
-      <style>
-      /* Same CSS as Kotlin version */
-      .svg-viewer-container {
-          width: 100%;
-      }
       
-      .svg-with-controls {
-          position: relative;
-          display: inline-block;
-          max-width: 100%;
-      }
-      
-      /* ... rest of CSS ... */
-      </style>
-      
-      <script>
-      window.svgViewer = window.svgViewer || {
-          // Same JavaScript as Kotlin version
-          toggleControls: function(id) {
-              // ... implementation ...
-          },
-          // ... rest of methods ...
-      };
-      </script>
     ASSETS
   end
 
