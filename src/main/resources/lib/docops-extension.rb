@@ -56,6 +56,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     title = attrs['title'] || 'SVG Viewer'
     show_controls = attrs['controls'] == 'true'
     allow_copy = attrs.fetch('copy', 'true') == 'true'
+    use_glass = attrs.fetch('useGlass', 'true') == 'false'
     allow_zoom = attrs.fetch('zoom', 'true') == 'true'
     allow_expand = attrs.fetch('expand', 'true') == 'true'
     theme = attrs['theme'] || 'light'
@@ -93,7 +94,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
       use_base64 = attrs.fetch('base64', 'true') == 'false'
 
       if type == 'PDF'
-        link = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&title=#{CGI.escape(title)}&type=SVG&useDark=#{use_dark}&backend=#{backend}&filename=docops.svg"
+        link = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&title=#{CGI.escape(title)}&type=SVG&useDark=#{use_dark}&useGlass=#{use_glass}&backend=#{backend}&filename=docops.svg"
         img = "image::#{link}[#{opts},link=#{link},window=_blank,opts=nofollow]"
 
         #puts img if local_debug
@@ -101,7 +102,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
         lines << img
         parse_content(block, lines)
       else
-        url = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&type=#{type}&useDark=#{use_dark}&title=#{CGI.escape(title)}&backend=#{backend}&filename=ghi.svg"
+        url = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&type=#{type}&useDark=#{use_dark}&title=#{CGI.escape(title)}&useGlass=#{use_glass}&backend=#{backend}&filename=ghi.svg"
 
         #puts url if local_debug
 

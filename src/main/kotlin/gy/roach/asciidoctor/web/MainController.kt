@@ -43,7 +43,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
 
     @GetMapping("/test", produces = ["text/html"])
-    fun localTest(
+    fun localConversion(
         @RequestParam("sourceDir") sourceDirectory: String,
         @RequestParam("outputDir") outputDirectory: String
     ): ResponseEntity<String> {
@@ -161,7 +161,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     }
 
-    private fun validateAndSanitizePath(inputPath: String): Path? {
+    fun validateAndSanitizePath(inputPath: String): Path? {
         try {
             // Basic input validation
             if (inputPath.isBlank() || inputPath.length > 500) {
@@ -255,7 +255,7 @@ class MainController(private val convert: AsciiDoctorConverter,
         }
     }
 
-    private fun recordExecution(
+    fun recordExecution(
         timestamp: LocalDateTime,
         sourceDir: String,
         outputDir: String,

@@ -10,9 +10,13 @@ management:
         include: health, info, loggers,metrics,beans,mappings,threaddump,heapdump,swagger-ui,sbom
 
 github:
-  api:
-    base-url: https://api.github.com
-    token: ${GITHUB_TOKEN:}
+  staging:
+    directory: ${GITHUB_STAGING_DIR:/Users/steveroach/development/docops/asciidoc-staging}
+  web:
+    directory: ${GITHUB_WEB_DIR:/Users/steveroach/development/docops/asciidoc-web}
+  disable:
+    ssl:
+      validation: ${GITHUB_DISABLE_SSL:false}
 
 converter:
   panel-server: http://localhost:8010/extension
