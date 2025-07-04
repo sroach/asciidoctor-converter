@@ -6,6 +6,7 @@ import gy.roach.asciidoctor.service.AsciiDoctorConverter
 import gy.roach.asciidoctor.service.ConversionJob
 import gy.roach.asciidoctor.service.ConversionJobService
 import gy.roach.asciidoctor.service.ConversionStats
+import gy.roach.asciidoctor.service.SitemapService
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -27,7 +28,8 @@ class MainController(private val convert: AsciiDoctorConverter,
                      private val historyConfig: ExecutionHistoryConfig,
                      private val allowedPathsConfig: AllowedPathsConfig,
                      private val htmlTemplateService: gy.roach.asciidoctor.service.HtmlTemplateService,
-                     private val conversionJobService: ConversionJobService
+                     private val conversionJobService: ConversionJobService,
+                     private val sitemapService: SitemapService
 ) {
     private val logger = LoggerFactory.getLogger(MainController::class.java)
 
@@ -120,6 +122,19 @@ class MainController(private val convert: AsciiDoctorConverter,
         try {
             // Convert files and get statistics
             val stats = convert.convert(localDirectory, validatedOutputDir.toString())
+
+            // Generate sitemap on successful conversion
+            try {
+                val sitemapPath = sitemapService.generateAndSaveSitemap(validatedOutputDir.toString())
+                if (sitemapPath != null) {
+                    logger.info("Generated sitemap: $sitemapPath")
+                } else {
+                    logger.warn("Failed to generate sitemap for output directory: $validatedOutputDir")
+                }
+            } catch (e: Exception) {
+                logger.error("Error generating sitemap for output directory: $validatedOutputDir", e)
+                // Don't fail the entire conversion if sitemap generation fails
+            }
 
             // Calculate execution duration
             val endTime = System.currentTimeMillis()
@@ -219,7 +234,7 @@ class MainController(private val convert: AsciiDoctorConverter,
         return ResponseEntity.ok(mapOf(
             "summary" to summary,
             "executions" to history,
-        "maxHistorySize" to historyConfig.maxSize
+            "maxHistorySize" to historyConfig.maxSize
         ))
     }
 
@@ -314,7 +329,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     /**
      * Start a PDF conversion job
-     * 
+     *
      * @param sourceDirectory Source directory containing AsciiDoc files
      * @param outputDirectory Output directory for PDF files
      * @return Job ID
@@ -378,7 +393,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     /**
      * Get the status of a PDF conversion job
-     * 
+     *
      * @param jobId Job ID
      * @return Job status
      */
@@ -416,7 +431,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     /**
      * Get all PDF conversion jobs
-     * 
+     *
      * @return List of jobs
      */
     @GetMapping("/pdf/jobs", produces = [MediaType.APPLICATION_JSON_VALUE])
