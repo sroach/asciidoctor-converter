@@ -26,6 +26,8 @@ converter:
 app:
   execution-history:
     max-size: 10
+  encryption:
+    key: ${ENCRYPTION_KEY:your-32-character-secret-key-here}
   security:
     allowed-base-paths:
       - "/Users/steveroach/IdeaProjects"

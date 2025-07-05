@@ -3,6 +3,7 @@ package gy.roach.asciidoctor.web
 import gy.roach.asciidoctor.repo.GithubClient
 import gy.roach.asciidoctor.service.AsciiDoctorConverter
 import gy.roach.asciidoctor.service.ConversionStats
+import gy.roach.asciidoctor.service.EncryptionService
 import gy.roach.asciidoctor.service.HtmlTemplateService
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
@@ -24,7 +25,8 @@ class GithubController(
     private val githubClient: GithubClient,
     private val mainController: MainController,
     private val convert: AsciiDoctorConverter,
-    private val htmlTemplateService: HtmlTemplateService
+    private val htmlTemplateService: HtmlTemplateService,
+    private val encryptionService: EncryptionService
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -33,10 +35,11 @@ class GithubController(
 
     /**
      * Data class representing a GitHub repository request.
+     * The PAT (Personal Access Token) should be encrypted before being sent to this endpoint.
      */
     data class GithubRepositoryRequest(
         val repoName: String,
-        val pat: String,
+        val encryptedPat: String, // Changed from 'pat' to 'encryptedPat' to be explicit
         val name: String,
         val gitUrl: String,
         val branch: String = "main"
@@ -44,8 +47,8 @@ class GithubController(
 
     /**
      * Process a GitHub repository and convert its content.
-     * 
-     * @param request The GitHub repository request
+     *
+     * @param request The GitHub repository request with encrypted PAT
      * @return ResponseEntity with the conversion result
      */
     @PostMapping("/process")
@@ -66,30 +69,39 @@ class GithubController(
 
             // Record the failed execution
             mainController.recordExecution(
-                startTimestamp, 
-                "Repository: ${request.repoName}", 
-                "N/A", 
-                duration, 
-                ConversionStats(), 
-                false, 
+                startTimestamp,
+                "Repository: ${request.repoName}",
+                "N/A",
+                duration,
+                ConversionStats(),
+                false,
                 conflictMessage
             )
 
             return ResponseEntity.status(409) // HTTP 409 Conflict
                 .header("Content-Type", "text/html; charset=UTF-8")
                 .body(htmlTemplateService.buildConflictResponseMessage(
-                    conflictMessage, 
-                    existingConversion, 
-                    startTimestamp, 
+                    conflictMessage,
+                    existingConversion,
+                    startTimestamp,
                     duration
                 ))
         }
 
         try {
-            // Process the repository using GithubClient
+            // Decrypt the PAT just before use
+            val decryptedPat = try {
+                encryptionService.decrypt(request.encryptedPat)
+            } catch (e: Exception) {
+                logger.error("Failed to decrypt PAT for repository: ${request.repoName}", e)
+                return ResponseEntity.badRequest()
+                    .body("Invalid encrypted PAT provided")
+            }
+
+            // Process the repository using GithubClient with decrypted PAT
             val result = githubClient.processRepository(
                 repoName = request.repoName,
-                pat = request.pat,
+                pat = decryptedPat, // Use decrypted PAT
                 name = request.name,
                 gitUrl = request.gitUrl,
                 branch = request.branch
