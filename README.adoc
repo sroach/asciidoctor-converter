@@ -102,3 +102,222 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Thread-safe operations for concurrent processing
 - Memory-efficient file processing
 - Robust error handling and recovery
+
+== Docker next
+
+Looking at your Spring Boot application, I can see it's an AsciiDoc converter with specific directory configurations and logging setup. Here's the recommended way to dockerize this app:Based on your Spring Boot application that converts AsciiDoc files, here's the recommended way to dockerize it:
+
+== Dockerfile
+
+[source,dockerfile]
+----
+# Use a multi-stage build to optimize the final image size
+FROM eclipse-temurin:21-jdk-jammy AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy Maven wrapper and pom.xml first (for better layer caching)
+COPY pom.xml mvnw ./
+COPY .mvn .mvn
+
+# Make Maven wrapper executable
+RUN chmod +x ./mvnw
+
+# Download dependencies (this layer will be cached if pom.xml doesn't change)
+RUN ./mvnw dependency:go-offline
+
+# Copy source code
+COPY src ./src
+
+# Build the application
+RUN ./mvnw clean package -DskipTests
+
+# Runtime stage
+FROM eclipse-temurin:21-jre-jammy
+
+# Install GraphViz for diagram generation (used by asciidoctor-diagram)
+RUN apt-get update && \
+    apt-get install -y graphviz && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create app user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
+WORKDIR /app
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/tmp && \
+    chown -R appuser:appuser /app
+
+# Copy the JAR file from builder stage
+COPY --from=builder /app/target/*.jar app.jar
+
+# Change ownership to app user
+RUN chown appuser:appuser app.jar
+
+# Switch to non-root user
+USER appuser
+
+# Expose the port your app runs on
+EXPOSE 7202
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:7202/converter/actuator/health || exit 1
+
+# Run the application
+CMD ["java", "-jar", "app.jar"]
+----
+
+
+== Docker Compose
+
+[source,yaml]
+----
+version: '3.8'
+
+services:
+  asciidoctor-converter:
+    build: .
+    ports:
+      - "7202:7202"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - ENCRYPTION_KEY=your-secure-32-character-key-here
+      - GITHUB_STAGING_DIR=/app/staging
+      - GITHUB_WEB_DIR=/app/web
+      - GITHUB_DISABLE_SSL=false
+    volumes:
+      # Mount volumes for persistent data
+      - ./logs:/app/logs
+      - ./staging:/app/staging
+      - ./web:/app/web
+      - ./tmp:/app/tmp
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7202/converter/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+----
+
+
+== Docker-specific Configuration
+
+[source,yaml]
+----
+server:
+  port: 7202
+  servlet:
+    context-path: /converter
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, loggers, metrics, beans, mappings, threaddump, heapdump, swagger-ui, sbom
+
+github:
+  staging:
+    directory: ${GITHUB_STAGING_DIR:/app/staging}
+  web:
+    directory: ${GITHUB_WEB_DIR:/app/web}
+  disable:
+    ssl:
+      validation: ${GITHUB_DISABLE_SSL:false}
+
+converter:
+  panel-server: http://localhost:8010/extension
+  panel-webserver: http://localhost:8010/extension
+  local-debug: false
+
+app:
+  execution-history:
+    max-size: 10
+  encryption:
+    key: ${ENCRYPTION_KEY:your-32-character-secret-key-here}
+  security:
+    allowed-base-paths:
+      - "/app/staging"
+      - "/app/web"
+      - "/app/tmp"
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+
+logging:
+  file:
+    name: /app/logs/application.log
+  level:
+    root: INFO
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 5MB
+      max-history: 10
+      total-size-cap: 250MB
+      file-name-pattern: /app/logs/application-%d{yyyy-MM-dd}.%i.log.gz
+      clean-history-on-start: true
+----
+
+
+== .dockerignore
+
+[source,ignorelang]
+----
+# Exclude unnecessary files from Docker build context
+target/
+logs/
+*.log
+.git/
+.gitignore
+README.md
+*.md
+.idea/
+*.iml
+.DS_Store
+----
+
+
+== Key Docker Features:
+
+1. **Multi-stage build**: Reduces final image size by separating build and runtime environments
+2. **Security**: Runs as non-root user for better security
+3. **GraphViz**: Installs GraphViz for diagram generation support
+4. **Health checks**: Built-in health monitoring
+5. **Volume mounts**: Persistent storage for logs and data
+6. **Environment variables**: Configurable through environment variables
+7. **Spring profiles**: Uses Docker-specific configuration
+
+== Running the Application:
+
+[source,shell script]
+----
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Or build and run manually
+docker build -t asciidoctor-converter .
+docker run -p 7202:7202 \
+  -e ENCRYPTION_KEY=your-secure-32-character-key-here \
+  -v $(pwd)/logs:/app/logs \
+  -v $(pwd)/staging:/app/staging \
+  asciidoctor-converter
+----
+
+
+== Important Notes:
+
+1. **Security**: Replace the default encryption key with a secure 32-character key
+2. **Volumes**: Mount appropriate directories for persistent data
+3. **Memory**: Consider adding JVM memory settings if needed: `-Xmx512m -Xms256m`
+4. **Networking**: If you need to connect to external services, configure networking appropriately
+
+This setup provides a production-ready Docker configuration for your AsciiDoc converter application.
