@@ -23,6 +23,10 @@ converter:
   panel-webserver: http://localhost:8010/extension
   local-debug: true
 
+sitemap:
+  directory-depth: ${SITEMAP_DIRECTORY_DEPTH:2}
+
+
 app:
   execution-history:
     max-size: 10

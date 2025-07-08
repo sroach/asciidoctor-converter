@@ -1,48 +1,51 @@
 package gy.roach.asciidoctor.service
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import kotlin.io.path.extension
-import kotlin.io.path.isDirectory
 import kotlin.io.path.name
 
 @Service
 class SitemapService {
     private val logger = LoggerFactory.getLogger(SitemapService::class.java)
 
+    @Value("\${sitemap.directory-depth:2}")
+    private val defaultDirectoryDepth: Int = 2
+
     data class SitemapEntry(
         val path: String,
         val name: String,
         val isDirectory: Boolean,
-        val children: List<SitemapEntry> = emptyList()
+        val children: List<SitemapEntry> = emptyList(),
+        val depth: Int = 0
     )
 
-    fun scanDirectory(directoryPath: String): SitemapEntry? {
+    fun scanDirectory(directoryPath: String, maxDepth: Int = defaultDirectoryDepth): SitemapEntry? {
         val path = Paths.get(directoryPath)
         if (!Files.exists(path)) {
             return null
         }
 
-        return buildSitemapEntry(path)
+        return buildSitemapEntry(path, maxDepth, 0)
     }
 
     /**
      * Generate sitemap.adoc directly in the source directory before conversion
      */
-    fun generateSitemapAdocInSourceDirectory(sourceDirectory: String): String? {
+    fun generateSitemapAdocInSourceDirectory(sourceDirectory: String, maxDepth: Int = defaultDirectoryDepth): String? {
         val sourcePath = Paths.get(sourceDirectory)
         if (!Files.exists(sourcePath) || !Files.isDirectory(sourcePath)) {
             return null
         }
 
         try {
-            // Generate sitemap content based on existing .adoc files in source directory
-            val sitemapAdocContent = generateSitemapAdocContentFromSource(sourcePath)
+            // Generate sitemap content based on directory structure in source directory
+            val sitemapAdocContent = generateSitemapAdocContentFromSource(sourcePath, maxDepth)
             val sitemapFile = sourcePath.resolve("sitemap.adoc")
             Files.write(sitemapFile, sitemapAdocContent.toByteArray())
             return sitemapFile.toString()
@@ -52,14 +55,11 @@ class SitemapService {
     }
 
     /**
-     * Generate sitemap.adoc content based on source .adoc files
+     * Generate sitemap.adoc content based on directory structure
      */
-    /**
-     * Generate sitemap.adoc content based on source .adoc files
-     */
-    private fun generateSitemapAdocContentFromSource(sourcePath: Path): String {
-        val adocFiles = findAdocFiles(sourcePath)
-        val buttons = generateButtonsFromAdocFiles(adocFiles)
+    private fun generateSitemapAdocContentFromSource(sourcePath: Path, maxDepth: Int): String {
+        val directories = findDirectories(sourcePath, maxDepth)
+        val buttons = generateButtonsFromDirectories(directories)
 
         // Copy sitemap icon to the source directory so it gets converted along with other files
         val iconPath = copySitemapIcon(sourcePath.toString())
@@ -95,58 +95,97 @@ class SitemapService {
     }
 
     /**
-     * Find all .adoc files in the source directory
+     * Find all directories in the source directory up to specified depth
      */
-    private fun findAdocFiles(sourcePath: Path): List<Path> {
-        val adocFiles = mutableListOf<Path>()
+    private fun findDirectories(sourcePath: Path, maxDepth: Int): List<DirectoryInfo> {
+        val directories = mutableListOf<DirectoryInfo>()
 
         try {
-            Files.walk(sourcePath).use { stream ->
-                stream.filter { path ->
-                    Files.isRegularFile(path) &&
-                            path.extension.equals("adoc", ignoreCase = true) &&
-                            !path.name.equals("sitemap.adoc", ignoreCase = true) // Exclude the sitemap file itself
-                }.sorted { a, b ->
-                    a.name.compareTo(b.name)
-                }.forEach { adocFiles.add(it) }
-            }
+            scanDirectoriesRecursively(sourcePath, directories, maxDepth, 0, "")
         } catch (e: Exception) {
-            // Log error but continue with empty list
+            logger.error("Error scanning directories in $sourcePath", e)
         }
 
-        return adocFiles
+        return directories.sortedBy { it.relativePath }
     }
 
     /**
-     * Generate buttons from .adoc files
+     * Recursively scan directories up to the specified depth
      */
-    private fun generateButtonsFromAdocFiles(adocFiles: List<Path>): List<Map<String, Any>> {
-        val buttons = mutableListOf<Map<String, Any>>()
-
-        // Add home button if index.adoc exists
-        val indexFile = adocFiles.find { it.name.equals("index.adoc", ignoreCase = true) }
-        if (indexFile != null) {
-            buttons.add(mapOf(
-                "label" to "Home",
-                "link" to "index.html",
-                "description" to "Main page",
-                "type" to "primary"
-            ))
+    private fun scanDirectoriesRecursively(
+        currentPath: Path,
+        directories: MutableList<DirectoryInfo>,
+        maxDepth: Int,
+        currentDepth: Int,
+        relativePath: String
+    ) {
+        if (currentDepth >= maxDepth) {
+            return
         }
 
-        // Add buttons for other .adoc files
-        adocFiles.filter { !it.name.equals("index.adoc", ignoreCase = true) }
-            .forEach { file ->
-                val fileName = file.name.removeSuffix(".adoc")
-                val htmlFileName = "${fileName}.html"
+        try {
+            Files.list(currentPath).use { stream ->
+                stream.filter { Files.isDirectory(it) }
+                    .sorted { a, b -> a.name.compareTo(b.name) }
+                    .forEach { directory ->
+                        val dirName = directory.name
+                        val newRelativePath = if (relativePath.isEmpty()) dirName else "$relativePath/$dirName"
 
-                buttons.add(mapOf(
-                    "label" to formatLabel(fileName),
-                    "link" to htmlFileName,
-                    "description" to "Page: ${formatLabel(fileName)}",
-                    "type" to determineButtonType(fileName)
-                ))
+                        directories.add(DirectoryInfo(
+                            name = dirName,
+                            relativePath = newRelativePath,
+                            absolutePath = directory.toString(),
+                            depth = currentDepth + 1
+                        ))
+
+                        // Recursively scan subdirectories
+                        scanDirectoriesRecursively(
+                            directory,
+                            directories,
+                            maxDepth,
+                            currentDepth + 1,
+                            newRelativePath
+                        )
+                    }
             }
+        } catch (e: Exception) {
+            logger.warn("Failed to scan directory: $currentPath", e)
+        }
+    }
+
+    /**
+     * Data class to hold directory information
+     */
+    data class DirectoryInfo(
+        val name: String,
+        val relativePath: String,
+        val absolutePath: String,
+        val depth: Int
+    )
+
+    /**
+     * Generate buttons from directories
+     */
+    private fun generateButtonsFromDirectories(directories: List<DirectoryInfo>): List<Map<String, Any>> {
+        val buttons = mutableListOf<Map<String, Any>>()
+
+        // Add home button for root directory
+        buttons.add(mapOf(
+            "label" to "Home",
+            "link" to "index.html",
+            "description" to "Main page",
+            "type" to "primary"
+        ))
+
+        // Add buttons for each directory
+        directories.forEach { directory ->
+            buttons.add(mapOf(
+                "label" to formatLabel(directory.name),
+                "link" to "${directory.relativePath}/sitemap.html",
+                "description" to "Section: ${formatLabel(directory.name)} (Depth: ${directory.depth})",
+                "type" to determineButtonTypeFromDirectory(directory.name)
+            ))
+        }
 
         return buttons
     }
@@ -155,7 +194,7 @@ class SitemapService {
      * Generate and save interactive sitemap using DocOps hex buttons
      * Creates sitemap.adoc in the sourceDirectory which will be converted to target
      */
-    fun generateAndSaveSitemap(outputDirectory: String, baseUrl: String = ""): String? {
+    fun generateAndSaveSitemap(outputDirectory: String, baseUrl: String = "", maxDepth: Int = defaultDirectoryDepth): String? {
         val outputPath = Paths.get(outputDirectory)
         if (!Files.exists(outputPath) || !Files.isDirectory(outputPath)) {
             return null
@@ -166,11 +205,11 @@ class SitemapService {
             val sourceDirectory = findSourceDirectory(outputPath)
             if (sourceDirectory == null) {
                 // If we can't find source directory, create sitemap.adoc in the output directory
-                return generateSitemapAdocInDirectory(outputPath, baseUrl)
+                return generateSitemapAdocInDirectory(outputPath, baseUrl, maxDepth)
             }
 
             // Generate sitemap.adoc in the source directory
-            val sitemapAdocContent = generateSitemapAdocContent(outputPath, baseUrl)
+            val sitemapAdocContent = generateSitemapAdocContent(outputPath, baseUrl, maxDepth)
             val sitemapFile = sourceDirectory.resolve("sitemap.adoc")
             Files.write(sitemapFile, sitemapAdocContent.toByteArray())
 
@@ -183,9 +222,9 @@ class SitemapService {
     /**
      * Generate sitemap.adoc directly in the specified directory
      */
-    private fun generateSitemapAdocInDirectory(directory: Path, baseUrl: String): String? {
+    private fun generateSitemapAdocInDirectory(directory: Path, baseUrl: String, maxDepth: Int): String? {
         try {
-            val sitemapAdocContent = generateSitemapAdocContent(directory, baseUrl)
+            val sitemapAdocContent = generateSitemapAdocContent(directory, baseUrl, maxDepth)
             val sitemapFile = directory.resolve("sitemap.adoc")
             Files.write(sitemapFile, sitemapAdocContent.toByteArray())
             return sitemapFile.toString()
@@ -226,8 +265,8 @@ class SitemapService {
     /**
      * Generate AsciiDoc content with DocOps hex buttons for sitemap
      */
-    private fun generateSitemapAdocContent(directory: Path, baseUrl: String): String {
-        val sitemapTree = buildSitemapTree(directory)
+    private fun generateSitemapAdocContent(directory: Path, baseUrl: String, maxDepth: Int): String {
+        val sitemapTree = buildSitemapTree(directory, maxDepth)
         val buttons = generateButtonsFromTree(sitemapTree, baseUrl)
 
         // Copy sitemap icon to the target directory
@@ -239,8 +278,8 @@ class SitemapService {
     /**
      * Build the sitemap tree structure
      */
-    private fun buildSitemapTree(directory: Path): SitemapEntry {
-        return buildSitemapEntry(directory)
+    private fun buildSitemapTree(directory: Path, maxDepth: Int): SitemapEntry {
+        return buildSitemapEntry(directory, maxDepth, 0)
     }
 
     /**
@@ -260,7 +299,7 @@ class SitemapService {
             ))
         }
 
-        // Process all HTML files and directories
+        // Process all directories based on depth
         addButtonsFromEntry(sitemapTree, buttons, baseUrl, "")
 
         return buttons
@@ -275,31 +314,18 @@ class SitemapService {
             val relativePath = if (parentPath.isEmpty()) entry.name else "$parentPath/${entry.name}"
 
             if (entry.isDirectory) {
-                // Add directory as category button if it contains HTML files
-                if (entry.children.any { !it.isDirectory }) {
-                    buttons.add(mapOf(
-                        "label" to formatLabel(entry.name),
-                        "link" to buildUrl(baseUrl, relativePath),
-                        "description" to "Section: ${formatLabel(entry.name)}",
-                        "type" to "category"
-                    ))
-                }
-            } else {
-                // Add HTML file as content button
-                val fileName = entry.name.removeSuffix(".html")
-                if (fileName != "index" && fileName != "sitemap") { // Skip index and sitemap files
-                    buttons.add(mapOf(
-                        "label" to formatLabel(fileName),
-                        "link" to buildUrl(baseUrl, relativePath),
-                        "description" to "Page: ${formatLabel(fileName)}",
-                        "type" to determineButtonType(fileName)
-                    ))
-                }
+                // Add directory as category button
+                buttons.add(mapOf(
+                    "label" to formatLabel(entry.name),
+                    "link" to buildUrl(baseUrl, "$relativePath/index.html"),
+                    "description" to "Section: ${formatLabel(entry.name)} (Depth: ${entry.depth})",
+                    "type" to determineButtonTypeFromDirectory(entry.name)
+                ))
             }
         }
 
-        // Process children
-        entry.children.forEach { child ->
+        // Process children directories only
+        entry.children.filter { it.isDirectory }.forEach { child ->
             val childPath = if (parentPath.isEmpty()) entry.name else "$parentPath/${entry.name}"
             addButtonsFromEntry(child, buttons, baseUrl, if (entry.name == "root") "" else childPath)
         }
@@ -316,23 +342,23 @@ class SitemapService {
     }
 
     /**
-     * Determine button type based on file name or content
+     * Determine button type based on directory name
      */
-    private fun determineButtonType(fileName: String): String {
+    private fun determineButtonTypeFromDirectory(dirName: String): String {
         return when {
-            fileName.contains("about", ignoreCase = true) -> "info"
-            fileName.contains("contact", ignoreCase = true) -> "support"
-            fileName.contains("help", ignoreCase = true) -> "support"
-            fileName.contains("doc", ignoreCase = true) -> "support"
-            fileName.contains("faq", ignoreCase = true) -> "support"
-            fileName.contains("guide", ignoreCase = true) -> "support"
-            fileName.contains("product", ignoreCase = true)||fileName.contains("story", ignoreCase = true) ||fileName.contains("arch", ignoreCase = true) -> "product"
-            fileName.contains("service", ignoreCase = true) -> "service"
-            fileName.contains("blog", ignoreCase = true) -> "content"
-            fileName.contains("news", ignoreCase = true) -> "content"
-            fileName.contains("resource", ignoreCase = true) -> "content"
-            fileName.contains("download", ignoreCase = true) -> "content"
-            else -> "content"
+            dirName.contains("about", ignoreCase = true) -> "info"
+            dirName.contains("contact", ignoreCase = true) -> "support"
+            dirName.contains("help", ignoreCase = true) -> "support"
+            dirName.contains("doc", ignoreCase = true) -> "support"
+            dirName.contains("faq", ignoreCase = true) -> "support"
+            dirName.contains("guide", ignoreCase = true) -> "support"
+            dirName.contains("product", ignoreCase = true) || dirName.contains("story", ignoreCase = true) || dirName.contains("arch", ignoreCase = true) -> "product"
+            dirName.contains("service", ignoreCase = true) -> "service"
+            dirName.contains("blog", ignoreCase = true) -> "content"
+            dirName.contains("news", ignoreCase = true) -> "content"
+            dirName.contains("resource", ignoreCase = true) -> "content"
+            dirName.contains("download", ignoreCase = true) -> "content"
+            else -> "category"
         }
     }
 
@@ -359,9 +385,9 @@ class SitemapService {
 :docname: sitemap
 
 
-== Interactive Sitemap
+== Interactive Directory Sitemap
 
-This sitemap provides a visual navigation structure of the website using hexagonal buttons.
+This sitemap provides a visual navigation structure of the website directories using hexagonal buttons.
 
 [docops,buttons]
 ----
@@ -370,21 +396,24 @@ $buttonsJson
 
 == Navigation Guide
 
-* Click any hexagonal button to navigate to that page
-* Hover over buttons to see page descriptions
+* Click any hexagonal button to navigate to that directory
+* Hover over buttons to see directory descriptions
 * Different colors represent different types of content:
   - 🔴 **Primary**: Main entry points (Home)
-  - 🔵 **Category**: Section directories
-  - 🟢 **Product**: Product-related pages
-  - 🟣 **Service**: Service-related pages
-  - 🟠 **Support**: Help and documentation
-  - ⚫ **Info**: About and company information
-  - 🟦 **Content**: Blog, news, and resources
-  - 🔵 **Page**: General pages
+  - 🔵 **Category**: Directory sections
+  - 🟢 **Product**: Product-related directories
+  - 🟣 **Service**: Service-related directories
+  - 🟠 **Support**: Help and documentation directories
+  - ⚫ **Info**: About and company information directories
+  - 🟦 **Content**: Blog, news, and resources directories
+
+== Directory Structure
+
+This sitemap was generated based on the directory structure with a maximum depth of directories traversed. Each button represents a directory that may contain content or further subdirectories.
 
 == About This Sitemap
 
-This sitemap was automatically generated from the website structure and includes all accessible pages. The visualization uses DocOps hex buttons for an interactive navigation experience.
+This sitemap was automatically generated from the website directory structure. The visualization uses DocOps hex buttons for an interactive navigation experience.
 
 Generated on: {localdate} at {localtime}
     """.trimIndent()
@@ -400,8 +429,8 @@ Generated on: {localdate} at {localtime}
                 "embeddedImage": {
                   "ref": "$iconPath"
                 },"""
-                } else {
-                    ""
+            } else {
+                ""
             }
             """
     {
@@ -413,8 +442,6 @@ Generated on: {localdate} at {localtime}
     }
         """.trimIndent()
         }
-
-
 
         return """
 {
@@ -445,46 +472,44 @@ Generated on: {localdate} at {localtime}
 }
     """.trimIndent()
     }
+
     /**
      * Generate interactive sitemap content without saving to file
      */
-    fun generateSitemapContent(directoryPath: String, baseUrl: String = ""): String? {
+    fun generateSitemapContent(directoryPath: String, baseUrl: String = "", maxDepth: Int = defaultDirectoryDepth): String? {
         val path = Paths.get(directoryPath)
         if (!Files.exists(path) || !Files.isDirectory(path)) {
             return null
         }
 
         try {
-            return generateSitemapAdocContent(path, baseUrl)
+            return generateSitemapAdocContent(path, baseUrl, maxDepth)
         } catch (e: Exception) {
             throw RuntimeException("Failed to generate sitemap content for directory: $directoryPath", e)
         }
     }
 
     /**
-     * Generate and save sitemap with custom base URL
+     * Generate and save sitemap with custom base URL and depth
      */
     fun generateAndSaveCustomSitemap(
         outputDirectory: String,
-        baseUrl: String = ""
+        baseUrl: String = "",
+        maxDepth: Int = defaultDirectoryDepth
     ): String? {
-        return generateAndSaveSitemap(outputDirectory, baseUrl)
+        return generateAndSaveSitemap(outputDirectory, baseUrl, maxDepth)
     }
 
-    private fun buildSitemapEntry(path: Path): SitemapEntry {
-        val children = if (Files.isDirectory(path)) {
+    private fun buildSitemapEntry(path: Path, maxDepth: Int, currentDepth: Int): SitemapEntry {
+        val children = if (Files.isDirectory(path) && currentDepth < maxDepth) {
             try {
                 Files.list(path).use { stream ->
                     stream.filter { child ->
-                        Files.isDirectory(child) || isHtmlFile(child)
+                        Files.isDirectory(child)
                     }.sorted { a, b ->
-                        when {
-                            Files.isDirectory(a) && !Files.isDirectory(b) -> -1
-                            !Files.isDirectory(a) && Files.isDirectory(b) -> 1
-                            else -> a.name.compareTo(b.name)
-                        }
+                        a.name.compareTo(b.name)
                     }.map { child ->
-                        buildSitemapEntry(child)
+                        buildSitemapEntry(child, maxDepth, currentDepth + 1)
                     }.toList()
                 }
             } catch (e: Exception) {
@@ -498,13 +523,9 @@ Generated on: {localdate} at {localtime}
             path = path.toString(),
             name = if (path.name.isBlank()) "root" else path.name,
             isDirectory = Files.isDirectory(path),
-            children = children
+            children = children,
+            depth = currentDepth
         )
-    }
-
-    private fun isHtmlFile(path: Path): Boolean {
-        val extension = path.extension.lowercase()
-        return extension in setOf("html", "htm", "xhtml")
     }
 
     /**
@@ -525,5 +546,4 @@ Generated on: {localdate} at {localtime}
             false
         }
     }
-
 }
