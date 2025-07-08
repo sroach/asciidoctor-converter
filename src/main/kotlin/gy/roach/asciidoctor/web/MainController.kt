@@ -3,7 +3,6 @@ package gy.roach.asciidoctor.web
 import gy.roach.asciidoctor.config.AllowedPathsConfig
 import gy.roach.asciidoctor.config.ExecutionHistoryConfig
 import gy.roach.asciidoctor.service.AsciiDoctorConverter
-import gy.roach.asciidoctor.service.ConversionJob
 import gy.roach.asciidoctor.service.ConversionJobService
 import gy.roach.asciidoctor.service.ConversionStats
 import gy.roach.asciidoctor.service.SitemapService
@@ -11,11 +10,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.*
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
@@ -120,21 +115,21 @@ class MainController(private val convert: AsciiDoctorConverter,
         logger.info("Started conversion for source directory: $normalizedSourcePath (execution ID: $executionId)")
 
         try {
-            // Convert files and get statistics
-            val stats = convert.convert(localDirectory, validatedOutputDir.toString())
-
-            // Generate sitemap on successful conversion
+            // Pre-generate sitemap.adoc in the source directory BEFORE conversion
             try {
-                val sitemapPath = sitemapService.generateAndSaveSitemap(validatedOutputDir.toString())
+                val sitemapPath = sitemapService.generateSitemapAdocInSourceDirectory(validatedSourceDir.toString())
                 if (sitemapPath != null) {
-                    logger.info("Generated sitemap: $sitemapPath")
+                    logger.info("Pre-generated sitemap.adoc for conversion: $sitemapPath")
                 } else {
-                    logger.warn("Failed to generate sitemap for output directory: $validatedOutputDir")
+                    logger.warn("Failed to pre-generate sitemap.adoc in source directory: $validatedSourceDir")
                 }
             } catch (e: Exception) {
-                logger.error("Error generating sitemap for output directory: $validatedOutputDir", e)
+                logger.error("Error pre-generating sitemap.adoc in source directory: $validatedSourceDir", e)
                 // Don't fail the entire conversion if sitemap generation fails
             }
+
+            // Convert files and get statistics
+            val stats = convert.convert(localDirectory, validatedOutputDir.toString())
 
             // Calculate execution duration
             val endTime = System.currentTimeMillis()
@@ -168,13 +163,22 @@ class MainController(private val convert: AsciiDoctorConverter,
 
 
 
-        }finally {
-            // Always remove the active conversion when done (success or failure)
-            activeConversions.remove(normalizedSourcePath)
-            logger.debug("Removed active conversion for source directory: $normalizedSourcePath (execution ID: $executionId)")
+        } finally {
+        // Clean up: delete sitemap.adoc from source directory after conversion
+        try {
+            sitemapService.deleteSitemapAdocFromSource(validatedSourceDir.toString())
+            logger.debug("Cleaned up sitemap.adoc from source directory: $validatedSourceDir")
+        } catch (e: Exception) {
+            logger.warn("Failed to clean up sitemap.adoc from source directory: $validatedSourceDir", e)
         }
 
+        // Always remove the active conversion when done (success or failure)
+        activeConversions.remove(normalizedSourcePath)
+        logger.debug("Removed active conversion for source directory: $normalizedSourcePath (execution ID: $executionId)")
     }
+
+
+}
 
     fun validateAndSanitizePath(inputPath: String): Path? {
         try {
