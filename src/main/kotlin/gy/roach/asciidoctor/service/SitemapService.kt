@@ -64,6 +64,9 @@ class SitemapService {
         // Copy sitemap icon to the source directory so it gets converted along with other files
         val iconPath = copySitemapIcon(sourcePath.toString())
 
+        // Copy iOS theme CSS to the source directory
+        copyiOSThemeCSS(sourcePath.toString())
+
         return buildSitemapAdocDocument(buttons, iconPath)
     }
 
@@ -93,6 +96,42 @@ class SitemapService {
             "" // Return empty string on error
         }
     }
+
+    /**
+     * Copy iOS theme CSS to target directory
+     */
+    private fun copyiOSThemeCSS(targetDirectory: String): Boolean {
+        return try {
+            val targetPath = Paths.get(targetDirectory)
+
+            // Create data/css directory structure
+            val cssDirectory = targetPath.resolve("data").resolve("css")
+            Files.createDirectories(cssDirectory)
+
+            val cssFileName = "sitemap-ios-theme.css"
+            val targetCSSPath = cssDirectory.resolve(cssFileName)
+
+            // Copy the CSS from resources to target directory
+            val resourceStream = this::class.java.getResourceAsStream("/data/css/$cssFileName")
+            if (resourceStream != null) {
+                resourceStream.use { stream ->
+                    Files.copy(stream, targetCSSPath, StandardCopyOption.REPLACE_EXISTING)
+                }
+                logger.debug("Copied iOS theme CSS to: $targetCSSPath")
+                true
+            } else {
+                logger.warn("iOS theme CSS not found in resources: /data/css/$cssFileName")
+                false
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to copy iOS theme CSS to $targetDirectory", e)
+            false
+        }
+    }
+
+
+
+
 
     /**
      * Find all directories in the source directory up to specified depth
@@ -373,6 +412,7 @@ class SitemapService {
         }
     }
 
+
     /**
      * Build the complete AsciiDoc document with DocOps hex buttons
      */
@@ -383,11 +423,16 @@ class SitemapService {
 = Website Sitemap
 :icons: font
 :docname: sitemap
+:stylesdir: data/css
+:stylesheet: sitemap-ios-theme.css
+:linkcss:
+:sectlinks:
+:sectanchors:
 
 
 == Interactive Directory Sitemap
 
-This sitemap provides a visual navigation structure of the website directories using hexagonal buttons.
+This sitemap provides a visual navigation structure of the website directories using hexagonal buttons with a modern iOS-inspired design.
 
 [docops,buttons]
 ----
@@ -396,26 +441,57 @@ $buttonsJson
 
 == Navigation Guide
 
-* Click any hexagonal button to navigate to that directory
-* Hover over buttons to see directory descriptions
-* Different colors represent different types of content:
-  - 🔴 **Primary**: Main entry points (Home)
-  - 🔵 **Category**: Directory sections
-  - 🟢 **Product**: Product-related directories
-  - 🟣 **Service**: Service-related directories
-  - 🟠 **Support**: Help and documentation directories
-  - ⚫ **Info**: About and company information directories
-  - 🟦 **Content**: Blog, news, and resources directories
+[.navigation-guide]
+****
+**How to Navigate:**
+
+* 👆 **Click** any hexagonal button to navigate to that directory
+* 💬 **Hover** over buttons to see directory descriptions  
+* 🎨 **Colors** represent different types of content:
+
+[cols="1,3", options="header"]
+|===
+| Color | Content Type
+| 🔴 **Primary** | Main entry points (Home)
+| 🔵 **Category** | Directory sections
+| 🟢 **Product** | Product-related directories
+| 🟣 **Service** | Service-related directories
+| 🟠 **Support** | Help and documentation directories
+| ⚫ **Info** | About and company information directories
+| 🟦 **Content** | Blog, news, and resources directories
+|===
+****
 
 == Directory Structure
 
+[.sect1]
+--
 This sitemap was generated based on the directory structure with a maximum depth of directories traversed. Each button represents a directory that may contain content or further subdirectories.
+
+The navigation is designed with modern iOS design principles:
+
+* **Clean Typography**: Using system fonts for optimal readability
+* **Subtle Shadows**: Depth through elevation and layering
+* **Smooth Transitions**: Fluid animations for better user experience
+* **Responsive Design**: Adapts to different screen sizes
+* **Dark Mode Support**: Automatic theme switching based on user preference
+--
 
 == About This Sitemap
 
-This sitemap was automatically generated from the website directory structure. The visualization uses DocOps hex buttons for an interactive navigation experience.
+[.sect1]
+--
+This sitemap was automatically generated from the website directory structure. The visualization uses DocOps hex buttons with an iOS-inspired theme for an interactive navigation experience.
+
+**Features:**
+* Modern iOS-style design language
+* Responsive layout for mobile and desktop
+* Dark mode support
+* Accessible navigation with keyboard support
+* Print-friendly styling
 
 Generated on: {localdate} at {localtime}
+--
     """.trimIndent()
     }
 
