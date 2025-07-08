@@ -66,8 +66,11 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
 
             if (includedFile.exists() && includedFile.isFile) {
                 includes.add(includedFile)
-                // Recursively extract includes from the included file
-                includes.addAll(extractIncludes(includedFile))
+                // Only recursively extract includes from AsciiDoc files to avoid infinite loops
+                // Non-AsciiDoc files (like JSON, XML, etc.) are leaf nodes in the dependency tree
+                if (includedFile.extension == "adoc") {
+                    includes.addAll(extractIncludes(includedFile))
+                }
             } else {
                 logger.warn("Included file not found: $includePath in ${file.name}")
             }
@@ -77,22 +80,23 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
     }
 
     /**
-     * Builds a dependency map between files and their includes.
-     * This map is used to determine if a file needs to be converted
-     * when one of its included files has changed.
-     * 
+     * Builds a comprehensive dependency map between files and their includes.
+     * This map includes both AsciiDoc and non-AsciiDoc files that are included.
+     *
+     * @param adocFiles List of AsciiDoc files to analyze
+     * @param allSourceFiles List of all source files (used for tracking non-AsciiDoc includes)
      * @return Pair of maps: first is file dependencies, second is reverse dependencies
      */
-    private fun buildDependencyMap(files: List<File>): Pair<Map<File, Set<File>>, Map<File, Set<File>>> {
+    private fun buildDependencyMap(adocFiles: List<File>, allSourceFiles: List<File>): Pair<Map<File, Set<File>>, Map<File, Set<File>>> {
         val fileDependencies = mutableMapOf<File, MutableSet<File>>()
         val reverseDependencies = mutableMapOf<File, MutableSet<File>>()
 
-        // First, build direct dependencies
-        files.forEach { file ->
+        // Build direct dependencies for all AsciiDoc files
+        adocFiles.forEach { file ->
             fileDependencies[file] = extractIncludes(file).toMutableSet()
         }
 
-        // Then, build reverse dependencies (which files include this file)
+        // Build reverse dependencies (which files include this file)
         fileDependencies.forEach { (parent, includes) ->
             includes.forEach { include ->
                 if (!reverseDependencies.containsKey(include)) {
@@ -102,7 +106,13 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
             }
         }
 
-        logger.info("Built dependency map for ${files.size} files, found ${fileDependencies.values.sumOf { it.size }} include relationships")
+        val totalIncludes = fileDependencies.values.sumOf { it.size }
+        val adocIncludes = fileDependencies.values.sumOf { includes -> includes.count { it.extension == "adoc" } }
+        val nonAdocIncludes = totalIncludes - adocIncludes
+
+        logger.info("Built dependency map for ${adocFiles.size} AsciiDoc files, found $totalIncludes include relationships " +
+                "($adocIncludes .adoc includes, $nonAdocIncludes non-.adoc includes)")
+
         return Pair(fileDependencies, reverseDependencies)
     }
 
@@ -111,8 +121,14 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
      * 1. If the target .adoc file doesn't exist.
      * 2. If the target HTML file doesn't exist
      * 3. If the content of the source and target .adoc files differs.
+     * 4. If any of the included files (including non-AsciiDoc) have changed.
      */
-    private fun shouldConvertFile(sourceFile: File, targetAdocFile: File, targetHtmlFile: File): Boolean {
+    private fun shouldConvertFile(
+        sourceFile: File,
+        targetAdocFile: File,
+        targetHtmlFile: File,
+        fileDependencies: Map<File, Set<File>>
+    ): Boolean {
         // If target adoc file doesn't exist, conversion is needed
         if (!targetAdocFile.exists()) {
             logger.debug("Target adoc file doesn't exist for ${sourceFile.name}, conversion needed")
@@ -129,9 +145,24 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
         val contentDiffers = Files.mismatch(sourceFile.toPath(), targetAdocFile.toPath()) != -1L
         if (contentDiffers) {
             logger.debug("Content differs for ${sourceFile.name}, conversion needed")
+            return true
         }
-        return contentDiffers
+
+        // Check if any included files are newer than the target HTML file
+        val includes = fileDependencies[sourceFile] ?: emptySet()
+        val targetHtmlLastModified = targetHtmlFile.lastModified()
+
+        for (include in includes) {
+            if (include.exists() && include.lastModified() > targetHtmlLastModified) {
+                logger.debug("Included file ${include.name} is newer than target HTML for ${sourceFile.name}, conversion needed")
+                return true
+            }
+        }
+
+        return false
     }
+
+
 
     private fun buildAttributes(): Attributes {
         // Get the docinfo directory from resources
@@ -169,49 +200,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
             .build()
     }
 
-    /**
-     * Asynchronously converts a file to PDF format.
-     * 
-     * @param file The AsciiDoc file to convert
-     * @param toDir The directory where the PDF will be written
-     * @return A CompletableFuture that will complete when the conversion is done
-     */
-    @Async
-    fun convertFileToPdfAsync(file: File, toDir: String): CompletableFuture<File> {
-        val future = CompletableFuture<File>()
 
-        try {
-            val targetDir = File(toDir)
-            if (!targetDir.exists()) {
-                targetDir.mkdirs()
-            }
-
-            // Calculate the output PDF file path
-            val pdfFileName = file.nameWithoutExtension + ".pdf"
-            val targetFile = File(targetDir, pdfFileName)
-
-            // Create parent directories if they don't exist
-            targetFile.parentFile?.mkdirs()
-
-            val options = buildPdfOptions(buildAttributes())
-            options.setMkDirs(true)
-
-            // Set the output directory to the parent directory of the target file
-            options.setToDir(targetFile.parentFile.absolutePath)
-
-            // Convert the file with a timeout
-            val asciidoctor = Asciidoctor.Factory.create()
-            asciidoctor.convertFile(file, options)
-
-            logger.info("Successfully converted file to PDF: ${file.name}")
-            future.complete(targetFile)
-        } catch (e: Exception) {
-            logger.error("Failed to convert file to PDF: ${file.name}", e)
-            future.completeExceptionally(e)
-        }
-
-        return future
-    }
 
     /**
      * Asynchronously converts a list of files to PDF format.
@@ -363,8 +352,8 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
         // Clean up deleted files first
         cleanupDeletedFiles(allSourceFiles, targetDir, stats)
 
-        // Convert AsciiDoc files
-        val (fileDependencies, reverseDependencies) = buildDependencyMap(adocFiles)
+        // Build comprehensive dependency map including non-AsciiDoc files
+        val (fileDependencies, reverseDependencies) = buildDependencyMap(adocFiles, allSourceFiles)
 
         // Set to track files that need conversion
         val filesToConvert = mutableSetOf<File>()
@@ -386,7 +375,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
                 // Create parent directories if they don't exist
                 targetFile.parentFile?.mkdirs()
 
-                if (shouldConvertFile(file, targetFile, targetHtmlFile)) {
+                if (shouldConvertFile(file, targetFile, targetHtmlFile, fileDependencies)) {
                     filesToConvertSet.add(file)
                     synchronized(stats) {
                         stats.filesNeedingConversion++
@@ -480,7 +469,6 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings) {
                 "${stats.filesFailed} files failed, ${stats.filesDeleted} files deleted")
         return stats
     }
-
     /**
      * Copies non-AsciiDoc files from source to target directory using virtual threads.
      * Only copies files that don't exist in the target directory or have different content.
