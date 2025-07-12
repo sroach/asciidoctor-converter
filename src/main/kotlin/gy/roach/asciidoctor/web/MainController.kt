@@ -7,6 +7,7 @@ import gy.roach.asciidoctor.service.ConversionJobService
 import gy.roach.asciidoctor.service.ConversionStats
 import gy.roach.asciidoctor.service.SitemapService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
@@ -26,6 +27,9 @@ class MainController(private val convert: AsciiDoctorConverter,
                      private val conversionJobService: ConversionJobService,
                      private val sitemapService: SitemapService
 ) {
+    @Value("\${sitemap.directory-depth:2}")
+    private val defaultDirectoryDepth: Int = 2
+
     private val logger = LoggerFactory.getLogger(MainController::class.java)
 
     // Thread-safe deque to store execution history
@@ -116,9 +120,13 @@ class MainController(private val convert: AsciiDoctorConverter,
 
         try {
             // Pre-generate sitemap.adoc in the source directory BEFORE conversion
+
             try {
-                val sitemapPath = sitemapService.generateSitemapAdocInSourceDirectory(validatedSourceDir.toString())
+                val sitemapPath = sitemapService.generateSitemapAdocInSourceDirectory(localDirectory.absolutePath, defaultDirectoryDepth, validatedOutputDir.toString())
                 if (sitemapPath != null) {
+                    // Copy sitemap icon to target directory so it's available during conversion
+                    sitemapService.copySitemapIconToTarget(validatedOutputDir.toString())
+
                     logger.info("Pre-generated sitemap.adoc for conversion: $sitemapPath")
                 } else {
                     logger.warn("Failed to pre-generate sitemap.adoc in source directory: $validatedSourceDir")

@@ -35,37 +35,70 @@ class SitemapService {
     }
 
     /**
-     * Generate sitemap.adoc directly in the source directory before conversion
+     * Copy only the sitemap icon to target directory if needed
+     * (CSS is now embedded, so only icon might be needed)
      */
-    fun generateSitemapAdocInSourceDirectory(sourceDirectory: String, maxDepth: Int = defaultDirectoryDepth): String? {
+    fun copySitemapIconToTarget(targetDirectory: String): Boolean {
+        return try {
+            val targetPath = Paths.get(targetDirectory)
+            val iconFileName = "sitemap-icon.svg"
+            val targetIconPath = targetPath.resolve(iconFileName)
+
+            val resourceStream = this::class.java.getResourceAsStream("/$iconFileName")
+            if (resourceStream != null) {
+                resourceStream.use { stream ->
+                    Files.copy(stream, targetIconPath, StandardCopyOption.REPLACE_EXISTING)
+                }
+                logger.debug("Copied sitemap icon to target: $targetIconPath")
+                true
+            } else {
+                logger.warn("Sitemap icon not found in resources: /$iconFileName")
+                false
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to copy sitemap icon to target $targetDirectory", e)
+            false
+        }
+    }
+
+    /**
+     * Generate sitemap.adoc directly in the source directory with embedded assets
+     */
+    fun generateSitemapAdocInSourceDirectory(
+        sourceDirectory: String,
+        maxDepth: Int = defaultDirectoryDepth,
+        outputDirectory: String
+    ): String? {
         val sourcePath = Paths.get(sourceDirectory)
         if (!Files.exists(sourcePath) || !Files.isDirectory(sourcePath)) {
             return null
         }
 
-        try {
-            // Generate sitemap content based on directory structure in source directory
-            val sitemapAdocContent = generateSitemapAdocContentFromSource(sourcePath, maxDepth)
+        return try {
+            // Generate sitemap content with embedded CSS
+            val sitemapAdocContent = generateSitemapAdocContentFromSource(sourcePath, maxDepth, outputDirectory)
             val sitemapFile = sourcePath.resolve("sitemap.adoc")
             Files.write(sitemapFile, sitemapAdocContent.toByteArray())
-            return sitemapFile.toString()
+
+            logger.info("Generated sitemap.adoc with embedded CSS in source directory: $sitemapFile")
+            sitemapFile.toString()
         } catch (e: Exception) {
-            throw RuntimeException("Failed to generate sitemap.adoc in source directory: $sourceDirectory", e)
+            logger.error("Failed to generate sitemap.adoc in source directory: $sourceDirectory", e)
+            null
         }
     }
+
 
     /**
      * Generate sitemap.adoc content based on directory structure
      */
-    private fun generateSitemapAdocContentFromSource(sourcePath: Path, maxDepth: Int): String {
+    private fun generateSitemapAdocContentFromSource(sourcePath: Path, maxDepth: Int, outputDirectory: String): String {
         val directories = findDirectories(sourcePath, maxDepth)
         val buttons = generateButtonsFromDirectories(directories)
 
-        // Copy sitemap icon to the source directory so it gets converted along with other files
-        val iconPath = copySitemapIcon(sourcePath.toString())
 
-        // Copy iOS theme CSS to the source directory
-        copyiOSThemeCSS(sourcePath.toString())
+        // Copy sitemap icon to the source directory so it gets converted along with other files
+        val iconPath = copySitemapIcon(outputDirectory)
 
         return buildSitemapAdocDocument(buttons, iconPath)
     }
@@ -96,39 +129,6 @@ class SitemapService {
             "" // Return empty string on error
         }
     }
-
-    /**
-     * Copy iOS theme CSS to target directory
-     */
-    private fun copyiOSThemeCSS(targetDirectory: String): Boolean {
-        return try {
-            val targetPath = Paths.get(targetDirectory)
-
-            // Create data/css directory structure
-            val cssDirectory = targetPath.resolve("data").resolve("css")
-            Files.createDirectories(cssDirectory)
-
-            val cssFileName = "sitemap-ios-theme.css"
-            val targetCSSPath = cssDirectory.resolve(cssFileName)
-
-            // Copy the CSS from resources to target directory
-            val resourceStream = this::class.java.getResourceAsStream("/data/css/$cssFileName")
-            if (resourceStream != null) {
-                resourceStream.use { stream ->
-                    Files.copy(stream, targetCSSPath, StandardCopyOption.REPLACE_EXISTING)
-                }
-                logger.debug("Copied iOS theme CSS to: $targetCSSPath")
-                true
-            } else {
-                logger.warn("iOS theme CSS not found in resources: /data/css/$cssFileName")
-                false
-            }
-        } catch (e: Exception) {
-            logger.error("Failed to copy iOS theme CSS to $targetDirectory", e)
-            false
-        }
-    }
-
 
 
 
@@ -416,19 +416,25 @@ class SitemapService {
     /**
      * Build the complete AsciiDoc document with DocOps hex buttons
      */
+    /**
+     * Build the complete AsciiDoc document with embedded CSS and DocOps hex buttons
+     */
     private fun buildSitemapAdocDocument(buttons: List<Map<String, Any>>, iconPath: String = ""): String {
         val buttonsJson = generateButtonsJson(buttons, iconPath)
+        val embeddedCSS = generateSitemapCSS()
 
         return """
 = Website Sitemap
 :icons: font
 :docname: sitemap
-:stylesdir: data/css
-:stylesheet: sitemap-ios-theme.css
-:linkcss:
 :sectlinks:
 :sectanchors:
 
+++++
+<style>
+$embeddedCSS
+</style>
+++++
 
 == Interactive Directory Sitemap
 
@@ -494,6 +500,7 @@ Generated on: {localdate} at {localtime}
 --
     """.trimIndent()
     }
+
 
     /**
      * Generate JSON for DocOps buttons
@@ -622,4 +629,34 @@ Generated on: {localdate} at {localtime}
             false
         }
     }
+
+    /**
+     * Generate CSS content for sitemap styling
+     */
+    private fun generateSitemapCSS(): String {
+        return try {
+            val resourceStream = this::class.java.getResourceAsStream("/data/css/sitemap-ios-theme.css")
+            if (resourceStream != null) {
+                resourceStream.use { stream ->
+                    stream.bufferedReader().readText()
+                }
+            } else {
+                logger.warn("iOS theme CSS not found in resources: /data/css/sitemap-ios-theme.css")
+                // Return a basic fallback CSS
+                """
+            .navigation-guide {
+                background: #f8f9fa;
+                border: 1px solid #e9ecef;
+                border-radius: 8px;
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+            """.trimIndent()
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to load sitemap CSS from resources", e)
+            ""
+        }
+    }
+
 }

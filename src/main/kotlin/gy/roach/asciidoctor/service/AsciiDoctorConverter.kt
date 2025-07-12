@@ -612,11 +612,13 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings, pri
             // Don't delete if:
             // 1. The file exists in source
             // 2. It's an HTML file with a corresponding .adoc file in source
+            // 3. It's a sitemap file (sitemap-icon.svg or sitemap.html)
             val hasSourceFile = sourceRelativePaths.contains(relativePath)
             val isHtmlWithAdocSource = targetFile.extension == "html" &&
                     sourceRelativePaths.contains(relativePath.replace(".html", ".adoc"))
+            val isSitemapFile = relativePath == "sitemap-icon.svg" || relativePath == "sitemap.html"
 
-            !hasSourceFile && !isHtmlWithAdocSource
+            !hasSourceFile && !isHtmlWithAdocSource && !isSitemapFile
         }
 
         // Use virtual threads for parallel file deletion
