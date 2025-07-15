@@ -70,6 +70,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     use_glass = attrs.fetch('useGlass', 'true') == 'false'
     allow_zoom = attrs.fetch('zoom', 'true') == 'true'
     allow_expand = attrs.fetch('expand', 'true') == 'true'
+    allow_csv = attrs.fetch('csv', 'true') == 'true'
     theme = attrs['theme'] || 'light'
     role = attrs.fetch('role', 'center')
 
@@ -125,13 +126,25 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
         end
 
         html = if show_controls && !use_base64
-                 generate_svg_viewer_html(image, id, title, show_controls,
-                                          allow_copy, allow_zoom, allow_expand, theme, role)
+                 generate_svg_viewer_html(
+                   image, id, title,
+                   show_controls, allow_copy, allow_zoom, allow_expand,  theme, role, allow_csv
+                 ).gsub(
+                   %(<div class="svg-with-controls" id="#{id}" data-theme="#{theme}">),
+                   %(<div class="svg-with-controls" id="#{id}" data-theme="#{theme}" data-original-content="#{content.gsub('"', '&quot;')}" data-kind="#{kind}">)
+                 )
+
                else
                  # For non-controlled SVGs, still apply alignment
                  "<div style=\"#{get_alignment_style(role)}\"><div style=\"display: inline-block;\">#{ensure_utf8(image)}</div></div>"
                end
+        server_script = <<~SCRIPT
+          <script>
+          window.docOpsServerUrl = '#{webserver}';
+          </script>
+        SCRIPT
 
+        html << server_script
         return create_block(parent, :pass, ensure_utf8(html), {})
       end
     else
@@ -240,7 +253,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
   end
 
   def generate_svg_viewer_html(svg_content, id, title, show_controls,
-                               allow_copy, allow_zoom, allow_expand, theme, role = 'center')
+                               allow_copy, allow_zoom, allow_expand, theme, role = 'center', allow_csv = true)
     # Get alignment styling based on role
     alignment_style = get_alignment_style(role)
 
@@ -257,9 +270,22 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
       html << ensure_utf8(build_zoom_controls(id)) if allow_zoom
       html << ensure_utf8(build_expand_control(id)) if allow_expand
       html << ensure_utf8(build_copy_control(id)) if allow_copy
+      html << ensure_utf8(build_csv_control(id)) if allow_csv
 
       html << "</div>"
       html << "</div>"
+      html << <<~HTML.strip
+        <div class="csv-container" id="csv-container-#{id}" style="display: none;">
+            <div class="csv-header">
+                <span>CSV Data</span>
+                <button class="csv-close" onclick="svgViewer.closeCsv('#{id}')" title="Close CSV">×</button>
+            </div>
+            <div class="csv-content" id="csv-content-#{id}">
+                <div class="csv-loading">Loading CSV data...</div>
+            </div>
+        </div>
+      HTML
+
     end
 
     html << "</div>" # Close svg-with-controls
@@ -308,11 +334,17 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     HTML
   end
 
+  def build_csv_control(id)
+    <<~HTML.strip
+      <button class="svg-control-btn csv-btn" onclick="svgViewer.toggleCsv('#{id}')" title="Show CSV Data">📊 CSV</button>
+    HTML
+  end
+
   def get_minimal_controls_assets
     # Returns the same CSS and JavaScript as in the Kotlin version
     # (truncated for brevity - would include the full CSS and JS from the original)
     <<~ASSETS
-      
+
     ASSETS
   end
 

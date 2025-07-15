@@ -163,6 +163,173 @@
     .copy-message.error {
         background: rgba(239, 68, 68, 0.95);
     }
+
+    /* CSV Container Styles */
+    .csv-container {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.98);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        margin-top: 10px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(8px);
+        z-index: 99;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .csv-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: rgba(249, 250, 251, 0.9);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 8px 8px 0 0;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .csv-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #666;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+    }
+
+    .csv-close:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #dc2626;
+    }
+
+    .csv-content {
+        padding: 16px;
+        max-height: 300px;
+        overflow: auto;
+    }
+
+    .csv-loading {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+        font-style: italic;
+    }
+
+    .csv-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        background: white;
+    }
+
+    .csv-table th,
+    .csv-table td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .csv-table th {
+        background: rgba(249, 250, 251, 0.9);
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .csv-table tr:hover {
+        background: rgba(59, 130, 246, 0.05);
+    }
+
+    .csv-error {
+        color: #dc2626;
+        background: rgba(239, 68, 68, 0.1);
+        padding: 12px;
+        border-radius: 6px;
+        margin: 8px 0;
+    }
+
+    /* Dark theme for CSV */
+    [data-theme="dark"] .csv-container {
+        background: rgba(30, 30, 30, 0.98);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    [data-theme="dark"] .csv-header {
+        background: rgba(55, 65, 81, 0.9);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #f0f0f0;
+    }
+
+    [data-theme="dark"] .csv-table {
+        background: rgba(30, 30, 30, 0.9);
+        color: #f0f0f0;
+    }
+
+    [data-theme="dark"] .csv-table th {
+        background: rgba(55, 65, 81, 0.9);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    [data-theme="dark"] .csv-table td {
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    [data-theme="dark"] .csv-table tr:hover {
+        background: rgba(59, 130, 246, 0.1);
+    }
+    .csv-table-container {
+        margin: 10px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+
+    .csv-copy-button {
+        background: #007acc;
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 11px;
+        float: right;
+    }
+
+    .csv-copy-button:hover {
+        background: #005a9e;
+    }
+
+    .csv-header-button-cell {
+        text-align: right;
+        width: 120px;
+        min-width: 120px;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
 </style>
 
 <script>
@@ -390,7 +557,189 @@
                 messageEl.classList.remove('show');
                 setTimeout(() => messageEl.remove(), 300);
             }, type === 'info' ? 1500 : 2500);
+        },
+        toggleCsv(id) {
+            const container = document.getElementById(`csv-container-${id}`);
+            const isVisible = container.style.display !== 'none';
+
+            if (isVisible) {
+                container.style.display = 'none';
+            } else {
+                container.style.display = 'block';
+                this.loadCsvData(id);
+            }
+    },
+
+    closeCsv(id) {
+        const container = document.getElementById(`csv-container-${id}`);
+        container.style.display = 'none';
+    },
+    async loadCsvData(id) {
+        const svgContainer = document.getElementById(id);
+        const svg = svgContainer.querySelector('svg');
+
+        if (!svg) {
+            console.error('No SVG found');
+            return;
         }
+
+        try {
+            // Method 1: Standard metadata with type
+            let csvMetadata = svg.querySelector('metadata[type="text/csv"]');
+            if (csvMetadata) {
+                const csvData = JSON.parse(csvMetadata.textContent.trim());
+                this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData);
+                return;
+            }
+
+            // Method 2: Custom csv-data element
+            csvMetadata = svg.querySelector('metadata csv-data');
+            if (csvMetadata) {
+                const csvData = JSON.parse(csvMetadata.textContent.trim());
+                this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData, `csv-table-${id}`);
+                return;
+            }
+
+            // Method 3: Data attribute
+            const csvDataAttr = svg.getAttribute('data-csv');
+            if (csvDataAttr) {
+                const csvData = JSON.parse(decodeURIComponent(csvDataAttr));
+                this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData, `csv-table-${id}`);
+                return;
+            }
+
+            console.error('No CSV data found in SVG');
+        } catch (error) {
+            console.error('Failed to parse CSV data:', error);
+        }
+    },
+
+    renderCsvTable(container, csvData, tableId) {
+        if (!csvData || !csvData.headers || !csvData.rows) {
+            container.innerHTML = '<div class="csv-error">Invalid CSV data format</div>';
+            return;
+        }
+
+        // Generate a unique table ID if not provided or make existing ID unique
+        const uniqueTableId = tableId ? `${tableId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` : `csv-table-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const table = document.createElement('table');
+        table.className = 'csv-table';
+        table.id = uniqueTableId;
+        // Create header
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+
+        csvData.headers.forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            headerRow.appendChild(th);
+        });
+
+        // Add button cell to header
+        const buttonTh = document.createElement('th');
+        buttonTh.className = 'csv-header-button-cell';
+
+        // Create copy button
+        const copyButton = document.createElement('button');
+        copyButton.className = 'csv-copy-button';
+        copyButton.textContent = 'Copy';
+        copyButton.title = 'Copy as Tab-Delimited';
+        copyButton.onclick = () => this.copyCsvAsTabDelimited(csvData);
+
+        buttonTh.appendChild(copyButton);
+        headerRow.appendChild(buttonTh);
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        // Create body
+        const tbody = document.createElement('tbody');
+
+        csvData.rows.forEach(row => {
+            const tr = document.createElement('tr');
+            row.forEach(cell => {
+                const td = document.createElement('td');
+                td.textContent = cell;
+                tr.appendChild(td);
+            });
+            // Add empty cell for button column
+            const emptyTd = document.createElement('td');
+            tr.appendChild(emptyTd);
+            tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        container.innerHTML = '';
+        container.appendChild(table);
+        const tableElement = document.getElementById(uniqueTableId);
+        if (tableElement) {
+            tableElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+
+
+    },
+
+    copyCsvAsTabDelimited(csvData) {
+        if (!csvData || !csvData.headers || !csvData.rows) {
+            console.error('Invalid CSV data for copying');
+            return;
+        }
+
+        // Create tab-delimited string
+        let tabDelimitedData = '';
+
+        // Add headers
+        tabDelimitedData += csvData.headers.join('\t') + '\n';
+
+        // Add rows
+        csvData.rows.forEach(row => {
+            tabDelimitedData += row.join('\t') + '\n';
+        });
+
+        // Copy to clipboard
+        navigator.clipboard.writeText(tabDelimitedData).then(() => {
+            // Provide visual feedback
+            const buttons = document.querySelectorAll('.csv-copy-button');
+            buttons.forEach(button => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#28a745';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#007acc';
+                }, 2000);
+            });
+        }).catch(err => {
+            console.error('Failed to copy to clipboard:', err);
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = tabDelimitedData;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                // Provide visual feedback
+                const buttons = document.querySelectorAll('.csv-copy-button');
+                buttons.forEach(button => {
+                    const originalText = button.textContent;
+                    button.textContent = 'Copied!';
+                    button.style.background = '#28a745';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.style.background = '#007acc';
+                    }, 2000);
+                });
+            } catch (fallbackErr) {
+                console.error('Fallback copy failed:', fallbackErr);
+                alert('Copy failed. Please select and copy the data manually.');
+            }
+            document.body.removeChild(textArea);
+        });
+    }
     };
 
     // Close controls when clicking outside
