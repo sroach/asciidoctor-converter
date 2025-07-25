@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 === [Unreleased]
 
 ==== Added
+
+==== Changed
+
+=== [0.0.2-SNAPSHOT] - 2025-07-25
+
+==== Added
 - User tracking functionality in generated HTML documents
 - Cookie-based unique user identification system
 - Session tracking and visit counting
