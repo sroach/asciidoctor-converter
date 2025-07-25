@@ -1,6 +1,7 @@
 package gy.roach.asciidoctor.service
 
 import gy.roach.asciidoctor.config.ConverterSettings
+import gy.roach.asciidoctor.extension.CopyToClipboardDocinfoProcessor
 import gy.roach.asciidoctor.extension.ReadingTimeDocinfoProcessor
 import gy.roach.asciidoctor.tabs.BlockSwitchDocinfoProcessor
 import org.asciidoctor.Asciidoctor
@@ -33,7 +34,9 @@ data class ConversionStats(
 
 
 @Service
-class AsciiDoctorConverter(private val converterSettings: ConverterSettings, private val readingTimeDocinfoProcessor: ReadingTimeDocinfoProcessor) {
+class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
+                           private val readingTimeDocinfoProcessor: ReadingTimeDocinfoProcessor,
+                           private val copyToClipboardDocinfoProcessor: CopyToClipboardDocinfoProcessor) {
     val asciidoctor: Asciidoctor = Asciidoctor.Factory.create()
     private val logger = LoggerFactory.getLogger(AsciiDoctorConverter::class.java)
 
@@ -44,6 +47,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings, pri
         asciidoctor.requireLibrary("asciidoctor-diagram")
         asciidoctor.javaExtensionRegistry().docinfoProcessor(BlockSwitchDocinfoProcessor::class.java)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(readingTimeDocinfoProcessor)
+        asciidoctor.javaExtensionRegistry().docinfoProcessor(copyToClipboardDocinfoProcessor)
 
         asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
     }
