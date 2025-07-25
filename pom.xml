@@ -10,22 +10,33 @@
     </parent>
     <groupId>gy.roach.asciidoctor</groupId>
     <artifactId>converter</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>2025.0.0</version>
     <name>converter</name>
-    <description>A jvm based service solution for converting asciidoctor files located in git</description>
-    <url/>
+    <description>A JVM based service solution for converting AsciiDoctor files located in git</description>
+    <url>https://github.com/steveroach/asciidoctor-converter</url>
     <licenses>
-        <license/>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+
     </licenses>
     <developers>
-        <developer/>
+        <developer>
+            <id>steveroach</id>
+            <name>Steve Roach</name>
+            <email>sroachst@gmail.com</email>
+        </developer>
+
     </developers>
     <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
+        <connection>scm:git:https://github.com/steveroach/asciidoctor-converter.git</connection>
+        <developerConnection>scm:git:git@github.com:steveroach/asciidoctor-converter.git</developerConnection>
+        <url>https://github.com/steveroach/asciidoctor-converter</url>
+        <tag>HEAD</tag>
     </scm>
+
 
     <properties>
         <java.version>21</java.version>
@@ -136,6 +147,24 @@
                         <version>${kotlin.version}</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.jreleaser</groupId>
+                <artifactId>jreleaser-maven-plugin</artifactId>
+                <version>1.13.1</version>
+                <configuration>
+                    <jreleaser>
+                        <release>
+                            <github>
+                                <skipTag>true</skipTag>
+                                <skipRelease>false</skipRelease>
+                                <sign>true</sign>
+                                <branch>main</branch>
+                                <branchPush>main</branchPush>
+                            </github>
+                        </release>
+                    </jreleaser>
+                </configuration>
             </plugin>
         </plugins>
     </build>

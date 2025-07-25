@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+
+      - name: Build with Maven
+        run: ./mvnw clean package -DskipTests
+
+      - name: Run JReleaser
+        uses: jreleaser/release-action@v2
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_DOCKER_DEFAULT_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          JRELEASER_DOCKER_DEFAULT_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          JRELEASER_SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        with:
+          arguments: full-release
+
+      - name: JReleaser output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jreleaser-logs
+          path: |
+            out/jreleaser/trace.log
+            out/jreleaser/output.properties

@@ -1,0 +1,119 @@
+project:
+  name: asciidoctor-converter
+  description: A JVM based service solution for converting AsciiDoctor files located in git
+  longDescription: |
+    AsciiDoctor Converter is a Spring Boot service that provides RESTful APIs for converting 
+    AsciiDoc files to HTML and PDF formats. It includes dependency tracking, incremental 
+    conversion, and integration with GitHub repositories.
+  authors:
+    - Steve Roach
+  license: Apache-2.0
+  java:
+    groupId: gy.roach.asciidoctor
+    artifactId: converter
+    version: 21
+    multiProject: false
+  inceptionYear: 2025
+
+release:
+  github:
+    owner: sroach # Replace with your GitHub username
+    name: asciidoctor-converter # Replace with your repository name
+    branch: main
+    branchPush: main
+    sign: true
+    releaseName: 'Release v{{projectVersion}}'
+    skipTag: false
+    skipRelease: false
+    overwrite: false
+    update: false
+    draft: false
+    prerelease:
+      enabled: false
+    changelog:
+      enabled: true
+      formatted: ALWAYS
+      preset: conventional-commits
+      contributors:
+        enabled: true
+      labelers:
+        - label: 'feature'
+          title: 'feat:'
+        - label: 'bug'
+          title: 'fix:'
+        - label: 'documentation'
+          title: 'docs:'
+      categories:
+        - title: '🚀 Features'
+          labels:
+            - 'feature'
+        - title: '🐛 Bug Fixes'
+          labels:
+            - 'bug'
+        - title: '📝 Documentation'
+          labels:
+            - 'documentation'
+      hide:
+        categories:
+          - 'merge'
+        contributors:
+          - 'GitHub'
+
+distributions:
+  asciidoctor-converter:
+    artifacts:
+      - path: 'target/{{distributionName}}-{{projectVersion}}.jar'
+        transform: 'target/{{distributionName}}-{{projectVersion}}.jar'
+    type: JAVA_BINARY
+    executable:
+      name: asciidoctor-converter
+    java:
+      mainClass: gy.roach.asciidoctor.AppKt
+      version: 21
+
+packagers:
+  docker:
+    active: ALWAYS
+    repository:
+      active: RELEASE
+      owner: steveroach # Replace with your Docker Hub username
+      name: asciidoctor-converter
+    registries:
+      - serverName: DEFAULT
+    imageNames:
+      - '{{repoOwner}}/{{distributionName}}:{{tagName}}'
+      - '{{repoOwner}}/{{distributionName}}:latest'
+    buildArgs:
+      JAR_FILE: 'target/{{distributionName}}-{{projectVersion}}.jar'
+    labels:
+      'org.opencontainers.image.title': '{{projectName}}'
+      'org.opencontainers.image.description': '{{projectDescription}}'
+      'org.opencontainers.image.url': '{{projectWebsite}}'
+      'org.opencontainers.image.source': '{{repoUrl}}'
+      'org.opencontainers.image.version': '{{projectVersion}}'
+      'org.opencontainers.image.revision': '{{commitFullHash}}'
+      'org.opencontainers.image.created': '{{timestamp}}'
+
+  brew:
+    active: RELEASE
+    repository:
+      owner: steveroach # Replace with your GitHub username
+      name: homebrew-tap
+    formulaName: asciidoctor-converter
+    description: '{{projectDescription}}'
+    homepage: '{{projectWebsite}}'
+
+announce:
+  slack:
+    active: RELEASE
+    channel: '#releases'
+    message: |
+      🚀 {{projectName}} {{projectVersion}} has been released!
+      
+      📝 {{releaseNotesUrl}}
+      
+      {{changelog}}
+
+environment:
+  properties:
+    artifactsDir: out/jreleaser/assemble/asciidoctor-converter/archive

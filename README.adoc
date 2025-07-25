@@ -486,3 +486,18 @@ docker run -p 7202:7202 \
 4. **Networking**: If you need to connect to external services, configure networking appropriately
 
 This setup provides a production-ready Docker configuration for your AsciiDoc converter application.
+
+image::image-2025-07-25-06-23-11-404.png[]
+
+[source,shell]
+----
+# Dry run to test configuration
+./mvnw jreleaser:config
+
+# Create a release (after creating a git tag)
+git tag v0.1.0
+git push origin v0.1.0
+
+# Manual release (if not using GitHub Actions)
+./mvnw jreleaser:full-release
+----
