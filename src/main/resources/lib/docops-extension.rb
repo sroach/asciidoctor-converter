@@ -83,7 +83,6 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
 
     # Fix: Proper create_block call with 4 parameters
     block = create_block(parent, :open, nil, {})
-    image = ''
 
     if server_available?(parent, server)
       type = get_type(parent)
@@ -103,7 +102,6 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
       scale = attrs.fetch('scale', '1.0')
       title = attrs.fetch('title', 'Title')
       lines = []
-      use_base64 = attrs.fetch('base64', 'true') == 'false'
 
       if type == 'PDF'
         link = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&title=#{CGI.escape(title)}&type=SVG&useDark=#{use_dark}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=docops.svg"
@@ -116,16 +114,9 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
       else
         url = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&type=#{type}&useDark=#{use_dark}&title=#{CGI.escape(title)}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=ghi.svg"
 
-        #puts url if local_debug
-
         image = get_content_from_server(url, parent)
 
-        # Convert to base64 if requested and it's SVG content
-        if use_base64 && !idea_on?(parent)
-          image = convert_svg_to_base64_image(image, attrs)
-        end
-
-        html = if show_controls && !use_base64
+        html = if show_controls
                  generate_svg_viewer_html(
                    image, id, title,
                    show_controls, allow_copy, allow_zoom, allow_expand,  theme, role, allow_csv
@@ -175,82 +166,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     attrs['id'] || "svgviewer-#{SecureRandom.hex(8)}"
   end
 
-  def build_object_tag(data_url, attrs)
-    result = "<object type=\"image/svg+xml\" data=\"#{data_url}\""
 
-    # Add standard attributes if provided
-    result += " width=\"#{escape_html(attrs['width'])}\"" if attrs['width']
-    result += " height=\"#{escape_html(attrs['height'])}\"" if attrs['height']
-    result += " class=\"#{escape_html(attrs['class'])}\"" if attrs['class']
-    result += " id=\"#{escape_html(attrs['id'])}\"" if attrs['id']
-    result += " style=\"#{escape_html(attrs['style'])}\"" if attrs['style']
-
-    # Add ARIA attributes for accessibility
-    result += " aria-label=\"#{escape_html(attrs['title'])}\"" if attrs['title']
-    result += " aria-describedby=\"#{escape_html(attrs['alt'])}\"" if attrs['alt']
-
-    result += "></object>"
-    result
-  end
-
-  def svg_content?(content)
-    content.strip.start_with?('<svg') && content.include?('</svg>')
-  end
-
-  def convert_svg_to_base64_image(svg_content, attrs)
-    begin
-      # Clean and optimize the SVG content
-      clean_svg = optimize_svg_content(svg_content)
-
-      # Encode to base64
-      base64_content = Base64.strict_encode64(clean_svg)
-
-      # Create data URL
-      data_url = "data:image/svg+xml;base64,#{base64_content}"
-
-      # Build image tag with attributes
-      build_object_tag(data_url, attrs)
-    rescue => e
-      #puts "Warning: Failed to convert SVG to base64: #{e.message}" if @local_debug
-      # Return original SVG content if conversion fails
-      svg_content
-    end
-  end
-
-  def optimize_svg_content(svg_content)
-    optimized = svg_content.strip
-
-    # Remove XML declaration if present (not needed for data URLs)
-    optimized = optimized.gsub(/<\?xml[^>]*\?>/, '')
-
-    # Remove DOCTYPE if present
-    optimized = optimized.gsub(/<!DOCTYPE[^>]*>/, '')
-
-    # Remove comments
-    optimized = optimized.gsub(/<!--.*?-->/m, '')
-
-    # Normalize whitespace (but be careful with text content)
-    optimized = optimized.gsub(/\s+/, ' ')
-
-    # Remove leading/trailing whitespace
-    optimized = optimized.strip
-
-    # Ensure xmlns attribute is present for standalone SVG
-    unless optimized.include?('xmlns=')
-      optimized = optimized.sub('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')
-    end
-
-    optimized
-  end
-
-  def escape_html(text)
-    return '' unless text
-    text.to_s.gsub('&', '&amp;')
-        .gsub('<', '&lt;')
-        .gsub('>', '&gt;')
-        .gsub('"', '&quot;')
-        .gsub("'", '&#39;')
-  end
 
   def generate_svg_viewer_html(svg_content, id, title, show_controls,
                                allow_copy, allow_zoom, allow_expand, theme, role = 'center', allow_csv = true)
