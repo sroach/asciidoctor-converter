@@ -50,6 +50,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         asciidoctor.javaExtensionRegistry().docinfoProcessor(copyToClipboardDocinfoProcessor)
 
         asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
+        asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/reactions_block_processor.rb"))
     }
 
     /**
