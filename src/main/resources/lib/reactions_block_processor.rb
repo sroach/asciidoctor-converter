@@ -2,7 +2,7 @@ require 'asciidoctor/extensions'
 
 include Asciidoctor
 
-# Ruby equivalent of the Kotlin ReactionsBlockProcessor with role support
+# Ruby equivalent of the Kotlin ReactionsBlockProcessor with persistent user selections
 class ReactionsBlockProcessor < Extensions::BlockMacroProcessor
   use_dsl
   named :reactions
@@ -19,6 +19,9 @@ class ReactionsBlockProcessor < Extensions::BlockMacroProcessor
     # Check for role attribute to determine alignment
     role = attrs['role'] || attrs[1] # attrs[1] is positional parameter
     alignment_style = role == 'right' ? 'justify-content: flex-end;' : ''
+
+    # Create unique identifier for this reactions block
+    reactions_id = "reactions-#{document_name.gsub(/[^a-zA-Z0-9]/, '-')}"
 
     # Define available reactions
     reactions = [
@@ -37,15 +40,15 @@ class ReactionsBlockProcessor < Extensions::BlockMacroProcessor
         <button class="reaction-button reaction-#{reaction[:id]}" 
                 style="background: none; border: none; cursor: pointer; font-size: 18px; margin: 0 5px;" 
                 title="#{reaction[:title]}"
-                onclick="handleReactionClick('#{reaction[:id]}', '#{document_name}', '#{document_author}')">
+                onclick="handleReactionClick('#{reaction[:id]}', '#{document_name}', '#{document_author}', '#{reactions_id}')">
             #{reaction[:emoji]}
         </button>
       HTML
     end.join("\n")
 
-    # Generate the complete HTML with conditional alignment
+    # Generate the complete HTML with persistent selection support
     html = <<~HTML
-      <div class="reactions-container" style="display: flex; align-items: center; margin: 20px 0; #{alignment_style}">
+      <div id="#{reactions_id}" class="reactions-container" style="display: flex; align-items: center; margin: 20px 0; #{alignment_style}">
           <div class="reactions-buttons" style="display: flex; gap: 2px;">
               #{reaction_buttons_html}
           </div>
@@ -73,35 +76,110 @@ class ReactionsBlockProcessor < Extensions::BlockMacroProcessor
       </div>
 
       <script>
-          function handleReactionClick(reactionType, docName, author) {
-              // Highlight the selected reaction
-              const reactionButtons = document.querySelectorAll('.reaction-button');
+          // Initialize reactions on page load
+          document.addEventListener('DOMContentLoaded', function() {
+              restoreUserReactions('#{reactions_id}');
+          });
+
+          function getStorageKey(reactionsId, reactionType) {
+              return 'reaction_' + reactionsId + '_' + reactionType;
+          }
+
+          function saveUserReaction(reactionsId, reactionType, selected) {
+              const key = getStorageKey(reactionsId, reactionType);
+              if (selected) {
+                  localStorage.setItem(key, 'true');
+              } else {
+                  localStorage.removeItem(key);
+              }
+          }
+
+          function getUserReaction(reactionsId, reactionType) {
+              const key = getStorageKey(reactionsId, reactionType);
+              return localStorage.getItem(key) === 'true';
+          }
+
+          function restoreUserReactions(reactionsId) {
+              const container = document.getElementById(reactionsId);
+              if (!container) return;
+
+              const reactionButtons = container.querySelectorAll('.reaction-button');
+              let hasSelection = false;
+
               reactionButtons.forEach(btn => {
-                  if (btn.classList.contains('reaction-' + reactionType)) {
+                  // Look for classes that match the pattern 'reaction-' followed by a reaction ID
+                  // Exclude 'reaction-button' by checking the class is longer than 'reaction-'.length
+                  const reactionType = Array.from(btn.classList)
+                      .find(cls => cls.startsWith('reaction-') && cls !== 'reaction-button')
+                      ?.replace('reaction-', '');
+                  
+                  if (reactionType && getUserReaction(reactionsId, reactionType)) {
+                      btn.style.transform = 'scale(1.2)';
+                      btn.style.opacity = '1';
+                      hasSelection = true;
+                  } else {
+                      btn.style.transform = 'scale(1)';
+                      btn.style.opacity = hasSelection ? '0.5' : '1';
+                  }
+              });
+          }
+
+
+          function handleReactionClick(reactionType, docName, author, reactionsId) {
+              const container = document.getElementById(reactionsId);
+              const reactionButtons = container.querySelectorAll('.reaction-button');
+              const clickedButton = container.querySelector('.reaction-' + reactionType);
+              
+              // Check if this reaction is already selected
+              const isCurrentlySelected = getUserReaction(reactionsId, reactionType);
+              
+              // Clear all previous selections for this reactions block
+              reactionButtons.forEach(btn => {
+                  // Same fix here - exclude 'reaction-button' class
+                  const btnReactionType = Array.from(btn.classList)
+                      .find(cls => cls.startsWith('reaction-') && cls !== 'reaction-button')
+                      ?.replace('reaction-', '');
+                  if (btnReactionType) {
+                      saveUserReaction(reactionsId, btnReactionType, false);
+                  }
+              });
+
+              // Toggle the clicked reaction
+              const newSelectionState = !isCurrentlySelected;
+              if (newSelectionState) {
+                  saveUserReaction(reactionsId, reactionType, true);
+              }
+
+              // Update visual state
+              reactionButtons.forEach(btn => {
+                  if (btn.classList.contains('reaction-' + reactionType) && newSelectionState) {
                       btn.style.transform = 'scale(1.2)';
                       btn.style.opacity = '1';
                   } else {
                       btn.style.transform = 'scale(1)';
-                      btn.style.opacity = '0.5';
+                      btn.style.opacity = newSelectionState ? '0.5' : '1';
                   }
               });
 
-              // Post the data
-              const data = {
-                  documentName: docName,
-                  author: author,
-                  reactionType: reactionType
-              };
+              // Post the data only if a reaction is selected
+              if (newSelectionState) {
+                  const data = {
+                      documentName: docName,
+                      author: author,
+                      reactionType: reactionType
+                  };
 
-              console.log('Reaction data:', data);
+                  console.log('Reaction data:', data);
 
-              // You can implement actual AJAX post here
-               fetch('/reactions/api/feedback', {
-                   method: 'POST',
-                   headers: { 'Content-Type': 'application/json' },
-                   body: JSON.stringify(data)
-               });
+                  // You can implement actual AJAX post here
+                   fetch('reactions/api/feedback', {
+                       method: 'POST',
+                       headers: { 'Content-Type': 'application/json' },
+                       body: JSON.stringify(data)
+                   });
+              }
           }
+
 
           function showCommentForm(docName, author, reactionType = null) {
               document.getElementById('commentDocName').value = docName;
@@ -155,4 +233,8 @@ class ReactionsBlockProcessor < Extensions::BlockMacroProcessor
 
     create_pass_block(parent, html, {})
   end
+end
+
+Asciidoctor::Extensions.register do
+  block_macro ReactionsBlockProcessor
 end
