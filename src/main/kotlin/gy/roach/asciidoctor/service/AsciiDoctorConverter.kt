@@ -2,6 +2,8 @@ package gy.roach.asciidoctor.service
 
 import gy.roach.asciidoctor.config.ConverterSettings
 import gy.roach.asciidoctor.extension.CopyToClipboardDocinfoProcessor
+import gy.roach.asciidoctor.extension.DocOpsMermaidDocinfoProcessor
+import gy.roach.asciidoctor.extension.MermaidIncludeDocinfoProcessor
 import gy.roach.asciidoctor.extension.ReadingTimeDocinfoProcessor
 import gy.roach.asciidoctor.tabs.BlockSwitchDocinfoProcessor
 import org.asciidoctor.Asciidoctor
@@ -48,6 +50,8 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         asciidoctor.javaExtensionRegistry().docinfoProcessor(BlockSwitchDocinfoProcessor::class.java)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(readingTimeDocinfoProcessor)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(copyToClipboardDocinfoProcessor)
+        asciidoctor.javaExtensionRegistry().docinfoProcessor(DocOpsMermaidDocinfoProcessor::class.java)
+        asciidoctor.javaExtensionRegistry().docinfoProcessor(MermaidIncludeDocinfoProcessor::class.java)
 
         asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
         asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/reactions_block_processor.rb"))

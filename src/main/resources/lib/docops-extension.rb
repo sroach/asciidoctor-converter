@@ -97,6 +97,20 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
                             {})
       end
 
+      # Special handling for mermaid kind
+      if kind == "mermaid"
+        dark = attrs.fetch('useDark', 'false')
+        use_dark = dark.downcase == 'true'
+        scale = attrs.fetch('scale', '1.0')
+        title = attrs.fetch('title', 'Title')
+
+        url = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&type=#{type}&useDark=#{use_dark}&title=#{CGI.escape(title)}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=mermaid.svg"
+
+        mermaid_content = get_content_from_server(url, parent)
+
+        return create_block(parent, :pass, ensure_utf8(mermaid_content), {})
+      end
+
       dark = attrs.fetch('useDark', 'false')
       use_dark = dark.downcase == 'true'
       scale = attrs.fetch('scale', '1.0')
@@ -129,13 +143,6 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
                  # For non-controlled SVGs, still apply alignment
                  "<div style=\"#{get_alignment_style(role)}\"><div style=\"display: inline-block;\">#{ensure_utf8(image)}</div></div>"
                end
-        server_script = <<~SCRIPT
-          <script>
-          window.docOpsServerUrl = '#{webserver}';
-          </script>
-        SCRIPT
-
-        html << server_script
         return create_block(parent, :pass, ensure_utf8(html), {})
       end
     else
