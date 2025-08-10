@@ -21,6 +21,28 @@ class DocOpsMermaidDocinfoProcessor : DocinfoProcessor(){
                     theme: 'neo',
                     look: 'neo'
                 });
+            mermaid.run({
+                querySelector: '.mermaid',
+                postRenderCallback: (id) => {
+                console.log('Post-render callback for diagram:', id);
+                const svg = document.getElementById(id);
+                const container =svg.parentNode;
+    
+                // Initialize Panzoom
+                const panzoomInstance = svgPanZoom(svg, {
+                    controlIconsEnabled: true,
+    
+                    center: true,
+                });
+                var sizes= panzoomInstance.getSizes();
+    
+                container.style.width = sizes.width + 'px';
+                container.style.height = sizes.height + 'px';
+                console.log('Panzoom instance:', panzoomInstance.getSizes());
+                svg.setAttribute('width', sizes.width);
+                svg.setAttribute('height', sizes.height);
+        }
+    });
                 </script>
         """.trimIndent()
 
