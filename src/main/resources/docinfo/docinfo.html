@@ -851,3 +851,164 @@
         tracker.trackPageView(userInfo);
     });
 </script>
+<script>
+    // Collapsible TOC JavaScript
+    document.addEventListener('DOMContentLoaded', function() {
+        const toc = document.getElementById('toc');
+
+        if (!toc) return;
+
+        // Transform the existing TOC structure to be collapsible
+        function initializeCollapsibleTOC() {
+            const tocLinks = toc.querySelectorAll('a');
+            const processedItems = new Set();
+
+            tocLinks.forEach(link => {
+                const listItem = link.parentElement;
+
+                if (processedItems.has(listItem)) return;
+                processedItems.add(listItem);
+
+                // Check if this item has nested lists (children)
+                const nestedList = listItem.querySelector('ul');
+                if (nestedList) {
+                    listItem.classList.add('toc-item', 'has-children');
+                    nestedList.classList.add('toc-list');
+
+                    // Add click handler to the arrow area
+                    link.addEventListener('click', function(e) {
+                        // Only handle clicks on the arrow area (first 20px)
+                        const rect = link.getBoundingClientRect();
+                        const clickX = e.clientX - rect.left;
+
+                        if (clickX <= 20) {
+                            e.preventDefault();
+                            toggleTOCItem(listItem);
+                        }
+                    });
+
+                    // Make nested items collapsible too
+                    const nestedItems = nestedList.querySelectorAll('li');
+                    nestedItems.forEach(nestedItem => {
+                        nestedItem.classList.add('toc-item');
+                        const nestedNestedList = nestedItem.querySelector('ul');
+                        if (nestedNestedList) {
+                            nestedItem.classList.add('has-children');
+                            nestedNestedList.classList.add('toc-list');
+                        }
+                    });
+                } else {
+                    listItem.classList.add('toc-item');
+                }
+            });
+
+            // Initially collapse all items beyond level 1
+            const level2Items = toc.querySelectorAll('.toc-list .toc-item.has-children');
+            level2Items.forEach(item => {
+                // item.classList.remove('expanded'); // Start collapsed
+            });
+        }
+
+        // Toggle a TOC item's expanded/collapsed state
+        function toggleTOCItem(item) {
+            item.classList.toggle('expanded');
+
+            // Update aria attributes for accessibility
+            const link = item.querySelector('a');
+            const isExpanded = item.classList.contains('expanded');
+            link.setAttribute('aria-expanded', isExpanded.toString());
+        }
+
+        // Add control buttons (optional)
+        function addTOCControls() {
+            const tocTitle = toc.querySelector('#toctitle, .title');
+            if (!tocTitle) return;
+
+            const controls = document.createElement('div');
+            controls.className = 'toc-controls';
+
+            const expandAllBtn = document.createElement('button');
+            expandAllBtn.className = 'toc-control-btn';
+            expandAllBtn.textContent = 'Expand All';
+            expandAllBtn.onclick = () => expandAllTOCItems(true);
+
+            const collapseAllBtn = document.createElement('button');
+            collapseAllBtn.className = 'toc-control-btn';
+            collapseAllBtn.textContent = 'Collapse All';
+            collapseAllBtn.onclick = () => expandAllTOCItems(false);
+
+            controls.appendChild(expandAllBtn);
+            controls.appendChild(collapseAllBtn);
+
+            tocTitle.parentNode.insertBefore(controls, tocTitle.nextSibling);
+        }
+
+        // Expand or collapse all TOC items
+        function expandAllTOCItems(expand) {
+            const tocItems = toc.querySelectorAll('.toc-item.has-children');
+            tocItems.forEach(item => {
+                if (expand) {
+                    item.classList.add('expanded');
+                } else {
+                    item.classList.remove('expanded');
+                }
+
+                const link = item.querySelector('a');
+                link.setAttribute('aria-expanded', expand.toString());
+            });
+        }
+
+        // Highlight current section in TOC
+        function highlightCurrentSection() {
+            const sections = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            const tocLinks = toc.querySelectorAll('a[href^="#"]');
+
+            function updateActiveSection() {
+                let currentSection = null;
+                const scrollPos = window.scrollY + 100; // Offset for better UX
+
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (scrollPos >= sectionTop) {
+                        currentSection = section;
+                    }
+                });
+
+                // Remove all active classes
+                tocLinks.forEach(link => link.classList.remove('active'));
+
+                // Add active class to current section
+                if (currentSection && currentSection.id) {
+                    const activeLink = toc.querySelector(`a[href="#${currentSection.id}"]`);
+                    if (activeLink) {
+                        activeLink.classList.add('active');
+
+                        // Expand parent items to show active link
+                        let parent = activeLink.parentElement;
+                        while (parent && parent !== toc) {
+                            if (parent.classList.contains('has-children')) {
+                                parent.classList.add('expanded');
+                            }
+                            parent = parent.parentElement;
+                        }
+                    }
+                }
+            }
+
+            // Update on scroll (throttled)
+            let scrollTimeout;
+            window.addEventListener('scroll', () => {
+                if (scrollTimeout) clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(updateActiveSection, 100);
+            });
+
+            // Initial update
+            updateActiveSection();
+        }
+
+        // Initialize everything
+        initializeCollapsibleTOC();
+        addTOCControls(); // Optional: comment out if you don't want control buttons
+        highlightCurrentSection();
+    });
+</script>
