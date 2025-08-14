@@ -4,11 +4,9 @@
 :icons: font
 :source-highlighter: highlight.js
 
-image:https://img.shields.io/badge/Spring%20Boot-3.5.3-brightgreen.svg[Spring Boot]
-image:https://img.shields.io/badge/Kotlin-2.1.21-blue.svg[Kotlin]
-image:https://img.shields.io/badge/AsciiDoctor-3.0.0-orange.svg[AsciiDoctor]
-image:https://img.shields.io/badge/Java-21-red.svg[Java]
-image:https://img.shields.io/badge/License-MIT-lightgrey.svg[License]
+
+image:https://roach.gy/extension/api/docops/svg?kind=badge&payload=U3ByaW5nJTIwQm9vdCU3QzMuNS40JTdDJTdDJTIzMDYxMzNiJTdDJTIzNmZjNDQxJTdDJTNDU3ByaW5nJTNFJTdDJTIzZmNmY2ZjJTBBS290bGluJTdDMi4xLjIxJTdDJTdDJTIzMDYxMzNiJTdDJTIzMTEwMEZGJTdDJTNDS290bGluJTNFJTdDJTIzZmNmY2ZjJTBBQXNjaWlEb2N0b3IlN0MzLjAuMCU3QyU3QyUyMzA2MTMzYiU3QyUyM0ZGQTUwMCU3QyUzQ2FzY2lpZG9jdG9yJTNFJTdDJTIzZmNmY2ZjJTBBSmF2YSU3QzIxJTdDJTdDJTIzMDYxMzNiJTdDJTIzRkYwMDAwJTdDJTNDSmF2YSUzRSU3QyUyM2ZjZmNmYyUwQUxpY2Vuc2UlN0NNSVQlN0MlN0MlMjMwNjEzM2IlN0MlMjNjY2NjY2MlN0MlM0NKYXZhJTNFJTdDJTIzZmNmY2Zj&type=SVG&useDark=false&title=Title&numChars=24&backend=html5&filename=visualization.svg[]
+
 
 == Introduction
 
