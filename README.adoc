@@ -266,11 +266,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memory-efficient file processing
 - Robust error handling and recovery
 
-== Docker next
+== 🐳 Docker next
 
 Looking at your Spring Boot application, I can see it's an AsciiDoc converter with specific directory configurations and logging setup. Here's the recommended way to dockerize this app:Based on your Spring Boot application that converts AsciiDoc files, here's the recommended way to dockerize it:
 
-== Dockerfile
+== 🐳 Dockerfile
 
 [source,dockerfile]
 ----
@@ -335,7 +335,7 @@ CMD ["java", "-jar", "app.jar"]
 ----
 
 
-== Docker Compose
+== 🐳 Docker Compose
 
 [source,yaml]
 ----
@@ -368,7 +368,7 @@ services:
 ----
 
 
-== Docker-specific Configuration
+== 🐳 Docker-specific Configuration
 
 [source,yaml]
 ----

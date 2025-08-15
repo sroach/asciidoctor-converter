@@ -1011,4 +1011,107 @@
         addTOCControls(); // Optional: comment out if you don't want control buttons
         highlightCurrentSection();
     });
+
+    // TOC Toggle Functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const body = document.body;
+        const toc = document.getElementById('toc');
+
+        // Only add toggle functionality if TOC exists and is in sidebar mode (toc2)
+        if (toc && toc.classList.contains('toc2')) {
+            // Create toggle button
+            const toggleButton = document.createElement('button');
+            toggleButton.className = 'toc-toggle';
+            toggleButton.innerHTML = '☰';
+            toggleButton.setAttribute('aria-label', 'Toggle Table of Contents');
+            toggleButton.setAttribute('title', 'Toggle Table of Contents');
+
+            // Create overlay for mobile
+            const overlay = document.createElement('div');
+            overlay.className = 'toc-overlay';
+
+            // Add elements to DOM
+            body.appendChild(toggleButton);
+            body.appendChild(overlay);
+
+            // Toggle function
+            function toggleTOC() {
+                const isCollapsed = toc.classList.contains('toc-collapsed');
+                const isMobile = window.innerWidth <= 768;
+
+                if (isCollapsed) {
+                    // Show TOC
+                    toc.classList.remove('toc-collapsed');
+                    body.classList.remove('toc-collapsed');
+                    if (isMobile) {
+                        toc.classList.add('toc-mobile-open');
+                        overlay.classList.add('active');
+                    }
+                    toggleButton.innerHTML = '✕';
+                    toggleButton.setAttribute('title', 'Hide Table of Contents');
+                } else {
+                    // Hide TOC
+                    toc.classList.add('toc-collapsed');
+                    body.classList.add('toc-collapsed');
+                    if (isMobile) {
+                        toc.classList.remove('toc-mobile-open');
+                        overlay.classList.remove('active');
+                    }
+                    toggleButton.innerHTML = '☰';
+                    toggleButton.setAttribute('title', 'Show Table of Contents');
+                }
+            }
+
+            // Event listeners
+            toggleButton.addEventListener('click', toggleTOC);
+
+            // Close TOC when clicking overlay (mobile)
+            overlay.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    if (!toc.classList.contains('toc-collapsed')) {
+                        toggleTOC();
+                    }
+                }
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile) {
+                    // On mobile, always start with TOC hidden
+                    if (!toc.classList.contains('toc-collapsed')) {
+                        toc.classList.add('toc-collapsed');
+                        body.classList.add('toc-collapsed');
+                        toc.classList.remove('toc-mobile-open');
+                        overlay.classList.remove('active');
+                        toggleButton.innerHTML = '☰';
+                    }
+                } else {
+                    // On desktop, remove mobile classes
+                    toc.classList.remove('toc-mobile-open');
+                    overlay.classList.remove('active');
+                }
+            });
+
+            // Keyboard support
+            document.addEventListener('keydown', function(e) {
+                // Toggle TOC with Ctrl/Cmd + \
+                if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
+                    e.preventDefault();
+                    toggleTOC();
+                }
+                // Close TOC with Escape key (when open)
+                else if (e.key === 'Escape' && !toc.classList.contains('toc-collapsed')) {
+                    toggleTOC();
+                }
+            });
+
+            // Auto-hide TOC on mobile by default
+            if (window.innerWidth <= 768) {
+                toc.classList.add('toc-collapsed');
+                body.classList.add('toc-collapsed');
+                toggleButton.innerHTML = '☰';
+            }
+        }
+    });
 </script>
