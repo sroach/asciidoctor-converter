@@ -3,9 +3,8 @@ package gy.roach.asciidoctor.service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.File
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CompletableFuture
 
 data class ConversionJob(
     val id: String,
@@ -103,4 +102,69 @@ class ConversionJobService(private val asciiDoctorConverter: AsciiDoctorConverte
      * @return Map of job IDs to ConversionJobs
      */
     fun getAllJobs(): Map<String, ConversionJob> = jobs.toMap()
+
+    fun startEpubConversion(files: List<File>, toDir: String): String {
+        val jobId = UUID.randomUUID().toString()
+        jobs[jobId] = ConversionJob(jobId, ConversionStatus.QUEUED, 0)
+
+        jobs[jobId]?.status = ConversionStatus.IN_PROGRESS
+
+        val future = asciiDoctorConverter.convertToEpubAsync(files, toDir)
+
+        // Monitor and handle completion similar to PDF conversion
+        future.whenComplete { stats, throwable ->
+            if (throwable != null) {
+                logger.error("EPUB conversion job failed: $jobId", throwable)
+                jobs[jobId]?.apply {
+                    this.status = ConversionStatus.FAILED
+                    this.errorMessage = throwable.message
+                }
+            } else {
+                jobs[jobId]?.apply {
+                    this.stats = stats
+                    this.progress = 100
+                    this.status = ConversionStatus.COMPLETED
+                }
+                logger.info("EPUB conversion job completed: $jobId")
+            }
+        }
+
+        return jobId
+    }
+
+    /**
+     * Starts an EPUB conversion job for a single file asynchronously
+     *
+     * @param sourceFile Single file to convert
+     * @param toDir Output directory
+     * @return Job ID
+     */
+    fun startSingleFileEpubConversion(sourceFile: File, toDir: String): String {
+        val jobId = UUID.randomUUID().toString()
+        jobs[jobId] = ConversionJob(jobId, ConversionStatus.QUEUED, 0)
+
+        jobs[jobId]?.status = ConversionStatus.IN_PROGRESS
+
+        val future = asciiDoctorConverter.convertSingleFileToEpubAsync(sourceFile, toDir)
+
+        // Handle completion
+        future.whenComplete { stats, throwable ->
+            if (throwable != null) {
+                logger.error("Single file EPUB conversion job failed: $jobId", throwable)
+                jobs[jobId]?.apply {
+                    this.status = ConversionStatus.FAILED
+                    this.errorMessage = throwable.message
+                }
+            } else {
+                jobs[jobId]?.apply {
+                    this.stats = stats
+                    this.progress = 100
+                    this.status = ConversionStatus.COMPLETED
+                }
+                logger.info("Single file EPUB conversion job completed: $jobId")
+            }
+        }
+
+        return jobId
+    }
 }

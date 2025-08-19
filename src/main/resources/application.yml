@@ -22,6 +22,21 @@ converter:
   panel-server: http://localhost:8010/extension
   panel-webserver: http://localhost:8010/extension
   local-debug: true
+  default-formats:
+    - html
+  epub-settings:
+    title: "Generated EPUB"
+    authors:
+      - "Steve Roach"
+    language: "en"
+    cover-image-path: ""
+    toc-level: 2
+    validate-output: true
+    resource-inclusion:
+      include-images: true
+      include-fonts: true
+      include-stylesheets: true
+      max-image-size: 10485760
 
 sitemap:
   directory-depth: ${SITEMAP_DIRECTORY_DEPTH:2}

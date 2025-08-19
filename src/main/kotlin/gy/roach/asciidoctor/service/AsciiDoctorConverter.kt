@@ -714,4 +714,193 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             }
         }
     }
+
+    private fun buildEpubOptions(attrs: Attributes): Options {
+        return Options.builder()
+            .backend("epub3")
+            .attributes(attrs)
+            .safe(SafeMode.UNSAFE)
+            .build()
+    }
+
+    /**
+     * Asynchronously converts a list of files to EPUB format.
+     *
+     * @param files The list of AsciiDoc files to convert
+     * @param toDir The directory where the EPUBs will be written
+     * @return A CompletableFuture that will complete when all conversions are done
+     */
+    @Async
+    fun convertToEpubAsync(files: List<File>, toDir: String): CompletableFuture<ConversionStats> {
+        val stats = ConversionStats()
+        val future = CompletableFuture<ConversionStats>()
+
+        try {
+            val maxConcurrentConversions = 2
+            val executor = Executors.newFixedThreadPool(maxConcurrentConversions)
+
+            val futures = files.map { file ->
+                CompletableFuture.supplyAsync({
+                    try {
+                        val targetDir = File(toDir)
+                        if (!targetDir.exists()) {
+                            targetDir.mkdirs()
+                        }
+
+                        val epubFileName = file.nameWithoutExtension + ".epub"
+                        val targetFile = File(targetDir, epubFileName)
+                        targetFile.parentFile?.mkdirs()
+
+                        val options = buildEpubOptions(buildEpubAttributes())
+                        options.setMkDirs(true)
+                        options.setToDir(targetFile.parentFile.absolutePath)
+
+                        // Convert the file with EPUB3 backend
+                        val asciidoctor = Asciidoctor.Factory.create()
+                        asciidoctor.convertFile(file, options)
+
+                        synchronized(stats) {
+                            stats.filesConverted++
+                        }
+                        logger.info("Successfully converted file to EPUB: ${file.name}")
+                        true
+                    } catch (e: Exception) {
+                        synchronized(stats) {
+                            stats.filesFailed++
+                            stats.failedFiles.add(file.name)
+                        }
+                        logger.error("Failed to convert file to EPUB: ${file.name}", e)
+                        false
+                    }
+                }, executor)
+            }
+
+            CompletableFuture.allOf(*futures.toTypedArray())
+                .orTimeout(30, TimeUnit.MINUTES)
+                .whenComplete { _, throwable ->
+                    executor.shutdown()
+                    if (throwable != null) {
+                        logger.error("EPUB conversion failed", throwable)
+                        future.completeExceptionally(throwable)
+                    } else {
+                        logger.info("EPUB conversion completed: ${stats.filesConverted} files converted, ${stats.filesFailed} files failed")
+                        future.complete(stats)
+                    }
+                }
+        } catch (e: Exception) {
+            logger.error("EPUB conversion failed", e)
+            future.completeExceptionally(e)
+        }
+
+        return future
+    }
+
+    /**
+     * Converts a single AsciiDoc file to EPUB format synchronously.
+     *
+     * @param sourceFile The AsciiDoc file to convert
+     * @param outputDir The directory where the EPUB will be written
+     * @return ConversionStats with the result of the conversion
+     */
+    fun convertSingleFileToEpub(sourceFile: File, outputDir: String): ConversionStats {
+        val stats = ConversionStats()
+
+        if (!sourceFile.exists() || !sourceFile.isFile || sourceFile.extension != "adoc") {
+            stats.filesFailed++
+            stats.failedFiles.add("Invalid source file: ${sourceFile.name}")
+            logger.error("Invalid source file for EPUB conversion: ${sourceFile.absolutePath}")
+            return stats
+        }
+
+        try {
+            val targetDir = File(outputDir)
+            if (!targetDir.exists()) {
+                targetDir.mkdirs()
+            }
+
+            // Calculate the output EPUB file path
+            val epubFileName = sourceFile.nameWithoutExtension + ".epub"
+            val targetFile = File(targetDir, epubFileName)
+
+            // Create parent directories if they don't exist
+            targetFile.parentFile?.mkdirs()
+
+            val options = buildEpubOptions(buildEpubAttributes())
+            options.setMkDirs(true)
+            options.setToDir(targetFile.parentFile.absolutePath)
+
+            // Convert the file
+            val asciidoctor = Asciidoctor.Factory.create()
+            asciidoctor.requireLibrary("asciidoctor-epub3")
+            asciidoctor.convertFile(sourceFile, options)
+
+            stats.filesConverted++
+            logger.info("Successfully converted single file to EPUB: ${sourceFile.name} -> ${epubFileName}")
+
+        } catch (e: Exception) {
+            stats.filesFailed++
+            stats.failedFiles.add(sourceFile.name)
+            logger.error("Failed to convert single file to EPUB: ${sourceFile.name}", e)
+        }
+
+        return stats
+    }
+
+    /**
+     * Asynchronously converts a single AsciiDoc file to EPUB format.
+     *
+     * @param sourceFile The AsciiDoc file to convert
+     * @param outputDir The directory where the EPUB will be written
+     * @return A CompletableFuture that will complete when the conversion is done
+     */
+    @Async
+    fun convertSingleFileToEpubAsync(sourceFile: File, outputDir: String): CompletableFuture<ConversionStats> {
+        val future = CompletableFuture<ConversionStats>()
+
+        try {
+            val stats = convertSingleFileToEpub(sourceFile, outputDir)
+            future.complete(stats)
+        } catch (e: Exception) {
+            logger.error("Async EPUB conversion failed for single file: ${sourceFile.name}", e)
+            future.completeExceptionally(e)
+        }
+
+        return future
+    }
+    private fun buildEpubAttributes(): Attributes {
+        val docinfoDir = this::class.java.classLoader.getResource("docinfo")?.path
+            ?: "src/main/resources/docinfo"
+
+        return Attributes.builder()
+            .sourceHighlighter("highlightjs")
+            .allowUriRead(true)
+            .linkAttrs(true)
+            .attribute("local-debug", converterSettings.localDebug.toString())
+            .attribute("panel-server", converterSettings.panelServer)
+            .attribute("panel-webserver", converterSettings.panelWebserver)
+            .attribute("ebook-format", "epub3")
+            .attribute("ebook-validate", converterSettings.epubSettings?.validateOutput ?: true)
+            .dataUri(false) // EPUB should embed resources differently
+            .attribute("docinfodir", docinfoDir)
+            .attribute("docinfo", "shared")
+            // EPUB-specific metadata attributes
+            .attribute("epub-chapter-level", 1)
+            .attribute("toc-level", converterSettings.epubSettings?.tocLevel ?: 2)
+            .apply {
+                // Add optional EPUB metadata if configured
+                converterSettings.epubSettings?.let { epubSettings ->
+                    epubSettings.title?.let { attribute("epub-title-override", it) }
+                    if (epubSettings.authors.isNotEmpty()) {
+                        attribute("author", epubSettings.authors.joinToString(", "))
+                    }
+                    attribute("lang", epubSettings.language)
+                    epubSettings.coverImagePath?.let {
+                        if (File(it).exists()) {
+                            attribute("front-cover-image", it)
+                        }
+                    }
+                }
+            }
+            .build()
+    }
 }
