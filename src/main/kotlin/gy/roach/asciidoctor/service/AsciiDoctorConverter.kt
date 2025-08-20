@@ -831,6 +831,16 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
             // Convert the file
             val asciidoctor = Asciidoctor.Factory.create()
+            asciidoctor.requireLibrary("asciidoctor-diagram")
+            asciidoctor.javaExtensionRegistry().docinfoProcessor(BlockSwitchDocinfoProcessor::class.java)
+            asciidoctor.javaExtensionRegistry().docinfoProcessor(readingTimeDocinfoProcessor)
+            asciidoctor.javaExtensionRegistry().docinfoProcessor(copyToClipboardDocinfoProcessor)
+            asciidoctor.javaExtensionRegistry().docinfoProcessor(DocOpsMermaidDocinfoProcessor::class.java)
+            asciidoctor.javaExtensionRegistry().docinfoProcessor(MermaidIncludeDocinfoProcessor::class.java)
+
+            asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
+            asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/reactions_block_processor.rb"))
+
             asciidoctor.requireLibrary("asciidoctor-epub3")
             asciidoctor.convertFile(sourceFile, options)
 

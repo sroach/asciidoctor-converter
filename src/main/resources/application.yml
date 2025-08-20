@@ -31,7 +31,7 @@ converter:
     language: "en"
     cover-image-path: ""
     toc-level: 2
-    validate-output: true
+    validate-output: false
     resource-inclusion:
       include-images: true
       include-fonts: true

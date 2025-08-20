@@ -80,6 +80,19 @@
             <artifactId>asciidoctorj-diagram</artifactId>
             <version>3.0.1</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.asciidoctor/asciidoctorj-diagram-ditaamini -->
+        <dependency>
+            <groupId>org.asciidoctor</groupId>
+            <artifactId>asciidoctorj-diagram-ditaamini</artifactId>
+            <version>1.0.3</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.asciidoctor/asciidoctorj-diagram-plantuml -->
+        <dependency>
+            <groupId>org.asciidoctor</groupId>
+            <artifactId>asciidoctorj-diagram-plantuml</artifactId>
+            <version>1.2025.3</version>
+            <scope>runtime</scope>
+        </dependency>
         <dependency>
             <groupId>org.asciidoctor</groupId>
             <artifactId>asciidoctorj-pdf</artifactId>
