@@ -445,6 +445,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
                     val options = buildOptions(buildAttributes())
                     options.setMkDirs(true)
+                    options.setBaseDir(file.parentFile.absolutePath)
 
                     // Set the output directory to the parent directory of the target file
                     // to preserve the directory structure
