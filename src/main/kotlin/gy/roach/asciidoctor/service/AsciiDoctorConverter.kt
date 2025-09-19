@@ -55,6 +55,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
         asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
         asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/reactions_block_processor.rb"))
+        asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/page_navigation_postprocessor.rb"))
     }
 
     /**
