@@ -475,7 +475,8 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
       image_urls << {
         url: url,
         title: title,
-        kind: block_kind
+        kind: block_kind,
+        content: block_content
       }
     end
 
@@ -494,6 +495,7 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
   end
 
   private
+
 
   def parse_nested_blocks(lines, debug = false)
     blocks = []
@@ -556,12 +558,19 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
       img_url = img_data[:url]
       title = img_data[:title]
       kind = img_data[:kind]
+      content = img_data[:content]
       item_id = "gallery-item-#{gallery_id}-#{index}"
+
+      # Escape content for HTML attribute
+      escaped_content = CGI.escape_html(content)
 
       html << "<div class=\"gallery-item\" data-kind=\"#{kind}\" id=\"#{item_id}\">"
       html << "<div class=\"gallery-item-header\">"
       html << "<div class=\"gallery-item-title\">#{ensure_utf8(title)}</div>"
+      html << "<div class=\"gallery-item-actions\">"
+      html << "<button class=\"gallery-content-btn\" onclick=\"showcaseGallery.showContent('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}', '#{kind}', this.getAttribute('data-content'))\" data-content=\"#{escaped_content}\" title=\"View content\">{ }</button>"
       html << "<button class=\"gallery-expand-btn\" onclick=\"showcaseGallery.expandItem('#{item_id}', '#{img_url}', '#{ensure_utf8(title).gsub("'", "\\\\'")}')\" title=\"Expand to fullscreen\">⛶</button>"
+      html << "</div>"
       html << "</div>"
       html << "<div class=\"gallery-item-image\">"
       html << "<img src=\"#{img_url}\" alt=\"#{ensure_utf8(title)}\" loading=\"lazy\" />"
@@ -571,10 +580,31 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
 
     html << "</div>"
     html << get_gallery_modal
+    html << get_content_modal
     html << get_gallery_styles
     html << get_gallery_javascript
 
     html.join("\n")
+  end
+
+  def get_content_modal
+    <<~HTML
+      <div id="showcase-content-modal" class="showcase-modal" style="display: none;">
+        <div class="showcase-modal-overlay" onclick="showcaseGallery.closeContentModal()"></div>
+        <div class="showcase-modal-content showcase-content-modal-content">
+          <div class="showcase-modal-header">
+            <span class="showcase-modal-title"></span>
+            <button class="showcase-modal-close" onclick="showcaseGallery.closeContentModal()" title="Close">×</button>
+          </div>
+          <div class="showcase-modal-body showcase-content-body">
+            <pre class="showcase-content-pre"><code class="showcase-content-code"></code></pre>
+          </div>
+          <div class="showcase-content-footer">
+            <button class="showcase-copy-btn" onclick="showcaseGallery.copyContent()" title="Copy to clipboard">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+    HTML
   end
 
   def get_gallery_modal
@@ -635,7 +665,14 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
           flex: 1;
         }
         
-        .gallery-expand-btn {
+        .gallery-item-actions {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+        }
+        
+        .gallery-expand-btn,
+        .gallery-content-btn {
           background: none;
           border: none;
           font-size: 1.3rem;
@@ -646,8 +683,18 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
           line-height: 1;
         }
         
+        .gallery-content-btn {
+          color: #9b59b6;
+          font-weight: bold;
+        }
+        
         .gallery-expand-btn:hover {
           color: #2980b9;
+          transform: scale(1.2);
+        }
+        
+        .gallery-content-btn:hover {
+          color: #8e44ad;
           transform: scale(1.2);
         }
         
@@ -703,6 +750,11 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
           overflow: hidden;
         }
         
+        .showcase-content-modal-content {
+          max-width: 90vw;
+          width: 1000px;
+        }
+        
         .showcase-modal-header {
           display: flex;
           justify-content: space-between;
@@ -747,6 +799,58 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
           background: white;
         }
         
+        .showcase-content-body {
+          padding: 0;
+          align-items: stretch;
+          justify-content: stretch;
+          background: #282c34;
+        }
+        
+        .showcase-content-pre {
+          margin: 0;
+          width: 100%;
+          max-height: calc(95vh - 150px);
+          overflow: auto;
+        }
+        
+        .showcase-content-code {
+          display: block;
+          padding: 1.5rem;
+          color: #abb2bf;
+          font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+          font-size: 0.9rem;
+          line-height: 1.5;
+          white-space: pre;
+          tab-size: 4;
+        }
+        
+        .showcase-content-footer {
+          padding: 1rem 1.5rem;
+          border-top: 1px solid #e0e0e0;
+          background: #f8f9fa;
+          display: flex;
+          justify-content: flex-end;
+        }
+        
+        .showcase-copy-btn {
+          background: #3498db;
+          color: white;
+          border: none;
+          padding: 0.5rem 1rem;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.95rem;
+          transition: background 0.2s;
+        }
+        
+        .showcase-copy-btn:hover {
+          background: #2980b9;
+        }
+        
+        .showcase-copy-btn.copied {
+          background: #27ae60;
+        }
+        
         .showcase-modal-image {
           max-width: 100%;
           max-height: calc(95vh - 100px);
@@ -769,15 +873,22 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
           .showcase-modal-body {
             padding: 1rem;
           }
+          
+          .showcase-content-modal-content {
+            width: 100vw;
+          }
         }
       </style>
     CSS
   end
 
+
   def get_gallery_javascript
     <<~JAVASCRIPT
       <script>
         window.showcaseGallery = window.showcaseGallery || (function() {
+          let currentContent = '';
+          
           return {
             expandItem: function(itemId, imageUrl, title) {
               const modal = document.getElementById('showcase-gallery-modal');
@@ -791,7 +902,6 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
               modal.style.display = 'flex';
               document.body.style.overflow = 'hidden';
               
-              // Close on ESC key
               document.addEventListener('keydown', this.handleEscKey);
             },
             
@@ -803,9 +913,61 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
               document.removeEventListener('keydown', this.handleEscKey);
             },
             
+            showContent: function(itemId, title, kind, content) {
+              const modal = document.getElementById('showcase-content-modal');
+              const modalTitle = modal.querySelector('.showcase-modal-title');
+              const codeElement = modal.querySelector('.showcase-content-code');
+              
+              // Decode HTML entities
+              const textarea = document.createElement('textarea');
+              textarea.innerHTML = content;
+              const decodedContent = textarea.value;
+              
+              currentContent = decodedContent;
+              
+              modalTitle.textContent = title + ' (' + kind + ')';
+              codeElement.textContent = decodedContent;
+              
+              modal.style.display = 'flex';
+              document.body.style.overflow = 'hidden';
+              
+              document.addEventListener('keydown', this.handleContentEscKey);
+            },
+            
+            closeContentModal: function() {
+              const modal = document.getElementById('showcase-content-modal');
+              modal.style.display = 'none';
+              document.body.style.overflow = '';
+              currentContent = '';
+              
+              document.removeEventListener('keydown', this.handleContentEscKey);
+            },
+            
+            copyContent: function() {
+              const btn = document.querySelector('.showcase-copy-btn');
+              
+              navigator.clipboard.writeText(currentContent).then(function() {
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('copied');
+                
+                setTimeout(function() {
+                  btn.textContent = '📋 Copy';
+                  btn.classList.remove('copied');
+                }, 2000);
+              }).catch(function(err) {
+                console.error('Failed to copy:', err);
+              });
+            },
+            
             handleEscKey: function(e) {
               if (e.key === 'Escape') {
                 showcaseGallery.closeModal();
+              }
+            },
+            
+            handleContentEscKey: function(e) {
+              if (e.key === 'Escape') {
+                showcaseGallery.closeContentModal();
               }
             }
           };
