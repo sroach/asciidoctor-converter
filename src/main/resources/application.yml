@@ -20,7 +20,7 @@ github:
 
 converter:
   panel-server: http://localhost:8010/extension
-  panel-webserver: http://localhost:8010/extension
+  panel-webserver: https://roach.gy/extension
   local-debug: true
   default-formats:
     - html

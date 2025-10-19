@@ -402,11 +402,513 @@ end
 # Register the extension
 Extensions.register do
   block DocOpsBlockProcessor
+  block DocOpsShowcaseProcessor
 end
 
 
 Asciidoctor::Extensions.register do
   block DocOpsBlockProcessor
+  block DocOpsShowcaseProcessor
 end if defined? Asciidoctor::Extensions
+
+class DocOpsShowcaseProcessor < Extensions::BlockProcessor
+  include Asciidoctor::Logging
+  use_dsl
+
+  named :gallery
+  on_contexts :example
+  content_model :compound
+  positional_attributes 'kind'
+
+  def initialize(*args)
+    super(*args)
+    Encoding.default_external = Encoding::UTF_8
+    Encoding.default_internal = Encoding::UTF_8
+  end
+
+  def process(parent, reader, attrs)
+    kind = attrs['kind']
+
+    # Only process showcase blocks
+    return nil unless kind == 'showcase'
+
+    doc = parent.document
+    docfile = doc.attr('docfile')
+    filename = File.basename(docfile || '', '.*') if docfile
+
+    local_debug = get_debug_setting(parent)
+    server = get_server_url(parent)
+    webserver = get_webserver_url(parent)
+    backend = doc.attr('backend') || 'html5'
+
+    # Check if server is available
+    unless server_available?(parent, server)
+      return create_block(parent, :paragraph, "DocOps Server Unavailable! 😵", {})
+    end
+
+    # Parse nested docops blocks
+    image_urls = []
+    lines = reader.read_lines
+
+    # Process nested blocks
+    nested_blocks = parse_nested_blocks(lines, local_debug)
+
+    nested_blocks.each do |block_data|
+      block_kind = block_data[:kind]
+      block_content = block_data[:content]
+      block_attrs = block_data[:attrs]
+
+      next if block_kind.nil? || block_content.empty?
+
+      # Generate image URL similar to line 129
+      payload = compress_string(block_content)
+      type = get_type(parent)
+
+      dark = block_attrs.fetch('useDark', 'false')
+      use_dark = dark.downcase == 'true'
+      scale = block_attrs.fetch('scale', '1.0')
+      title = block_attrs.fetch('title', block_kind.capitalize)
+      use_glass = block_attrs.fetch('useGlass', 'true') == 'false'
+
+      url = "#{webserver}/api/docops/svg?kind=#{block_kind}&payload=#{payload}&scale=#{scale}&type=#{type}&useDark=#{use_dark}&title=#{CGI.escape(title)}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=#{block_kind}.svg"
+
+      image_urls << {
+        url: url,
+        title: title,
+        kind: block_kind
+      }
+    end
+
+    # Generate output based on backend
+    if backend.downcase == 'html5'
+      html_content = generate_html_gallery(image_urls, parent)
+      return create_block(parent, :pass, ensure_utf8(html_content), {})
+    else
+      # Generate AsciiDoc table for PDF and other backends
+      table_content = generate_asciidoc_table(image_urls)
+      # Parse the table content as AsciiDoc
+      block = create_block(parent, :open, nil, {})
+      parse_content_lines(block, table_content.split("\n"))
+      return block
+    end
+  end
+
+  private
+
+  def parse_nested_blocks(lines, debug = false)
+    blocks = []
+    current_block = nil
+    in_listing = false
+
+    lines.each do |line|
+      # Match [docops,kind] format
+      if line.strip =~ /^\[docops,\s*(\w+)(?:,\s*(.+))?\]$/
+        # Save previous block if exists
+        blocks << current_block if current_block && !current_block[:content].empty?
+
+        kind = $1
+        attrs_str = $2
+
+        # Parse additional attributes
+        attrs = {}
+        if attrs_str
+          attrs_str.scan(/(\w+)=["']?([^"',\]]+)["']?/).each do |key, value|
+            attrs[key] = value
+          end
+        end
+
+        current_block = {
+          kind: kind,
+          content: '',
+          attrs: attrs
+        }
+        in_listing = false
+        next
+      end
+
+      # Start of listing block
+      if line.strip == '....'
+        in_listing = !in_listing
+        next
+      end
+
+      # Collect content if we're in a block and between listing delimiters
+      if current_block && in_listing
+        current_block[:content] += line + "\n"
+      end
+    end
+
+    # Add the last block
+    blocks << current_block if current_block && !current_block[:content].empty?
+
+    blocks
+  end
+
+  def generate_html_gallery(image_urls, parent)
+    return "<p>No images to display</p>" if image_urls.empty?
+
+    gallery_id = "docops-gallery-#{SecureRandom.hex(8)}"
+
+    html = []
+    html << "<div class=\"docops-showcase-gallery\" id=\"#{gallery_id}\">"
+
+    image_urls.each_with_index do |img_data, index|
+      img_url = img_data[:url]
+      title = img_data[:title]
+      kind = img_data[:kind]
+      item_id = "gallery-item-#{gallery_id}-#{index}"
+
+      html << "<div class=\"gallery-item\" data-kind=\"#{kind}\" id=\"#{item_id}\">"
+      html << "<div class=\"gallery-item-header\">"
+      html << "<div class=\"gallery-item-title\">#{ensure_utf8(title)}</div>"
+      html << "<button class=\"gallery-expand-btn\" onclick=\"showcaseGallery.expandItem('#{item_id}', '#{img_url}', '#{ensure_utf8(title).gsub("'", "\\\\'")}')\" title=\"Expand to fullscreen\">⛶</button>"
+      html << "</div>"
+      html << "<div class=\"gallery-item-image\">"
+      html << "<img src=\"#{img_url}\" alt=\"#{ensure_utf8(title)}\" loading=\"lazy\" />"
+      html << "</div>"
+      html << "</div>"
+    end
+
+    html << "</div>"
+    html << get_gallery_modal
+    html << get_gallery_styles
+    html << get_gallery_javascript
+
+    html.join("\n")
+  end
+
+  def get_gallery_modal
+    <<~HTML
+      <div id="showcase-gallery-modal" class="showcase-modal" style="display: none;">
+        <div class="showcase-modal-overlay" onclick="showcaseGallery.closeModal()"></div>
+        <div class="showcase-modal-content">
+          <div class="showcase-modal-header">
+            <span class="showcase-modal-title"></span>
+            <button class="showcase-modal-close" onclick="showcaseGallery.closeModal()" title="Close">×</button>
+          </div>
+          <div class="showcase-modal-body">
+            <img src="" alt="" class="showcase-modal-image" />
+          </div>
+        </div>
+      </div>
+    HTML
+  end
+
+  def get_gallery_styles
+    <<~CSS
+      <style>
+        .docops-showcase-gallery {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 2rem;
+          padding: 2rem;
+          margin: 2rem 0;
+        }
+        
+        .gallery-item {
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          padding: 1rem;
+          background: #fff;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .gallery-item:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .gallery-item-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 2px solid #3498db;
+        }
+        
+        .gallery-item-title {
+          font-weight: bold;
+          font-size: 1.1rem;
+          color: #2c3e50;
+          flex: 1;
+        }
+        
+        .gallery-expand-btn {
+          background: none;
+          border: none;
+          font-size: 1.3rem;
+          cursor: pointer;
+          padding: 0.25rem 0.5rem;
+          color: #3498db;
+          transition: color 0.2s, transform 0.2s;
+          line-height: 1;
+        }
+        
+        .gallery-expand-btn:hover {
+          color: #2980b9;
+          transform: scale(1.2);
+        }
+        
+        .gallery-item-image {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 200px;
+        }
+        
+        .gallery-item-image img {
+          max-width: 100%;
+          height: auto;
+          cursor: pointer;
+        }
+        
+        .gallery-item-image img:hover {
+          opacity: 0.9;
+        }
+        
+        /* Modal Styles */
+        .showcase-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 10000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .showcase-modal-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.8);
+          backdrop-filter: blur(4px);
+        }
+        
+        .showcase-modal-content {
+          position: relative;
+          background: white;
+          border-radius: 12px;
+          max-width: 95vw;
+          max-height: 95vh;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+          overflow: hidden;
+        }
+        
+        .showcase-modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1rem 1.5rem;
+          border-bottom: 1px solid #e0e0e0;
+          background: #f8f9fa;
+        }
+        
+        .showcase-modal-title {
+          font-weight: bold;
+          font-size: 1.2rem;
+          color: #2c3e50;
+        }
+        
+        .showcase-modal-close {
+          background: none;
+          border: none;
+          font-size: 2rem;
+          cursor: pointer;
+          padding: 0;
+          width: 2rem;
+          height: 2rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #7f8c8d;
+          transition: color 0.2s;
+          line-height: 1;
+        }
+        
+        .showcase-modal-close:hover {
+          color: #e74c3c;
+        }
+        
+        .showcase-modal-body {
+          padding: 2rem;
+          overflow: auto;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background: white;
+        }
+        
+        .showcase-modal-image {
+          max-width: 100%;
+          max-height: calc(95vh - 100px);
+          width: auto;
+          height: auto;
+        }
+        
+        @media (max-width: 768px) {
+          .docops-showcase-gallery {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+          }
+          
+          .showcase-modal-content {
+            max-width: 100vw;
+            max-height: 100vh;
+            border-radius: 0;
+          }
+          
+          .showcase-modal-body {
+            padding: 1rem;
+          }
+        }
+      </style>
+    CSS
+  end
+
+  def get_gallery_javascript
+    <<~JAVASCRIPT
+      <script>
+        window.showcaseGallery = window.showcaseGallery || (function() {
+          return {
+            expandItem: function(itemId, imageUrl, title) {
+              const modal = document.getElementById('showcase-gallery-modal');
+              const modalTitle = modal.querySelector('.showcase-modal-title');
+              const modalImage = modal.querySelector('.showcase-modal-image');
+              
+              modalTitle.textContent = title;
+              modalImage.src = imageUrl;
+              modalImage.alt = title;
+              
+              modal.style.display = 'flex';
+              document.body.style.overflow = 'hidden';
+              
+              // Close on ESC key
+              document.addEventListener('keydown', this.handleEscKey);
+            },
+            
+            closeModal: function() {
+              const modal = document.getElementById('showcase-gallery-modal');
+              modal.style.display = 'none';
+              document.body.style.overflow = '';
+              
+              document.removeEventListener('keydown', this.handleEscKey);
+            },
+            
+            handleEscKey: function(e) {
+              if (e.key === 'Escape') {
+                showcaseGallery.closeModal();
+              }
+            }
+          };
+        })();
+      </script>
+    JAVASCRIPT
+  end
+
+  def generate_asciidoc_table(image_urls)
+    return "" if image_urls.empty?
+
+    # Calculate number of columns (2 for reasonable layout in PDF)
+    cols = 2
+
+    lines = []
+    lines << "[cols=\"#{cols}*\", frame=none, grid=none]"
+    lines << "|==="
+
+    image_urls.each_slice(cols) do |row_images|
+      # Title row
+      title_row = row_images.map { |img| "a| *#{img[:title]}*" }.join(" ")
+      lines << title_row
+
+      # Image row
+      image_row = row_images.map do |img|
+        "a| image::#{img[:url]}[align=center,opts=inline]"
+      end.join(" ")
+      lines << image_row
+    end
+
+    lines << "|==="
+
+    lines.join("\n")
+  end
+
+
+  def parse_content_lines(block, lines)
+    parsed_lines = Asciidoctor::Reader.new(lines)
+    while parsed_lines.has_more_lines?
+      block << create_block(block, :paragraph, parsed_lines.read_line, {})
+    end
+  end
+
+  # Helper methods (reused from DocOpsBlockProcessor)
+  def get_debug_setting(parent)
+    debug = parent.document.attr('local-debug')
+    debug&.downcase == 'true'
+  end
+
+  def get_server_url(parent)
+    parent.document.attr('panel-server')
+  end
+
+  def get_webserver_url(parent)
+    parent.document.attr('panel-webserver')
+  end
+
+  def get_type(parent)
+    backend = parent.document.attr('backend') || 'html5'
+    backend.downcase == 'pdf' ? 'PDF' : 'SVG'
+  end
+
+  def server_available?(parent, server_url)
+    local_debug = get_debug_setting(parent)
+    uri = URI("#{server_url}/api/ping")
+
+    begin
+      response = Net::HTTP.start(uri.hostname, uri.port,
+                                 use_ssl: uri.scheme == 'https',
+                                 read_timeout: 60,
+                                 open_timeout: 20) do |http|
+        http.get(uri.path)
+      end
+
+      response.code == '200'
+    rescue => e
+      false
+    end
+  end
+
+  def compress_string(body)
+    compressed = StringIO.new
+    gz = Zlib::GzipWriter.new(compressed)
+    gz.write(body)
+    gz.close
+    Base64.urlsafe_encode64(compressed.string)
+  end
+
+  def ensure_utf8(str)
+    return str if str.nil?
+    return str if str.encoding == Encoding::UTF_8 && str.valid_encoding?
+
+    if str.encoding == Encoding::ASCII_8BIT
+      begin
+        utf8_str = str.force_encoding('UTF-8')
+        return utf8_str if utf8_str.valid_encoding?
+      rescue
+        # Fall through to replacement strategy
+      end
+    end
+
+    str.to_s.force_encoding('UTF-8').encode('UTF-8', invalid: :replace, undef: :replace)
+  end
+end
 
 
