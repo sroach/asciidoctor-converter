@@ -561,6 +561,9 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
       content = img_data[:content]
       item_id = "gallery-item-#{gallery_id}-#{index}"
 
+      # Fetch SVG content inline
+      svg_content = get_content_from_server(img_url, parent)
+
       # Escape content for HTML attribute
       escaped_content = CGI.escape_html(content)
 
@@ -569,11 +572,11 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
       html << "<div class=\"gallery-item-title\">#{ensure_utf8(title)}</div>"
       html << "<div class=\"gallery-item-actions\">"
       html << "<button class=\"gallery-content-btn\" onclick=\"showcaseGallery.showContent('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}', '#{kind}', this.getAttribute('data-content'))\" data-content=\"#{escaped_content}\" title=\"View content\">{ }</button>"
-      html << "<button class=\"gallery-expand-btn\" onclick=\"showcaseGallery.expandItem('#{item_id}', '#{img_url}', '#{ensure_utf8(title).gsub("'", "\\\\'")}')\" title=\"Expand to fullscreen\">⛶</button>"
+      html << "<button class=\"gallery-expand-btn\" onclick=\"showcaseGallery.expandItem('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}')\" title=\"Expand to fullscreen\">⛶</button>"
       html << "</div>"
       html << "</div>"
       html << "<div class=\"gallery-item-image\">"
-      html << "<img src=\"#{img_url}\" alt=\"#{ensure_utf8(title)}\" loading=\"lazy\" />"
+      html << ensure_utf8(svg_content)
       html << "</div>"
       html << "</div>"
     end
@@ -581,8 +584,6 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
     html << "</div>"
     html << get_gallery_modal
     html << get_content_modal
-    html << get_gallery_styles
-    html << get_gallery_javascript
 
     html.join("\n")
   end
@@ -617,364 +618,12 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
             <button class="showcase-modal-close" onclick="showcaseGallery.closeModal()" title="Close">×</button>
           </div>
           <div class="showcase-modal-body">
-            <img src="" alt="" class="showcase-modal-image" />
           </div>
         </div>
       </div>
     HTML
   end
 
-  def get_gallery_styles
-    <<~CSS
-      <style>
-        .docops-showcase-gallery {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 2rem;
-          padding: 2rem;
-          margin: 2rem 0;
-        }
-        
-        .gallery-item {
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          padding: 1rem;
-          background: #fff;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .gallery-item:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        .gallery-item-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1rem;
-          padding-bottom: 0.5rem;
-          border-bottom: 2px solid #3498db;
-        }
-        
-        .gallery-item-title {
-          font-weight: bold;
-          font-size: 1.1rem;
-          color: #2c3e50;
-          flex: 1;
-        }
-        
-        .gallery-item-actions {
-          display: flex;
-          gap: 0.5rem;
-          align-items: center;
-        }
-        
-        .gallery-expand-btn,
-        .gallery-content-btn {
-          background: none;
-          border: none;
-          font-size: 1.3rem;
-          cursor: pointer;
-          padding: 0.25rem 0.5rem;
-          color: #3498db;
-          transition: color 0.2s, transform 0.2s;
-          line-height: 1;
-        }
-        
-        .gallery-content-btn {
-          color: #9b59b6;
-          font-weight: bold;
-        }
-        
-        .gallery-expand-btn:hover {
-          color: #2980b9;
-          transform: scale(1.2);
-        }
-        
-        .gallery-content-btn:hover {
-          color: #8e44ad;
-          transform: scale(1.2);
-        }
-        
-        .gallery-item-image {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 200px;
-        }
-        
-        .gallery-item-image img {
-          max-width: 100%;
-          height: auto;
-          cursor: pointer;
-        }
-        
-        .gallery-item-image img:hover {
-          opacity: 0.9;
-        }
-        
-        /* Modal Styles */
-        .showcase-modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: 10000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .showcase-modal-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.8);
-          backdrop-filter: blur(4px);
-        }
-        
-        .showcase-modal-content {
-          position: relative;
-          background: white;
-          border-radius: 12px;
-          max-width: 95vw;
-          max-height: 95vh;
-          display: flex;
-          flex-direction: column;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-          overflow: hidden;
-        }
-        
-        .showcase-content-modal-content {
-          max-width: 90vw;
-          width: 1000px;
-        }
-        
-        .showcase-modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.5rem;
-          border-bottom: 1px solid #e0e0e0;
-          background: #f8f9fa;
-        }
-        
-        .showcase-modal-title {
-          font-weight: bold;
-          font-size: 1.2rem;
-          color: #2c3e50;
-        }
-        
-        .showcase-modal-close {
-          background: none;
-          border: none;
-          font-size: 2rem;
-          cursor: pointer;
-          padding: 0;
-          width: 2rem;
-          height: 2rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #7f8c8d;
-          transition: color 0.2s;
-          line-height: 1;
-        }
-        
-        .showcase-modal-close:hover {
-          color: #e74c3c;
-        }
-        
-        .showcase-modal-body {
-          padding: 2rem;
-          overflow: auto;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          background: white;
-        }
-        
-        .showcase-content-body {
-          padding: 0;
-          align-items: stretch;
-          justify-content: stretch;
-          background: #282c34;
-        }
-        
-        .showcase-content-pre {
-          margin: 0;
-          width: 100%;
-          max-height: calc(95vh - 150px);
-          overflow: auto;
-        }
-        
-        .showcase-content-code {
-          display: block;
-          padding: 1.5rem;
-          color: #abb2bf;
-          font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-          font-size: 0.9rem;
-          line-height: 1.5;
-          white-space: pre;
-          tab-size: 4;
-        }
-        
-        .showcase-content-footer {
-          padding: 1rem 1.5rem;
-          border-top: 1px solid #e0e0e0;
-          background: #f8f9fa;
-          display: flex;
-          justify-content: flex-end;
-        }
-        
-        .showcase-copy-btn {
-          background: #3498db;
-          color: white;
-          border: none;
-          padding: 0.5rem 1rem;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 0.95rem;
-          transition: background 0.2s;
-        }
-        
-        .showcase-copy-btn:hover {
-          background: #2980b9;
-        }
-        
-        .showcase-copy-btn.copied {
-          background: #27ae60;
-        }
-        
-        .showcase-modal-image {
-          max-width: 100%;
-          max-height: calc(95vh - 100px);
-          width: auto;
-          height: auto;
-        }
-        
-        @media (max-width: 768px) {
-          .docops-showcase-gallery {
-            grid-template-columns: 1fr;
-            padding: 1rem;
-          }
-          
-          .showcase-modal-content {
-            max-width: 100vw;
-            max-height: 100vh;
-            border-radius: 0;
-          }
-          
-          .showcase-modal-body {
-            padding: 1rem;
-          }
-          
-          .showcase-content-modal-content {
-            width: 100vw;
-          }
-        }
-      </style>
-    CSS
-  end
-
-
-  def get_gallery_javascript
-    <<~JAVASCRIPT
-      <script>
-        window.showcaseGallery = window.showcaseGallery || (function() {
-          let currentContent = '';
-          
-          return {
-            expandItem: function(itemId, imageUrl, title) {
-              const modal = document.getElementById('showcase-gallery-modal');
-              const modalTitle = modal.querySelector('.showcase-modal-title');
-              const modalImage = modal.querySelector('.showcase-modal-image');
-              
-              modalTitle.textContent = title;
-              modalImage.src = imageUrl;
-              modalImage.alt = title;
-              
-              modal.style.display = 'flex';
-              document.body.style.overflow = 'hidden';
-              
-              document.addEventListener('keydown', this.handleEscKey);
-            },
-            
-            closeModal: function() {
-              const modal = document.getElementById('showcase-gallery-modal');
-              modal.style.display = 'none';
-              document.body.style.overflow = '';
-              
-              document.removeEventListener('keydown', this.handleEscKey);
-            },
-            
-            showContent: function(itemId, title, kind, content) {
-              const modal = document.getElementById('showcase-content-modal');
-              const modalTitle = modal.querySelector('.showcase-modal-title');
-              const codeElement = modal.querySelector('.showcase-content-code');
-              
-              // Decode HTML entities
-              const textarea = document.createElement('textarea');
-              textarea.innerHTML = content;
-              const decodedContent = textarea.value;
-              
-              currentContent = decodedContent;
-              
-              modalTitle.textContent = title + ' (' + kind + ')';
-              codeElement.textContent = decodedContent;
-              
-              modal.style.display = 'flex';
-              document.body.style.overflow = 'hidden';
-              
-              document.addEventListener('keydown', this.handleContentEscKey);
-            },
-            
-            closeContentModal: function() {
-              const modal = document.getElementById('showcase-content-modal');
-              modal.style.display = 'none';
-              document.body.style.overflow = '';
-              currentContent = '';
-              
-              document.removeEventListener('keydown', this.handleContentEscKey);
-            },
-            
-            copyContent: function() {
-              const btn = document.querySelector('.showcase-copy-btn');
-              
-              navigator.clipboard.writeText(currentContent).then(function() {
-                btn.textContent = '✓ Copied!';
-                btn.classList.add('copied');
-                
-                setTimeout(function() {
-                  btn.textContent = '📋 Copy';
-                  btn.classList.remove('copied');
-                }, 2000);
-              }).catch(function(err) {
-                console.error('Failed to copy:', err);
-              });
-            },
-            
-            handleEscKey: function(e) {
-              if (e.key === 'Escape') {
-                showcaseGallery.closeModal();
-              }
-            },
-            
-            handleContentEscKey: function(e) {
-              if (e.key === 'Escape') {
-                showcaseGallery.closeContentModal();
-              }
-            }
-          };
-        })();
-      </script>
-    JAVASCRIPT
-  end
 
   def generate_asciidoc_table(image_urls)
     return "" if image_urls.empty?
@@ -1045,6 +694,28 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
       response.code == '200'
     rescue => e
       false
+    end
+  end
+
+  def get_content_from_server(url, parent)
+    local_debug = get_debug_setting(parent)
+    #parent.logger.info "Getting content from server: #{url}"
+    logger.info "getting image from url #{url}"
+
+    uri = URI(url)
+
+    begin
+      response = Net::HTTP.start(uri.hostname, uri.port,
+                                 use_ssl: uri.scheme == 'https',
+                                 read_timeout: 60,
+                                 open_timeout: 20) do |http|
+        http.get(uri.request_uri)
+      end
+
+      response.body
+    rescue => e
+      #puts "Failed to get content from server: #{e.message}" if local_debug
+      ''
     end
   end
 

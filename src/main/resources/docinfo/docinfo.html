@@ -331,7 +331,255 @@
     }
 
 </style>
+<style>
+    /* DocOps Showcase Gallery Styles */
+    .docops-showcase-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        padding: 2rem;
+        margin: 2rem 0;
+    }
 
+    .gallery-item {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 1rem;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .gallery-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .gallery-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #3498db;
+    }
+
+    .gallery-item-title {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #2c3e50;
+        flex: 1;
+    }
+
+    .gallery-item-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .gallery-expand-btn,
+    .gallery-content-btn {
+        background: none;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        color: #3498db;
+        transition: color 0.2s, transform 0.2s;
+        line-height: 1;
+    }
+
+    .gallery-content-btn {
+        color: #9b59b6;
+        font-weight: bold;
+    }
+
+    .gallery-expand-btn:hover {
+        color: #2980b9;
+        transform: scale(1.2);
+    }
+
+    .gallery-content-btn:hover {
+        color: #8e44ad;
+        transform: scale(1.2);
+    }
+
+    .gallery-item-image {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 200px;
+    }
+
+    .gallery-item-image svg {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Modal Styles */
+    .showcase-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .showcase-modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(4px);
+    }
+
+    .showcase-modal-content {
+        position: relative;
+        background: white;
+        border-radius: 12px;
+        max-width: 95vw;
+        max-height: 95vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        overflow: hidden;
+    }
+
+    .showcase-content-modal-content {
+        max-width: 90vw;
+        width: 1000px;
+    }
+
+    .showcase-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e0e0e0;
+        background: #f8f9fa;
+    }
+
+    .showcase-modal-title {
+        font-weight: bold;
+        font-size: 1.2rem;
+        color: #2c3e50;
+    }
+
+    .showcase-modal-close {
+        background: none;
+        border: none;
+        font-size: 2rem;
+        cursor: pointer;
+        padding: 0;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #7f8c8d;
+        transition: color 0.2s;
+        line-height: 1;
+    }
+
+    .showcase-modal-close:hover {
+        color: #e74c3c;
+    }
+
+    .showcase-modal-body {
+        padding: 2rem;
+        overflow: auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: white;
+    }
+
+    .showcase-content-body {
+        padding: 0;
+        align-items: stretch;
+        justify-content: stretch;
+        background: #282c34;
+    }
+
+    .showcase-content-pre {
+        margin: 0;
+        width: 100%;
+        max-height: calc(95vh - 150px);
+        overflow: auto;
+    }
+
+    .showcase-content-code {
+        display: block;
+        padding: 1.5rem;
+        color: #abb2bf;
+        font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        white-space: pre;
+        tab-size: 4;
+    }
+
+    .showcase-content-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e0e0e0;
+        background: #f8f9fa;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .showcase-copy-btn {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: background 0.2s;
+    }
+
+    .showcase-copy-btn:hover {
+        background: #2980b9;
+    }
+
+    .showcase-copy-btn.copied {
+        background: #27ae60;
+    }
+
+    .showcase-modal-body svg {
+        max-width: 100%;
+        max-height: calc(95vh - 100px);
+        width: auto;
+        height: auto;
+    }
+
+    @media (max-width: 768px) {
+        .docops-showcase-gallery {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+
+        .showcase-modal-content {
+            max-width: 100vw;
+            max-height: 100vh;
+            border-radius: 0;
+        }
+
+        .showcase-modal-body {
+            padding: 1rem;
+        }
+
+        .showcase-content-modal-content {
+            width: 100vw;
+        }
+    }
+</style>
 <script>
     window.svgViewer = window.svgViewer || {
         toggleControls(id) {
@@ -1114,4 +1362,104 @@
             }
         }
     });
+</script>
+<script>
+    window.showcaseGallery = window.showcaseGallery || (function() {
+        let currentContent = '';
+        let currentSvg = null;
+
+        return {
+            expandItem: function(itemId, title) {
+                const galleryItem = document.getElementById(itemId);
+                const svgElement = galleryItem.querySelector('.gallery-item-image svg');
+
+                if (!svgElement) return;
+
+                const modal = document.getElementById('showcase-gallery-modal');
+                const modalTitle = modal.querySelector('.showcase-modal-title');
+                const modalBody = modal.querySelector('.showcase-modal-body');
+
+                // Clone the SVG for the modal
+                const clonedSvg = svgElement.cloneNode(true);
+
+                modalTitle.textContent = title;
+                modalBody.innerHTML = '';
+                modalBody.appendChild(clonedSvg);
+
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+
+                document.addEventListener('keydown', this.handleEscKey);
+            },
+
+            closeModal: function() {
+                const modal = document.getElementById('showcase-gallery-modal');
+                const modalBody = modal.querySelector('.showcase-modal-body');
+
+                modal.style.display = 'none';
+                modalBody.innerHTML = '';
+                document.body.style.overflow = '';
+
+                document.removeEventListener('keydown', this.handleEscKey);
+            },
+
+            showContent: function(itemId, title, kind, content) {
+                const modal = document.getElementById('showcase-content-modal');
+                const modalTitle = modal.querySelector('.showcase-modal-title');
+                const codeElement = modal.querySelector('.showcase-content-code');
+
+                // Decode HTML entities
+                const textarea = document.createElement('textarea');
+                textarea.innerHTML = content;
+                const decodedContent = textarea.value;
+
+                currentContent = decodedContent;
+
+                modalTitle.textContent = title + ' (' + kind + ')';
+                codeElement.textContent = decodedContent;
+
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+
+                document.addEventListener('keydown', this.handleContentEscKey);
+            },
+
+            closeContentModal: function() {
+                const modal = document.getElementById('showcase-content-modal');
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+                currentContent = '';
+
+                document.removeEventListener('keydown', this.handleContentEscKey);
+            },
+
+            copyContent: function() {
+                const btn = document.querySelector('.showcase-copy-btn');
+
+                navigator.clipboard.writeText(currentContent).then(function() {
+                    btn.textContent = '✓ Copied!';
+                    btn.classList.add('copied');
+
+                    setTimeout(function() {
+                        btn.textContent = '📋 Copy';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                }).catch(function(err) {
+                    console.error('Failed to copy:', err);
+                });
+            },
+
+            handleEscKey: function(e) {
+                if (e.key === 'Escape') {
+                    showcaseGallery.closeModal();
+                }
+            },
+
+            handleContentEscKey: function(e) {
+                if (e.key === 'Escape') {
+                    showcaseGallery.closeContentModal();
+                }
+            }
+        };
+    })();
 </script>
