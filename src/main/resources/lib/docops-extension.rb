@@ -16,7 +16,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
   use_dsl
 
   named :docops
-  on_contexts :listing
+  on_contexts :listing, :example
   content_model :compound
   positional_attributes 'kind'
   # Add this helper method at the class level
@@ -78,75 +78,92 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     local_debug = get_debug_setting(parent)
     server = get_server_url(parent)
     webserver = get_webserver_url(parent)
+    backend = parent.document.attr('backend') || 'html5'
+
+    kind = attrs['kind']
+
+    if kind.nil? || kind.empty?
+      return create_block(parent, :paragraph,
+                          "Parameter Error: Missing 'kind' block parameter, example -> [\"docops\", kind=\"buttons\"] 😵",
+                          {})
+    end
+
+    # Check if server is available
+    unless server_available?(parent, server)
+      return create_block(parent, :paragraph, "DocOps Server Unavailable! 😵", {})
+    end
+
+    # Handle showcase gallery
+    if kind == 'showcase'
+      showcase = DocOpsShowcaseProcessor.new(parent, server, webserver, backend, filename, local_debug)
+      html_content = showcase.process_showcase(reader)
+
+      if backend.downcase == 'html5'
+        return create_block(parent, :pass, ensure_utf8(html_content), {})
+      else
+        # For non-HTML backends, parse as AsciiDoc
+        block = create_block(parent, :open, nil, {})
+        parse_content_lines(block, html_content.split("\n"))
+        return block
+      end
+    end
 
     content = sub_content(reader, parent, local_debug)
 
     # Fix: Proper create_block call with 4 parameters
     block = create_block(parent, :open, nil, {})
 
-    if server_available?(parent, server)
-      type = get_type(parent)
-      backend = parent.document.attr('backend') || 'html5'
-      payload = get_compressed_payload(parent, content)
-      opts = "format=svg,opts=inline,align='#{role}'"
-      kind = attrs['kind']
+    type = get_type(parent)
+    payload = get_compressed_payload(parent, content)
+    opts = "format=svg,opts=inline,align='#{role}'"
 
-      if kind.nil? || kind.empty?
-        return create_block(parent, :paragraph,
-                            "Parameter Error: Missing 'kind' block parameter, example -> [\"docops\", kind=\"buttons\"] 😵",
-                            {})
-      end
-
-      # Special handling for mermaid kind
-      if kind == "mermaid"
-        dark = attrs.fetch('useDark', 'false')
-        use_dark = dark.downcase == 'true'
-        scale = attrs.fetch('scale', '1.0')
-        title = attrs.fetch('title', 'Title')
-
-        url = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&type=#{type}&useDark=#{use_dark}&title=#{CGI.escape(title)}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=mermaid.svg"
-
-        mermaid_content = get_content_from_server(url, parent)
-
-        return create_block(parent, :pass, ensure_utf8(mermaid_content), {})
-      end
-
+    # Special handling for mermaid kind
+    if kind == "mermaid"
       dark = attrs.fetch('useDark', 'false')
       use_dark = dark.downcase == 'true'
       scale = attrs.fetch('scale', '1.0')
       title = attrs.fetch('title', 'Title')
-      lines = []
 
-      if type == 'PDF'
-        link = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&title=#{CGI.escape(title)}&type=SVG&useDark=#{use_dark}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=docops.svg"
-        img = "image::#{link}[#{opts},link=#{link},window=_blank,opts=nofollow]"
+      url = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&type=#{type}&useDark=#{use_dark}&title=#{CGI.escape(title)}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=mermaid.svg"
 
-        #puts img if local_debug
+      mermaid_content = get_content_from_server(url, parent)
 
-        lines << img
-        parse_content(block, lines)
-      else
-        url = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&type=#{type}&useDark=#{use_dark}&title=#{CGI.escape(title)}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=ghi.svg"
+      return create_block(parent, :pass, ensure_utf8(mermaid_content), {})
+    end
 
-        image = get_content_from_server(url, parent)
+    dark = attrs.fetch('useDark', 'false')
+    use_dark = dark.downcase == 'true'
+    scale = attrs.fetch('scale', '1.0')
+    title = attrs.fetch('title', 'Title')
+    lines = []
 
-        html = if show_controls
-                 generate_svg_viewer_html(
-                   image, id, title,
-                   show_controls, allow_copy, allow_zoom, allow_expand,  theme, role, allow_csv
-                 ).gsub(
-                   %(<div class="svg-with-controls" id="#{id}" data-theme="#{theme}">),
-                   %(<div class="svg-with-controls" id="#{id}" data-theme="#{theme}" data-original-content="#{content.gsub('"', '&quot;')}" data-kind="#{kind}">)
-                 )
+    if type == 'PDF'
+      link = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&title=#{CGI.escape(title)}&type=SVG&useDark=#{use_dark}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=docops.svg"
+      img = "image::#{link}[#{opts},link=#{link},window=_blank,opts=nofollow]"
 
-               else
-                 # For non-controlled SVGs, still apply alignment
-                 "<div style=\"#{get_alignment_style(role)}\"><div style=\"display: inline-block;\">#{ensure_utf8(image)}</div></div>"
-               end
-        return create_block(parent, :pass, ensure_utf8(html), {})
-      end
+      #puts img if local_debug
+
+      lines << img
+      parse_content(block, lines)
     else
-      return create_block(parent, :paragraph, "DocOps Server Unavailable! 😵", {})
+      url = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&type=#{type}&useDark=#{use_dark}&title=#{CGI.escape(title)}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=ghi.svg"
+
+      image = get_content_from_server(url, parent)
+
+      html = if show_controls
+               generate_svg_viewer_html(
+                 image, id, title,
+                 show_controls, allow_copy, allow_zoom, allow_expand,  theme, role, allow_csv
+               ).gsub(
+                 %(<div class="svg-with-controls" id="#{id}" data-theme="#{theme}">),
+                 %(<div class="svg-with-controls" id="#{id}" data-theme="#{theme}" data-original-content="#{content.gsub('"', '&quot;')}" data-kind="#{kind}">)
+               )
+
+             else
+               # For non-controlled SVGs, still apply alignment
+               "<div style=\"#{get_alignment_style(role)}\"><div style=\"display: inline-block;\">#{ensure_utf8(image)}</div></div>"
+             end
+      return create_block(parent, :pass, ensure_utf8(html), {})
     end
 
     block
@@ -386,6 +403,13 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     # This would depend on your specific needs
   end
 
+  def parse_content_lines(block, lines)
+    parsed_lines = Asciidoctor::Reader.new(lines)
+    while parsed_lines.has_more_lines?
+      block << create_block(block, :paragraph, parsed_lines.read_line, {})
+    end
+  end
+
   def safe_log(message)
     begin
       timestamp = Time.now.strftime('%Y-%m-%d %H:%M:%S.%L')
@@ -402,57 +426,30 @@ end
 # Register the extension
 Extensions.register do
   block DocOpsBlockProcessor
-  block DocOpsShowcaseProcessor
 end
 
 
 Asciidoctor::Extensions.register do
   block DocOpsBlockProcessor
-  block DocOpsShowcaseProcessor
 end if defined? Asciidoctor::Extensions
 
-class DocOpsShowcaseProcessor < Extensions::BlockProcessor
-  include Asciidoctor::Logging
-  use_dsl
+class DocOpsShowcaseProcessor
+  attr_reader :parent, :server, :webserver, :backend, :filename, :local_debug
 
-  named :gallery
-  on_contexts :example
-  content_model :compound
-  positional_attributes 'kind'
-
-  def initialize(*args)
-    super(*args)
-    Encoding.default_external = Encoding::UTF_8
-    Encoding.default_internal = Encoding::UTF_8
+  def initialize(parent, server, webserver, backend, filename, local_debug)
+    @parent = parent
+    @server = server
+    @webserver = webserver
+    @backend = backend
+    @filename = filename
+    @local_debug = local_debug
   end
 
-  def process(parent, reader, attrs)
-    kind = attrs['kind']
-
-    # Only process showcase blocks
-    return nil unless kind == 'showcase'
-
-    doc = parent.document
-    docfile = doc.attr('docfile')
-    filename = File.basename(docfile || '', '.*') if docfile
-
-    local_debug = get_debug_setting(parent)
-    server = get_server_url(parent)
-    webserver = get_webserver_url(parent)
-    backend = doc.attr('backend') || 'html5'
-
-    # Check if server is available
-    unless server_available?(parent, server)
-      return create_block(parent, :paragraph, "DocOps Server Unavailable! 😵", {})
-    end
-
-    # Parse nested docops blocks
-    image_urls = []
+  def process_showcase(reader)
     lines = reader.read_lines
+    nested_blocks = parse_nested_blocks(lines)
 
-    # Process nested blocks
-    nested_blocks = parse_nested_blocks(lines, local_debug)
-
+    image_urls = []
     nested_blocks.each do |block_data|
       block_kind = block_data[:kind]
       block_content = block_data[:content]
@@ -460,9 +457,9 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
 
       next if block_kind.nil? || block_content.empty?
 
-      # Generate image URL similar to line 129
+      # Generate image URL
       payload = compress_string(block_content)
-      type = get_type(parent)
+      type = get_type
 
       dark = block_attrs.fetch('useDark', 'false')
       use_dark = dark.downcase == 'true'
@@ -482,22 +479,15 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
 
     # Generate output based on backend
     if backend.downcase == 'html5'
-      html_content = generate_html_gallery(image_urls, parent)
-      return create_block(parent, :pass, ensure_utf8(html_content), {})
+      generate_html_gallery(image_urls)
     else
-      # Generate AsciiDoc table for PDF and other backends
-      table_content = generate_asciidoc_table(image_urls)
-      # Parse the table content as AsciiDoc
-      block = create_block(parent, :open, nil, {})
-      parse_content_lines(block, table_content.split("\n"))
-      return block
+      generate_asciidoc_table(image_urls)
     end
   end
 
   private
 
-
-  def parse_nested_blocks(lines, debug = false)
+  def parse_nested_blocks(lines)
     blocks = []
     current_block = nil
     in_listing = false
@@ -546,7 +536,7 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
     blocks
   end
 
-  def generate_html_gallery(image_urls, parent)
+  def generate_html_gallery(image_urls)
     return "<p>No images to display</p>" if image_urls.empty?
 
     gallery_id = "docops-gallery-#{SecureRandom.hex(8)}"
@@ -562,7 +552,7 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
       item_id = "gallery-item-#{gallery_id}-#{index}"
 
       # Fetch SVG content inline
-      svg_content = get_content_from_server(img_url, parent)
+      svg_content = get_content_from_server(img_url)
 
       # Escape content for HTML attribute
       escaped_content = CGI.escape_html(content)
@@ -586,6 +576,33 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
     html << get_content_modal
 
     html.join("\n")
+  end
+
+  def generate_asciidoc_table(image_urls)
+    return "" if image_urls.empty?
+
+    # Calculate number of columns (2 for reasonable layout in PDF)
+    cols = 2
+
+    lines = []
+    lines << "[cols=\"#{cols}*\", frame=none, grid=none]"
+    lines << "|==="
+
+    image_urls.each_slice(cols) do |row_images|
+      # Title row
+      title_row = row_images.map { |img| "a| *#{img[:title]}*" }.join(" ")
+      lines << title_row
+
+      # Image row
+      image_row = row_images.map do |img|
+        "a| image::#{img[:url]}[align=center,opts=inline]"
+      end.join(" ")
+      lines << image_row
+    end
+
+    lines << "|==="
+
+    lines.join("\n")
   end
 
   def get_content_modal
@@ -624,84 +641,11 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
     HTML
   end
 
-
-  def generate_asciidoc_table(image_urls)
-    return "" if image_urls.empty?
-
-    # Calculate number of columns (2 for reasonable layout in PDF)
-    cols = 2
-
-    lines = []
-    lines << "[cols=\"#{cols}*\", frame=none, grid=none]"
-    lines << "|==="
-
-    image_urls.each_slice(cols) do |row_images|
-      # Title row
-      title_row = row_images.map { |img| "a| *#{img[:title]}*" }.join(" ")
-      lines << title_row
-
-      # Image row
-      image_row = row_images.map do |img|
-        "a| image::#{img[:url]}[align=center,opts=inline]"
-      end.join(" ")
-      lines << image_row
-    end
-
-    lines << "|==="
-
-    lines.join("\n")
-  end
-
-
-  def parse_content_lines(block, lines)
-    parsed_lines = Asciidoctor::Reader.new(lines)
-    while parsed_lines.has_more_lines?
-      block << create_block(block, :paragraph, parsed_lines.read_line, {})
-    end
-  end
-
-  # Helper methods (reused from DocOpsBlockProcessor)
-  def get_debug_setting(parent)
-    debug = parent.document.attr('local-debug')
-    debug&.downcase == 'true'
-  end
-
-  def get_server_url(parent)
-    parent.document.attr('panel-server')
-  end
-
-  def get_webserver_url(parent)
-    parent.document.attr('panel-webserver')
-  end
-
-  def get_type(parent)
-    backend = parent.document.attr('backend') || 'html5'
+  def get_type
     backend.downcase == 'pdf' ? 'PDF' : 'SVG'
   end
 
-  def server_available?(parent, server_url)
-    local_debug = get_debug_setting(parent)
-    uri = URI("#{server_url}/api/ping")
-
-    begin
-      response = Net::HTTP.start(uri.hostname, uri.port,
-                                 use_ssl: uri.scheme == 'https',
-                                 read_timeout: 60,
-                                 open_timeout: 20) do |http|
-        http.get(uri.path)
-      end
-
-      response.code == '200'
-    rescue => e
-      false
-    end
-  end
-
-  def get_content_from_server(url, parent)
-    local_debug = get_debug_setting(parent)
-    #parent.logger.info "Getting content from server: #{url}"
-    logger.info "getting image from url #{url}"
-
+  def get_content_from_server(url)
     uri = URI(url)
 
     begin
@@ -714,7 +658,6 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
 
       response.body
     rescue => e
-      #puts "Failed to get content from server: #{e.message}" if local_debug
       ''
     end
   end
@@ -743,5 +686,3 @@ class DocOpsShowcaseProcessor < Extensions::BlockProcessor
     str.to_s.force_encoding('UTF-8').encode('UTF-8', invalid: :replace, undef: :replace)
   end
 end
-
-
