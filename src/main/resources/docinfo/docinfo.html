@@ -579,6 +579,89 @@
             width: 100vw;
         }
     }
+    .docops-slideshow {
+        position: relative;
+        width: 800px;
+        height: 600px;
+        max-width: 100%;
+        margin: 0 auto;
+        overflow: hidden;
+        background: #f5f5f5;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .docops-slide {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: opacity 1s ease-in-out;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+
+    .docops-slide.active {
+        opacity: 1;
+        position: relative;
+    }
+
+    .docops-slide .slide-content {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .docops-slide .slide-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        color: #333;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .docops-slide .slide-image {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .docops-slide .slide-image svg {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+    }
+
+    /* Responsive: Scale down on smaller screens */
+    @media (max-width: 820px) {
+        .docops-slideshow {
+            width: 100%;
+            height: calc(100vw * 0.75); /* Maintain 4:3 aspect ratio */
+            max-height: 600px;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .docops-slide .slide-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+    }
 </style>
 <script>
     window.svgViewer = window.svgViewer || {
@@ -1461,5 +1544,40 @@
                 }
             }
         };
+    })();
+
+    (function() {
+        document.addEventListener('DOMContentLoaded', function() {
+            const slideshows = document.querySelectorAll('.docops-slideshow');
+
+            slideshows.forEach(slideshow => {
+                const slides = slideshow.querySelectorAll('.docops-slide');
+                const interval = parseInt(slideshow.dataset.interval) || 30000;
+                let currentIndex = 0;
+
+                if (slides.length === 0) return;
+
+                function showSlide(index) {
+                    slides.forEach((slide, i) => {
+                        if (i === index) {
+                            slide.classList.add('active');
+                        } else {
+                            slide.classList.remove('active');
+                        }
+                    });
+                }
+
+                function nextSlide() {
+                    currentIndex = (currentIndex + 1) % slides.length;
+                    showSlide(currentIndex);
+                }
+
+                // Auto-advance slides every 30 seconds
+                setInterval(nextSlide, interval);
+
+                // Initialize first slide
+                showSlide(0);
+            });
+        });
     })();
 </script>

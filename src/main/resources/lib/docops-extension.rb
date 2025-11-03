@@ -107,7 +107,21 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
         return block
       end
     end
+    # Handle slideshow
+    if kind == 'slideshow'
+      showcase = DocOpsShowcaseProcessor.new(parent, server, webserver, backend, filename, local_debug)
+      interval = attrs['interval'] || '30000'  # Get interval or default to 30000ms
+      html_content = showcase.process_slideshow(reader, interval)
 
+      if backend.downcase == 'html5'
+        return create_block(parent, :pass, ensure_utf8(html_content), {})
+      else
+        # For PDF, use table format like showcase
+        block = create_block(parent, :open, nil, {})
+        parse_content_lines(block, html_content.split("\n"))
+        return block
+      end
+    end
     content = sub_content(reader, parent, local_debug)
 
     # Fix: Proper create_block call with 4 parameters
@@ -485,6 +499,46 @@ class DocOpsShowcaseProcessor
     end
   end
 
+  def process_slideshow(reader,  interval = '30000')
+    lines = reader.read_lines
+    nested_blocks = parse_nested_blocks(lines)
+
+    image_urls = []
+    nested_blocks.each do |block_data|
+      block_kind = block_data[:kind]
+      block_content = block_data[:content]
+      block_attrs = block_data[:attrs]
+
+      next if block_kind.nil? || block_content.empty?
+
+      # Generate image URL
+      payload = compress_string(block_content)
+      type = get_type
+
+      dark = block_attrs.fetch('useDark', 'false')
+      use_dark = dark.downcase == 'true'
+      scale = block_attrs.fetch('scale', '1.0')
+      title = block_attrs.fetch('title', block_kind.capitalize)
+      use_glass = block_attrs.fetch('useGlass', 'true') == 'false'
+
+      url = "#{webserver}/api/docops/svg?kind=#{block_kind}&payload=#{payload}&scale=#{scale}&type=#{type}&useDark=#{use_dark}&title=#{CGI.escape(title)}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=#{block_kind}.svg"
+
+      image_urls << {
+        url: url,
+        title: title,
+        kind: block_kind,
+        content: block_content
+      }
+    end
+
+    # Generate output based on backend
+    if backend.downcase == 'html5'
+      generate_html_slideshow(image_urls, interval)
+    else
+      generate_asciidoc_table(image_urls)
+    end
+  end
+
   private
 
   def parse_nested_blocks(lines)
@@ -578,6 +632,37 @@ class DocOpsShowcaseProcessor
     html.join("\n")
   end
 
+  def generate_html_slideshow(image_urls, interval = '30000')
+    return "<p>No images to display</p>" if image_urls.empty?
+
+    slideshow_id = "docops-slideshow-#{SecureRandom.hex(8)}"
+
+    html = []
+    html << "<div class=\"docops-slideshow\" id=\"#{slideshow_id}\" data-interval=\"#{interval}\">"
+
+    image_urls.each_with_index do |img_data, index|
+      img_url = img_data[:url]
+      title = img_data[:title]
+      kind = img_data[:kind]
+      active_class = index == 0 ? ' active' : ''
+
+      # Fetch SVG content inline
+      svg_content = get_content_from_server(img_url)
+
+      html << "<div class=\"docops-slide#{active_class}\" data-title=\"#{ensure_utf8(title)}\" data-kind=\"#{kind}\">"
+      html << "<div class=\"slide-content\">"
+      html << "<div class=\"slide-title\">#{ensure_utf8(title)}</div>"
+      html << "<div class=\"slide-image\">"
+      html << ensure_utf8(svg_content)
+      html << "</div>"
+      html << "</div>"
+      html << "</div>"
+    end
+
+    html << "</div>"
+
+    html.join("\n")
+  end
   def generate_asciidoc_table(image_urls)
     return "" if image_urls.empty?
 
