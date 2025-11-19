@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="2480" height="3508" viewBox="0 0 2480 3508" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#34495e;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3498db;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2ecc71;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="2480" height="3508" fill="url(#bgGradient)"/>
+  
+  <!-- Decorative top accent bar -->
+  <rect x="0" y="0" width="2480" height="20" fill="url(#accentGradient)"/>
+  
+  <!-- Geometric decoration -->
+  <circle cx="200" cy="200" r="80" fill="none" stroke="#3498db" stroke-width="3" opacity="0.3"/>
+  <circle cx="2280" cy="3300" r="100" fill="none" stroke="#2ecc71" stroke-width="3" opacity="0.3"/>
+  
+  <!-- Hexagon pattern (subtle) -->
+  <polygon points="2100,500 2150,475 2200,500 2200,550 2150,575 2100,550" 
+           fill="none" stroke="#ffffff" stroke-width="2" opacity="0.1"/>
+  <polygon points="380,2900 430,2875 480,2900 480,2950 430,2975 380,2950" 
+           fill="none" stroke="#ffffff" stroke-width="2" opacity="0.1"/>
+  
+  <!-- Decorative line elements -->
+  <line x1="300" y1="1400" x2="600" y2="1400" stroke="url(#accentGradient)" stroke-width="4"/>
+  <line x1="1880" y1="2100" x2="2180" y2="2100" stroke="url(#accentGradient)" stroke-width="4"/>
+  
+  <!-- Logo placeholder (company icon) -->
+  <g transform="translate(1240, 600)">
+    <circle cx="0" cy="0" r="100" fill="#fcfcfc" opacity="0.9"/>
+    <image href="docops.svg" x="-100" y="-100" width="200" height="200" preserveAspectRatio="xMidYMid meet"/>
+  </g>
+  
+  <!-- Bottom accent bar -->
+  <rect x="0" y="3488" width="2480" height="20" fill="url(#accentGradient)"/>
+  
+  <!-- Subtle corner decorations -->
+  <rect x="100" y="100" width="150" height="4" fill="#3498db" opacity="0.4"/>
+  <rect x="100" y="100" width="4" height="150" fill="#3498db" opacity="0.4"/>
+  
+  <rect x="2230" y="3304" width="150" height="4" fill="#2ecc71" opacity="0.4"/>
+  <rect x="2376" y="3154" width="4" height="150" fill="#2ecc71" opacity="0.4"/>
+</svg>

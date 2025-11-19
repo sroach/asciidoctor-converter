@@ -2,6 +2,10 @@ require 'asciidoctor/extensions'
 
 class PageNavigationPostprocessor < Asciidoctor::Extensions::Postprocessor
   def process document, output
+    # Only process HTML backends
+    backend = document.attr('backend') || ''
+    return output unless backend.downcase == 'html5' || backend.downcase == 'html'
+
     puts "🔍 PageNavigationPostprocessor: Processing document: #{document.attributes['docfile'] || 'unknown'}"
     puts "🔍 All document attributes:"
     document.attributes.each do |key, value|

@@ -8,6 +8,7 @@ import gy.roach.asciidoctor.extension.ReadingTimeDocinfoProcessor
 import gy.roach.asciidoctor.tabs.BlockSwitchDocinfoProcessor
 import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
+import org.asciidoctor.AttributesBuilder
 import org.asciidoctor.Options
 import org.asciidoctor.SafeMode
 import org.slf4j.LoggerFactory
@@ -194,6 +195,10 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .noFooter(true)
             .attribute("docinfodir", docinfoDir)
             .attribute("docinfo", "shared")
+            .attribute("encoding", "utf-8")
+           // .attribute("pdf-themesdir", "resources/themes")
+            .attribute("pdf-theme", "uri:classloader:/themes/emoji-theme.yml")
+            .attribute("pdf-fontsdir", "uri:classloader:/fonts;GEM_FONTS_DIR")
             .build()
 
     }
@@ -246,7 +251,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
                         // Create parent directories if they don't exist
                         targetFile.parentFile?.mkdirs()
-
+                        val attrs = buildAttributes()
                         val options = buildPdfOptions(buildAttributes())
                         options.setMkDirs(true)
 
@@ -254,8 +259,12 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                         options.setToDir(targetFile.parentFile.absolutePath)
 
                         // Convert the file with a timeout
-                        val asciidoctor = Asciidoctor.Factory.create()
-                        asciidoctor.convertFile(file, options)
+                        val localAsciidoctor = Asciidoctor.Factory.create()
+                        localAsciidoctor.requireLibrary("asciidoctor-diagram")
+
+                        localAsciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
+
+                        localAsciidoctor.convertFile(file, options)
 
                         synchronized(stats) {
                             stats.filesConverted++

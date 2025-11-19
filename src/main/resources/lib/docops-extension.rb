@@ -148,24 +148,49 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     dark = attrs.fetch('useDark', 'false')
     use_dark = dark.downcase == 'true'
     scale = attrs.fetch('scale', '1.0')
-    title = attrs.fetch('title', 'Title')
+    title = attrs.fetch('title', '')
     lines = []
 
     if type == 'PDF'
       link = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&title=#{CGI.escape(title)}&type=SVG&useDark=#{use_dark}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=docops.svg"
-      img = "image::#{link}[#{opts},link=#{link},window=_blank,opts=nofollow]"
+      #img = "image::#{link}[#{opts},link=#{link},window=_blank,opts=nofollow]"
 
       #puts img if local_debug
 
-      lines << img
-      parse_content(block, lines)
+      attrs = {
+        'target' => link,
+        'alt'    => title,
+        'format' => 'svg',
+        'align'  => role
+      }
+
+      # Only add caption if title is not the default
+      if title != ''
+        # Increment figure counter
+        figure_num = doc.increment_and_store_counter('figure-number', parent)
+        # Create caption with figure number
+        caption = "Figure #{figure_num}. #{title}"
+        attrs['title'] = caption
+      end
+
+      # Return the image block
+      return create_block(parent, :image, nil, attrs)
     else
       url = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&type=#{type}&useDark=#{use_dark}&title=#{CGI.escape(title)}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=ghi.svg"
 
       image = get_content_from_server(url, parent)
 
+      # Only create caption if title is not the default
+      caption_html = ""
+      if title != ''
+        # Increment figure counter
+        figure_num = doc.increment_and_store_counter('figure-number', parent)
+        # Create caption
+        caption_html = "<div class=\"title\">Figure #{figure_num}. #{title}</div>"
+      end
+
       html = if show_controls
-               generate_svg_viewer_html(
+               figure_content = generate_svg_viewer_html(
                  image, id, title,
                  show_controls, allow_copy, allow_zoom, allow_expand,  theme, role, allow_csv
                ).gsub(
@@ -173,9 +198,14 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
                  %(<div class="svg-with-controls" id="#{id}" data-theme="#{theme}" data-original-content="#{content.gsub('"', '&quot;')}" data-kind="#{kind}">)
                )
 
+               # Caption AFTER the image content
+               "<div class=\"imageblock #{role}\">" + figure_content + caption_html + "</div>"
              else
-               # For non-controlled SVGs, still apply alignment
-               "<div style=\"#{get_alignment_style(role)}\"><div style=\"display: inline-block;\">#{ensure_utf8(image)}</div></div>"
+               # For non-controlled SVGs, caption AFTER the image
+               "<div class=\"imageblock #{role}\">" +
+                 "<div class=\"content\"><div style=\"#{get_alignment_style(role)}\"><div style=\"display: inline-block;\">#{ensure_utf8(image)}</div></div></div>" +
+                 caption_html +
+                 "</div>"
              end
       return create_block(parent, :pass, ensure_utf8(html), {})
     end
@@ -298,7 +328,16 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     # Returns the same CSS and JavaScript as in the Kotlin version
     # (truncated for brevity - would include the full CSS and JS from the original)
     <<~ASSETS
-
+      <style>
+      imageblock .title {
+        text-align: center;
+        font-style: italic;
+        margin-top: 0.5em;  /* Changed from margin-bottom */
+        margin-bottom: 1em;
+        color: #666;
+        font-size: 0.9em;
+      }
+      </style>
     ASSETS
   end
 
