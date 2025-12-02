@@ -196,8 +196,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .attribute("docinfodir", docinfoDir)
             .attribute("docinfo", "shared")
             .attribute("encoding", "utf-8")
-           // .attribute("pdf-themesdir", "resources/themes")
-            .attribute("pdf-theme", "uri:classloader:/themes/emoji-theme.yml")
+            .attribute("pdf-theme", "uri:classloader:/themes/docops-theme.yml")
             .attribute("pdf-fontsdir", "uri:classloader:/fonts;GEM_FONTS_DIR")
             .build()
 

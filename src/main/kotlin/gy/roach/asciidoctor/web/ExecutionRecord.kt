@@ -3,6 +3,7 @@ package gy.roach.asciidoctor.web
 import gy.roach.asciidoctor.service.ConversionStats
 import java.time.LocalDateTime
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 
 data class ExecutionRecord(
     val id: String = UUID.randomUUID().toString(),
@@ -16,7 +17,7 @@ data class ExecutionRecord(
 )
 
 data class ExecutionSummary(
-    val totalExecutions: Int,
+    val totalExecutions: AtomicInteger,
     val successfulExecutions: Int,
     val failedExecutions: Int,
     val averageDurationMs: Long,

@@ -4,6 +4,7 @@ import gy.roach.asciidoctor.config.AllowedPathsConfig
 import gy.roach.asciidoctor.config.ConverterSettings
 import gy.roach.asciidoctor.config.ExecutionHistoryConfig
 import gy.roach.asciidoctor.service.AsciiDoctorConverter
+import gy.roach.asciidoctor.service.ConversionContext
 import gy.roach.asciidoctor.service.ConversionJobService
 import gy.roach.asciidoctor.service.ConversionStats
 import gy.roach.asciidoctor.service.SitemapService
@@ -27,7 +28,8 @@ class MainController(private val convert: AsciiDoctorConverter,
                      private val htmlTemplateService: gy.roach.asciidoctor.service.HtmlTemplateService,
                      private val conversionJobService: ConversionJobService,
                      private val sitemapService: SitemapService,
-                     private val converterSettings: ConverterSettings
+                     private val converterSettings: ConverterSettings,
+                     private val conversionContext: ConversionContext
 ) {
     @Value("\${sitemap.directory-depth:2}")
     private val defaultDirectoryDepth: Int = 2
@@ -35,13 +37,13 @@ class MainController(private val convert: AsciiDoctorConverter,
     private val logger = LoggerFactory.getLogger(MainController::class.java)
 
     // Thread-safe deque to store execution history
-    private val executionHistory = ConcurrentLinkedDeque<ExecutionRecord>()
+    //private val executionHistory = ConcurrentLinkedDeque<ExecutionRecord>()
 
     // Thread-safe map to track active conversions by normalized source directory path
-    private val activeConversions = ConcurrentHashMap<String, ActiveConversion>()
+    //private val activeConversions = ConcurrentHashMap<String, ActiveConversion>()
 
     // Counter for total executions (including those removed from history)
-    private var totalExecutionCount = 0
+    //private var totalExecutionCount = 0
 
 
 
@@ -91,7 +93,7 @@ class MainController(private val convert: AsciiDoctorConverter,
         }
         // Check if conversion is already in progress for this source directory
         val normalizedSourcePath = validatedSourceDir.toString()
-        val existingConversion = activeConversions[normalizedSourcePath]
+        val existingConversion = conversionContext.activeConversions[normalizedSourcePath]
 
         if (existingConversion != null) {
             val conflictMessage = "Conversion already in progress for source directory: $normalizedSourcePath (started at ${existingConversion.startTime})"
@@ -117,7 +119,7 @@ class MainController(private val convert: AsciiDoctorConverter,
             executionId = executionId
         )
 
-        activeConversions[normalizedSourcePath] = activeConversion
+        conversionContext.activeConversions[normalizedSourcePath] = activeConversion
         logger.info("Started conversion for source directory: $normalizedSourcePath (execution ID: $executionId)")
 
         try {
@@ -183,7 +185,7 @@ class MainController(private val convert: AsciiDoctorConverter,
         }
 
         // Always remove the active conversion when done (success or failure)
-        activeConversions.remove(normalizedSourcePath)
+            conversionContext.activeConversions.remove(normalizedSourcePath)
         logger.debug("Removed active conversion for source directory: $normalizedSourcePath (execution ID: $executionId)")
     }
 
@@ -225,7 +227,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     @GetMapping("/active-conversions", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getActiveConversions(): ResponseEntity<Map<String, Any>> {
-        val active = activeConversions.values.toList()
+        val active = conversionContext.activeConversions.values.toList()
         return ResponseEntity.ok(mapOf(
             "activeConversions" to active,
             "count" to active.size
@@ -234,7 +236,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     @GetMapping("/active-conversions/html", produces = ["text/html"])
     fun getActiveConversionsHtml(): ResponseEntity<String> {
-        val active = activeConversions.values.toList()
+        val active = conversionContext.activeConversions.values.toList()
         return ResponseEntity.ok()
             .header("Content-Type", "text/html; charset=UTF-8")
             .body(htmlTemplateService.buildActiveConversionsResponseMessage(active))
@@ -242,7 +244,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     @GetMapping("/stats", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getStatsJson(): ResponseEntity<Map<String, Any>> {
-        val history = executionHistory.toList()
+        val history = conversionContext.executionHistory.toList()
         val summary = calculateSummary(history)
 
         return ResponseEntity.ok(mapOf(
@@ -254,7 +256,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     @GetMapping("/stats/html", produces = ["text/html"])
     fun getStatsHtml(): ResponseEntity<String> {
-        val history = executionHistory.toList()
+        val history = conversionContext.executionHistory.toList()
         val summary = calculateSummary(history)
 
         return ResponseEntity.ok()
@@ -264,7 +266,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     @GetMapping("/stats/{executionId}", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getExecutionDetails(@PathVariable executionId: String): ResponseEntity<ExecutionRecord> {
-        val execution = executionHistory.find { it.id == executionId }
+        val execution = conversionContext.executionHistory.find { it.id == executionId }
         return if (execution != null) {
             ResponseEntity.ok(execution)
         } else {
@@ -274,7 +276,7 @@ class MainController(private val convert: AsciiDoctorConverter,
 
     @GetMapping("/stats/{executionId}/html", produces = ["text/html"])
     fun getExecutionDetailsHtml(@PathVariable executionId: String): ResponseEntity<String> {
-        val execution = executionHistory.find { it.id == executionId }
+        val execution = conversionContext.executionHistory.find { it.id == executionId }
         return if (execution != null) {
             ResponseEntity.ok()
                 .header("Content-Type", "text/html; charset=UTF-8")
@@ -304,22 +306,22 @@ class MainController(private val convert: AsciiDoctorConverter,
         )
 
         // Add to the front of the deque (most recent first)
-        executionHistory.addFirst(record)
+        conversionContext.executionHistory.addFirst(record)
 
         // Increment total execution count
-        totalExecutionCount++
+        conversionContext.totalExecutionCount.getAndIncrement()
 
         // Remove oldest entries if we exceed max size
-        while (executionHistory.size > historyConfig.maxSize) {
-            executionHistory.removeLast()
+        while (conversionContext.executionHistory.size > historyConfig.maxSize) {
+            conversionContext.executionHistory.removeLast()
         }
 
         logger.debug("Recorded execution: ${record.id} - Success: $success")
     }
 
-    private fun calculateSummary(history: List<ExecutionRecord>): ExecutionSummary {
+    fun calculateSummary(history: List<ExecutionRecord>): ExecutionSummary {
         if (history.isEmpty()) {
-            return ExecutionSummary(totalExecutionCount, 0, 0, 0, 0, 0, 0, null)
+            return ExecutionSummary(conversionContext.totalExecutionCount, 0, 0, 0, 0, 0, 0, null)
         }
 
         val successfulExecutions = history.count { it.success }
@@ -330,7 +332,7 @@ class MainController(private val convert: AsciiDoctorConverter,
         val totalFilesDeleted = history.sumOf { it.stats.filesDeleted }
 
         return ExecutionSummary(
-            totalExecutions = totalExecutionCount,
+            totalExecutions = conversionContext.totalExecutionCount,
             successfulExecutions = successfulExecutions,
             failedExecutions = failedExecutions,
             averageDurationMs = averageDuration,

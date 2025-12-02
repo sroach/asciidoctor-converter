@@ -1,0 +1,106 @@
+# Theme file: custom-theme.yml
+# Extends the default theme with fallback fonts for better character support
+extends: default-with-font-fallbacks
+
+# Customize the base font to Roboto (ensure Roboto's variants are in your fontsdir)
+font:
+  catalog:
+    # You can merge with the inherited catalog to keep the bundled fonts
+    merge: true
+  # Set Roboto as the primary font for most elements
+  base: 'Helvetica'
+  fallbacks: [M+ 1p Fallback, Noto Emoji]
+# Professional Typography
+base:
+  font-family: Helvetica
+  font-size: 11
+  line-height: 1.5
+
+# Professional Color Scheme
+page:
+  background-color: ffffff
+  layout: portrait
+  size: A4
+  margin: [ 0.75in, 1in, 0.75in, 1in ]
+
+# Corporate Header with Logo (skip on title page)
+header:
+  height: 0.75in
+  font-size: 9
+  line-height: 1
+  padding: [6, 1, 0, 1]
+  border-color: dddddd
+  border-width: 0.25
+  border-style: solid
+  image-vertical-align: middle
+  recto:
+    left:
+      content: image:docops.svg[width=40,height=40]
+    center:
+      content: '{document-title}'
+  verso:
+    left:
+      content: image:docops.svg[width=40,height=40]
+    center:
+      content: '{document-title}'
+
+
+svg:
+  fallback_font_family: Helvetica
+
+cover:
+  background-image: image:cover-page.svg[fit=cover]
+  background-color: #FFFFFF
+  title:
+    font-color: #FFFFFF
+    font-size: 32
+    font-style: bold
+    line-height: 1.2
+    text-align: center
+    top: 40%
+  subtitle:
+    font-color: #FFFFFF
+    font-size: 18
+    font-style: italic
+    line-height: 1.2
+    text-align: center
+  authors:
+    font-color: #FFFFFF
+    font-size: 14
+    text-align: center
+    top: 60%
+
+
+footer:
+  height: 0.75in
+  line-height: 1
+  recto:
+    right:
+      content: '{section-or-chapter-title} | {page-number} of {page-count}'
+  verso:
+    left:
+      content: '{page-number} of {page-count} | *{chapter-title}*'
+
+# Cover Page Configuration with SVG
+title-page:
+  align: center
+  background-image: image:cover-page.svg[]
+  title:
+    top: 45%
+    font-size: 42
+    font-color: ffffff
+    font-weight: bold
+    line-height: 1.2
+  subtitle:
+    top: 52%
+    font-size: 20
+    font-color: ecf0f1
+    font-style: italic
+  authors:
+    top: 70%
+    font-size: 16
+    font-color: bdc3c7
+  revision:
+    top: 75%
+    font-size: 14
+    font-color: 95a5a6

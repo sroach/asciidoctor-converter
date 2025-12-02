@@ -7,7 +7,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info, loggers,metrics,beans,mappings,threaddump,heapdump,swagger-ui,sbom
+        include: health, info, loggers,metrics,beans,mappings,threaddump,heapdump,swagger-ui,sbom,conversions
 
 github:
   staging:
