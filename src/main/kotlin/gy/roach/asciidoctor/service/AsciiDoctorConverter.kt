@@ -39,7 +39,8 @@ data class ConversionStats(
 @Service
 class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                            private val readingTimeDocinfoProcessor: ReadingTimeDocinfoProcessor,
-                           private val copyToClipboardDocinfoProcessor: CopyToClipboardDocinfoProcessor) {
+                           private val copyToClipboardDocinfoProcessor: CopyToClipboardDocinfoProcessor,
+                           private val markdownConverter: MarkdownConverter ) {
     val asciidoctor: Asciidoctor = Asciidoctor.Factory.create()
     private val logger = LoggerFactory.getLogger(AsciiDoctorConverter::class.java)
 
@@ -187,6 +188,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .sourceHighlighter("highlightjs")
             .allowUriRead(true)
             .linkAttrs(true)
+            .docType("book")
             .attribute("local-debug", converterSettings.localDebug.toString())
             .attribute("panel-server", converterSettings.panelServer)
             .attribute("panel-webserver", converterSettings.panelWebserver)
@@ -332,7 +334,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         }
 
         return directory.walkTopDown()
-            .filter { it.isFile && it.extension != "adoc" }
+            .filter { it.isFile && (it.extension != "adoc" || it.extension == "md")}
             .toList()
     }
 
@@ -437,7 +439,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         filesToConvert.addAll(additionalFilesSet)
 
         // Convert all files that need conversion using virtual threads
-        val executor = Executors.newVirtualThreadPerTaskExecutor()
+        var executor = Executors.newVirtualThreadPerTaskExecutor()
         val tasks = filesToConvert.map { file ->
             executor.submit {
                 // Calculate relative path from source directory
@@ -483,6 +485,33 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         tasks.forEach { it.get() }
         executor.close()
 
+        // Process Markdown files
+        val mdFiles = sourceDir.walkTopDown()
+            .filter { it.isFile && it.extension == "md" }
+            .toList()
+        var mdConverted = 0
+        var mdFailed = 0
+        executor = Executors.newVirtualThreadPerTaskExecutor()
+        val mdTasks = mdFiles.map { file ->
+            executor.submit {
+                val relativePath = file.relativeTo(sourceDir).parent ?: ""
+                val outputSubDir = if (relativePath.isNotEmpty()) {
+                    "${targetDir.absolutePath}/$relativePath"
+                } else {
+                    targetDir.absolutePath
+                }
+
+                if (markdownConverter.convertMarkdownToHtml(file, outputSubDir)) {
+                    mdConverted++
+                } else {
+                    mdFailed++
+                }
+            }
+        }
+        mdTasks.forEach { it.get() }
+        executor.close()
+        stats.filesConverted += mdConverted
+        stats.filesFailed += mdFailed
         // Copy non-AsciiDoc files to the target directory
         copyNonAdocFiles(nonAdocFiles, toDir, stats)
 
@@ -574,7 +603,18 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         }
     }
 
+    private fun copyMarkdownThemes(targetDir: String) {
+        val cssDir = File(targetDir, "css")
+        cssDir.mkdirs()
 
+        listOf("md-light.css", "md-dark.css").forEach { theme ->
+            javaClass.getResourceAsStream("/themes/$theme")?.use { input ->
+                File(cssDir, theme).outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+        }
+    }
     /**
      * Cleans up files in the target directory that no longer exist in the source using virtual threads.
      * This includes both .adoc files and their corresponding .html files,
