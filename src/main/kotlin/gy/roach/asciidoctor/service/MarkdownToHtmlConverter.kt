@@ -22,7 +22,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
         set(DocOpsMacroExtension.DEFAULT_SCALE, "1.0")
         set(DocOpsMacroExtension.DEFAULT_USE_DARK, "false")
     }
-    fun convertMarkdownToHtml(sourceFile: File, outputDir: String, cssTheme: String = "md-light.css"): Boolean {
+    fun convertMarkdownToHtml(sourceFile: File, outputDir: String, cssTheme: String = "github-markdown-css.css"): Boolean {
         return try {
 
             val parser = Parser.builder(options).build()
@@ -53,6 +53,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
     
     private fun buildHtmlDocument(title: String, body: String, cssTheme: String): String {
         val mdStyleSheet = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/$cssTheme")?.readAllBytes()?.decodeToString()
+        val modalOverlay = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/modal-overlay.css")?.readAllBytes()?.decodeToString()
         //language=html
         return """
             <!DOCTYPE html>
@@ -64,11 +65,75 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
                 <style>
                 $mdStyleSheet
                 </style>
+                <style>
+                $modalOverlay
+                </style>
+                <style>
+                    body {
+                        box-sizing: border-box;
+                        min-width: 200px;
+                        max-width: 980px;
+                        margin: 0 auto;
+                        padding: 45px;
+                    }
+
+                    @media (prefers-color-scheme: dark) {
+                        body {
+                            background-color: #0d1117;
+                        }
+                    }
+                </style>
             </head>
             <body>
                 <article class="markdown-body">
                     $body
                 </article>
+                <!-- Modal Overlay -->
+                <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
+                    <div class="modal-content" id="modalContent">
+                        <button class="close-button" onclick="closeModal()" aria-label="Close modal">×</button>
+                        <div id="modalSvgContainer"></div>
+                    </div>
+                </div>
+                <script>
+                    const modalOverlay = document.getElementById('modalOverlay');
+                    const modalSvgContainer = document.getElementById('modalSvgContainer');
+
+                    function openModal(container) {
+                        // Clone the SVG from the clicked container
+                        const svg = container.querySelector('svg');
+                        const svgClone = svg.cloneNode(true);
+
+                        // Clear previous content and add new SVG
+                        modalSvgContainer.innerHTML = '';
+                        modalSvgContainer.appendChild(svgClone);
+
+                        // Show modal with animation
+                        modalOverlay.classList.add('active');
+
+                        // Prevent body scroll when modal is open
+                        document.body.style.overflow = 'hidden';
+                    }
+
+                    function closeModal() {
+                        modalOverlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+
+                    function closeModalOnBackdrop(event) {
+                        // Only close if clicking the overlay itself, not the content
+                        if (event.target === modalOverlay) {
+                            closeModal();
+                        }
+                    }
+
+                    // Close modal with Escape key
+                    document.addEventListener('keydown', function(event) {
+                        if (event.key === 'Escape' && modalOverlay.classList.contains('active')) {
+                            closeModal();
+                        }
+                    });
+                </script>
             </body>
             </html>
         """.trimIndent()

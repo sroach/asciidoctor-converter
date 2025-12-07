@@ -235,16 +235,14 @@ class DocOpsMacroExtension private constructor() :
                 </object>
             """.trimIndent())*/
             val content = """
-                <div class="svg-wrapper">
-                <div class="expand-icon" onclick="openPopup(this)">
-                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-                  </svg>
-                </div>
+                <div class="example-item">
+                   <div class="svg-container" onclick="openModal(this)">
                 $svgRaw
-              </div>
+                </div>
+                </div>
+                
             """.trimIndent()
-            html.raw(svgRaw)
+            html.raw(content)
         }
 
         class Factory : NodeRendererFactory {
