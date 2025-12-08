@@ -1,11 +1,24 @@
 package gy.roach.asciidoctor.service
 
+import com.vladsch.flexmark.ext.admonition.AdmonitionExtension
+import com.vladsch.flexmark.ext.aside.AsideExtension
+import com.vladsch.flexmark.ext.definition.DefinitionExtension
+import com.vladsch.flexmark.ext.emoji.EmojiExtension
+import com.vladsch.flexmark.ext.footnotes.FootnoteExtension
+import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
+import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughSubscriptExtension
+import com.vladsch.flexmark.ext.ins.InsExtension
+import com.vladsch.flexmark.ext.superscript.SuperscriptExtension
+import com.vladsch.flexmark.ext.tables.TablesExtension
+import com.vladsch.flexmark.ext.toc.SimTocExtension
 import com.vladsch.flexmark.ext.toc.TocExtension
+import com.vladsch.flexmark.ext.wikilink.WikiLinkExtension
 import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
 import gy.roach.asciidoctor.config.ConverterSettings
 import gy.roach.asciidoctor.md.extension.DocOpsMacroExtension
+import gy.roach.asciidoctor.md.extension.MermaidNodeRendererFactory
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -17,16 +30,29 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
     private val logger = LoggerFactory.getLogger(MarkdownConverter::class.java)
 
     private val options = MutableDataSet().apply {
-        set(Parser.EXTENSIONS, listOf(DocOpsMacroExtension.create(), TocExtension.create()))
+        set(Parser.EXTENSIONS, listOf(DocOpsMacroExtension.create(),
+            TocExtension.create(),
+            AsideExtension.create(),
+            DefinitionExtension.create(),
+            EmojiExtension.create(),
+            FootnoteExtension.create(),
+            StrikethroughSubscriptExtension.create(),
+            InsExtension.create(),
+            SuperscriptExtension.create(),
+            TablesExtension.create(),
+            SimTocExtension.create(),
+            AdmonitionExtension.create(),
+            WikiLinkExtension.create()))
         set(DocOpsMacroExtension.WEBSERVER, converterSettings.panelServer)
         set(DocOpsMacroExtension.DEFAULT_SCALE, "1.0")
         set(DocOpsMacroExtension.DEFAULT_USE_DARK, "false")
+
     }
     fun convertMarkdownToHtml(sourceFile: File, outputDir: String, cssTheme: String = "github-markdown-css.css"): Boolean {
         return try {
 
             val parser = Parser.builder(options).build()
-            val renderer = HtmlRenderer.builder(options).build()
+            val renderer = HtmlRenderer.builder(options).nodeRendererFactory(MermaidNodeRendererFactory()).build()
             val markdownContent = sourceFile.readText()
             val document = parser.parse(markdownContent)
             val htmlBody = renderer.render(document)
@@ -54,6 +80,9 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
     private fun buildHtmlDocument(title: String, body: String, cssTheme: String): String {
         val mdStyleSheet = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/$cssTheme")?.readAllBytes()?.decodeToString()
         val modalOverlay = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/modal-overlay.css")?.readAllBytes()?.decodeToString()
+        val admonitionCss = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/admonition.css")?.readAllBytes()?.decodeToString()
+        val admonitionJs = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/admonition.js")?.readAllBytes()?.decodeToString()
+
         //language=html
         return """
             <!DOCTYPE html>
@@ -67,6 +96,9 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
                 </style>
                 <style>
                 $modalOverlay
+                </style>
+                <style>
+                $admonitionCss
                 </style>
                 <style>
                     body {
@@ -83,6 +115,8 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
                         }
                     }
                 </style>
+                <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js"></script>
+                
             </head>
             <body>
                 <article class="markdown-body">
@@ -134,6 +168,52 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
                         }
                     });
                 </script>
+                <script>
+                    mermaid.initialize({ startOnLoad: true });
+                </script>
+                <script>
+                $admonitionJs
+                </script>
+            </body>
+            </html>
+        """.trimIndent()
+    }
+}
+
+object MermaidFlexmark {
+    fun convertMarkdownWithMermaid(markdown: String): String {
+        val options = MutableDataSet().apply {
+            set(Parser.EXTENSIONS, listOf(
+                TablesExtension.create(),
+                StrikethroughExtension.create(),
+                DocOpsMacroExtension.create()
+            ))
+        }
+
+        val parser = Parser.builder(options).build()
+        val renderer = HtmlRenderer.builder(options)
+            .nodeRendererFactory(MermaidNodeRendererFactory())
+            .build()
+
+        val document = parser.parse(markdown)
+        return renderer.render(document)
+    }
+
+    fun createFullHtmlWithMermaid(markdownContent: String): String {
+        val htmlBody = convertMarkdownWithMermaid(markdownContent)
+
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+                <script>
+                    mermaid.initialize({ startOnLoad: true });
+                </script>
+            </head>
+            <body>
+                $htmlBody
             </body>
             </html>
         """.trimIndent()
