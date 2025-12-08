@@ -60,12 +60,12 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
             val htmlBody = renderer.render(document)
             
             // Wrap in full HTML document with styling
-            val fullHtml = buildHtmlDocument(
-                title = sourceFile.nameWithoutExtension,
-                body = htmlBody,
-                cssTheme = cssTheme
-            )
-            
+            val fullHtml = MermaidFlexmark.createFullHtmlWithMermaid(
+                markdownContent = htmlBody,
+                converterSettings = converterSettings,
+                title= sourceFile.nameWithoutExtension,
+                cssTheme = cssTheme)
+
             // Write output file
             val outputFile = File(outputDir, "${sourceFile.nameWithoutExtension}.html")
             outputFile.parentFile?.mkdirs()
@@ -79,7 +79,43 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
         }
     }
     
-    private fun buildHtmlDocument(title: String, body: String, cssTheme: String): String {
+}
+
+object MermaidFlexmark {
+    private fun convertMarkdownWithMermaid(markdown: String, converterSettings: ConverterSettings): String {
+        val options = MutableDataSet().apply {
+            set(Parser.EXTENSIONS, listOf(DocOpsMacroExtension.create(),
+                GitHubAdmonitionExtension.create(),
+                TocExtension.create(),
+                AsideExtension.create(),
+                DefinitionExtension.create(),
+                EmojiExtension.create(),
+                FootnoteExtension.create(),
+                StrikethroughSubscriptExtension.create(),
+                InsExtension.create(),
+                SuperscriptExtension.create(),
+                TablesExtension.create(),
+                SimTocExtension.create(),
+                AdmonitionExtension.create(),
+                WikiLinkExtension.create()))
+            set(DocOpsMacroExtension.WEBSERVER, converterSettings.panelServer)
+            set(DocOpsMacroExtension.DEFAULT_SCALE, "1.0")
+            set(DocOpsMacroExtension.DEFAULT_USE_DARK, "false")
+
+        }
+
+        val parser = Parser.builder(options).build()
+        val renderer = HtmlRenderer.builder(options)
+            .nodeRendererFactory(MermaidNodeRendererFactory())
+            .build()
+
+        val document = parser.parse(markdown)
+        return renderer.render(document)
+    }
+
+    fun createFullHtmlWithMermaid(markdownContent: String, converterSettings: ConverterSettings, title: String, cssTheme: String): String {
+        val htmlBody = convertMarkdownWithMermaid(markdownContent, converterSettings = converterSettings)
+
         val mdStyleSheet = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/$cssTheme")?.readAllBytes()?.decodeToString()
         val modalOverlay = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/modal-overlay.css")?.readAllBytes()?.decodeToString()
         val admonitionCss = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/admonition.css")?.readAllBytes()?.decodeToString()
@@ -122,7 +158,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
             </head>
             <body>
                 <article class="markdown-body">
-                    $body
+                    $htmlBody
                 </article>
                 <!-- Modal Overlay -->
                 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
@@ -176,46 +212,6 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
                 <script>
                 $admonitionJs
                 </script>
-            </body>
-            </html>
-        """.trimIndent()
-    }
-}
-
-object MermaidFlexmark {
-    fun convertMarkdownWithMermaid(markdown: String): String {
-        val options = MutableDataSet().apply {
-            set(Parser.EXTENSIONS, listOf(
-                TablesExtension.create(),
-                StrikethroughExtension.create(),
-                DocOpsMacroExtension.create()
-            ))
-        }
-
-        val parser = Parser.builder(options).build()
-        val renderer = HtmlRenderer.builder(options)
-            .nodeRendererFactory(MermaidNodeRendererFactory())
-            .build()
-
-        val document = parser.parse(markdown)
-        return renderer.render(document)
-    }
-
-    fun createFullHtmlWithMermaid(markdownContent: String): String {
-        val htmlBody = convertMarkdownWithMermaid(markdownContent)
-
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-                <script>
-                    mermaid.initialize({ startOnLoad: true });
-                </script>
-            </head>
-            <body>
-                $htmlBody
             </body>
             </html>
         """.trimIndent()

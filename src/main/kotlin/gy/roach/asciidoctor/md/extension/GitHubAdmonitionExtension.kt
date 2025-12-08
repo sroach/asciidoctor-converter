@@ -75,7 +75,6 @@ class GitHubAdmonitionExtension private constructor() : Parser.ParserExtension, 
                 var childNode = firstChild.firstChild
                 val allText = StringBuilder()
                 while (childNode != null) {
-                    println("DEBUG: Child node type: ${childNode.javaClass.simpleName}, content: '${childNode.chars}'")
                     allText.append(childNode.chars.toString())
                     childNode = childNode.next
                 }
