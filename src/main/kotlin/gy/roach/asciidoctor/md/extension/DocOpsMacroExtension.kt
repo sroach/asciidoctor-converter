@@ -12,10 +12,8 @@ import com.vladsch.flexmark.util.ast.Block
 import com.vladsch.flexmark.util.data.DataHolder
 import com.vladsch.flexmark.util.data.DataKey
 import com.vladsch.flexmark.util.data.MutableDataHolder
-import com.vladsch.flexmark.util.data.MutableDataSet
 import com.vladsch.flexmark.util.sequence.BasedSequence
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
@@ -236,7 +234,7 @@ class DocOpsMacroExtension private constructor() :
             """.trimIndent())*/
             val content = """
                 <div class="example-item">
-                   <div class="svg-container" onclick="openModal(this)">
+                   <div class="svg-container docops-container" onclick="openModal(this)">
                 $svgRaw
                 </div>
                 </div>

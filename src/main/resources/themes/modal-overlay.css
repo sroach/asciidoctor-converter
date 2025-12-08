@@ -1,6 +1,8 @@
 /* SVG Container - Clickable */
-.svg-container {
+.docops-container {
     display: inline-block;
+}
+.svg-container {
     cursor: pointer;
     border: 2px solid #ddd;
     border-radius: 8px;
@@ -9,6 +11,7 @@
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
 
 .svg-container:hover {
     border-color: #4CAF50;

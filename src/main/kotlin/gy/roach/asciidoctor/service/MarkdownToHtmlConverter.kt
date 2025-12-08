@@ -18,6 +18,7 @@ import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
 import gy.roach.asciidoctor.config.ConverterSettings
 import gy.roach.asciidoctor.md.extension.DocOpsMacroExtension
+import gy.roach.asciidoctor.md.extension.GitHubAdmonitionExtension
 import gy.roach.asciidoctor.md.extension.MermaidNodeRendererFactory
 
 import org.slf4j.LoggerFactory
@@ -31,6 +32,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
 
     private val options = MutableDataSet().apply {
         set(Parser.EXTENSIONS, listOf(DocOpsMacroExtension.create(),
+            GitHubAdmonitionExtension.create(),
             TocExtension.create(),
             AsideExtension.create(),
             DefinitionExtension.create(),
