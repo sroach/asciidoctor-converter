@@ -198,7 +198,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .attribute("docinfodir", docinfoDir)
             .attribute("docinfo", "shared")
             .attribute("encoding", "utf-8")
-            .attribute("pdf-theme", "uri:classloader:/themes/docops-theme.yml")
+            .attribute("pdf-theme", "uri:classloader:/themes/basic-theme.yml")
             .attribute("pdf-fontsdir", "uri:classloader:/fonts;GEM_FONTS_DIR")
             .build()
 
@@ -253,7 +253,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                         // Create parent directories if they don't exist
                         targetFile.parentFile?.mkdirs()
                         val attrs = buildAttributes()
-                        val options = buildPdfOptions(buildAttributes())
+                        val options = buildPdfOptions(attrs)
                         options.setMkDirs(true)
 
                         // Set the output directory to the parent directory of the target file

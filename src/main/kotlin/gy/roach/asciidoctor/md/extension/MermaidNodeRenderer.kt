@@ -24,23 +24,25 @@ class MermaidNodeRenderer : NodeRenderer {
         val language = node.info.toString()
 
         if (language == "mermaid") {
-            /*html.line()
-            html.attr("class", "mermaid")
-            html.withAttr().tag("div")
-            html.text(node.contentChars.toString())
-            html.tag("/div")
-            html.line()*/
-            //language=html
-            val content = """
-                <div class="example-item">
-                    <div class='mermaid svg-container' onclick='openModal(this);'>
-                        ${node.contentChars.toString()}
-                    </div>
-                </div>
-            """.trimIndent()
-            html.raw(content)
+            // Remove empty lines that cause paragraph wrapping
+            val mermaidContent = node.contentChars.toString()
+                .lines()
+                .filter { it.isNotBlank() }
+                .joinToString("\n")
+
+            // Disable HTML processing temporarily and output everything as one raw block
+            val fullContent = buildString {
+                appendLine("<div class=\"example-item\">")
+                appendLine("<div class='mermaid svg-container' onclick='openModal(this);'>")
+                appendLine(mermaidContent)
+                appendLine("</div>")
+                appendLine("</div>")
+            }
+
+            html.line()
+            html.rawPre(fullContent.trimEnd())
+            html.line()
         } else {
-            // Default rendering for other code blocks
             context.delegateRender()
         }
     }

@@ -1,33 +1,33 @@
 extends: default
-role:
-  love:
-    font-color: E0245E
-  wild:
-    font-color: 222222
-    text-transform: uppercase
-    font-style: italic
-    background-color: BCD637
-    border-offset: 1.5
-header:
-  font_color: 999999
-  height: 0.5in
-  recto:
-    columns: "<40% =20% >40%"
-    right:
-      content: '_{organization}_'
-    center:
-      content: image:docops.svg[width=40,height=40]
-  verso:
-    columns: $header_recto_columns
-    left:
-      content: $header_recto_right_content
-    center:
-      content: $header_recto_center_content
+page:
+  margin: [0.5in, 0.67in, 0.67in, 0.67in]
+  margin-inner: 0.75in
+  margin-outer: 0.59in
+
+title-page:
+  text-align: right
+  font-size: 24
+  background-image: cover-page.svg
+  title:
+    font_size: $heading_h1_font_size
+    font_color: #aaaaaa
+    font_style: bold
+    line_height: 1.2
+    top: 65%
+
 footer:
-  height: 0.45in
+  border-color: #DDDDDD
+  border-style: solid
+  height: 0.75in
   recto:
     right:
-      content: '{section-or-chapter-title} | {page-number}'
+      content: '{section-or-chapter-title} | *{page-number} of {page-count}*'
   verso:
     left:
-      content: '{page-number} | {chapter-title}'
+      content: '*{page-number} of {page-count}* | {section-or-chapter-title}'
+
+
+base:
+  font-family: Helvetica
+  font-size: 11
+  line-height: 1.5
