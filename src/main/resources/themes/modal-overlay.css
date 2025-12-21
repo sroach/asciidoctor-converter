@@ -1,21 +1,44 @@
-/* SVG Container - Clickable */
+/* Theme Variables */
+:root {
+    --svg-bg: white;
+    --svg-border: #ddd;
+    --svg-hover-border: #4CAF50;
+    --text-color: #666;
+    --modal-bg: white;
+    --shadow-light: rgba(0, 0, 0, 0.1);
+    --shadow-medium: rgba(0, 0, 0, 0.15);
+    --shadow-heavy: rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --svg-bg: #2b2b2b;
+        --svg-border: #444;
+        --svg-hover-border: #4CAF50;
+        --text-color: #aaa;
+        --modal-bg: #1e1e1e;
+        --shadow-light: rgba(0, 0, 0, 0.3);
+        --shadow-medium: rgba(0, 0, 0, 0.4);
+        --shadow-heavy: rgba(0, 0, 0, 0.6);
+    }
+}
 .docops-container {
     display: inline-block;
 }
 .svg-container {
     cursor: pointer;
-    border: 2px solid #ddd;
+    border: 2px solid var(--svg-border);
     border-radius: 8px;
     padding: 20px;
-    background: white;
+    background: var(--svg-bg);
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px var(--shadow-light);
 }
 
 
 .svg-container:hover {
-    border-color: #4CAF50;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    border-color: var(--svg-hover-border);
+    box-shadow: 0 4px 8px var(--shadow-medium);
     transform: translateY(-2px);
 }
 
@@ -27,7 +50,7 @@
     text-align: center;
     margin-top: 10px;
     font-size: 14px;
-    color: #666;
+    color: var(--text-color);
 }
 
 /* Modal Overlay */
@@ -56,12 +79,12 @@
 /* Modal Content */
 .modal-content {
     position: relative;
-    background: white;
+    background: var(--modal-bg);
     border-radius: 12px;
     padding: 30px;
     max-width: 90vw;
     max-height: 90vh;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 40px var(--shadow-heavy);
     transform: scale(0.8);
     transition: transform 0.3s ease;
 }
