@@ -1,0 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;600&display=swap');
+
+.markdown-body {
+    /* Custom Variables - High Contrast & Sharp Accents */
+    --font-heading: 'Syne', sans-serif;
+    --font-body: 'Outfit', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    
+    --accent-primary: #7e57ff;
+    --accent-secondary: #00f2fe;
+    --bg-gradient: radial-gradient(circle at top left, #1a1a2e 0%, #0d0d12 100%);
+    
+    background: var(--bg-gradient);
+    color: #e0e0e0;
+    font-family: var(--font-body);
+    line-height: 1.7;
+    padding: 3rem;
+    max-width: 900px;
+    margin: 0 auto;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    animation: pageReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Staggered Reveal for Content */
+.markdown-body > * {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: itemSlideIn 0.5s ease forwards;
+}
+
+.markdown-body > *:nth-child(1) { animation-delay: 0.1s; }
+.markdown-body > *:nth-child(2) { animation-delay: 0.2s; }
+.markdown-body > *:nth-child(3) { animation-delay: 0.3s; }
+.markdown-body > *:nth-child(n+4) { animation-delay: 0.4s; }
+
+@keyframes pageReveal {
+    to { opacity: 1; }
+}
+
+@keyframes itemSlideIn {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Typography */
+.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+    font-family: var(--font-heading);
+    color: #fff;
+    margin-top: 2.5rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+.markdown-body h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    border-bottom: none;
+    margin-bottom: 2rem;
+}
+
+.markdown-body h2 {
+    font-size: 2rem;
+    border-left: 4px solid var(--accent-primary);
+    padding-left: 1rem;
+    border-bottom: none;
+}
+
+/* Code Blocks - IDE Aesthetic */
+.markdown-body pre {
+    background: #000000 !important;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.markdown-body pre::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 2px; height: 100%;
+    background: var(--accent-primary);
+}
+
+.markdown-body code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: rgba(126, 87, 255, 0.15);
+    color: #b392ff;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+.markdown-body pre code {
+    background: transparent;
+    color: #d1d1d1;
+    padding: 0;
+}
+
+/* Links & Accents */
+.markdown-body a {
+    color: var(--accent-secondary);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--accent-secondary);
+    transition: all 0.2s ease;
+}
+
+.markdown-body a:hover {
+    color: #fff;
+    border-bottom-style: solid;
+    text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+}
+
+/* Blockquotes */
+.markdown-body blockquote {
+    margin: 2rem 0;
+    padding: 1rem 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 4px solid var(--accent-secondary);
+    font-style: italic;
+    color: #aaa;
+}
+
+/* Custom Table Design */
+.markdown-body table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 2rem 0;
+    border: 1px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.markdown-body th {
+    background: #1a1a2e;
+    color: var(--accent-secondary);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    padding: 1rem;
+}
+
+.markdown-body td {
+    padding: 1rem;
+    border-top: 1px solid #222;
+}
+
+/* Horizontal Rule */
+.markdown-body hr {
+    height: 1px;
+    background: linear-gradient(to right, transparent, #444, transparent);
+    border: none;
+    margin: 4rem 0;
+}
