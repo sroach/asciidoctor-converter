@@ -654,12 +654,17 @@ class DocOpsShowcaseProcessor
       html << "<div class=\"gallery-item-header\">"
       html << "<div class=\"gallery-item-title\">#{ensure_utf8(title)}</div>"
       html << "<div class=\"gallery-item-actions\">"
-      html << "<button class=\"gallery-content-btn\" onclick=\"showcaseGallery.showContent('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}', '#{kind}', this.getAttribute('data-content'))\" data-content=\"#{escaped_content}\" title=\"View content\">{ }</button>"
-      html << "<button class=\"gallery-expand-btn\" onclick=\"showcaseGallery.expandItem('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}')\" title=\"Expand to fullscreen\">⛶</button>"
+      # Using more creative button labels instead of symbols
+      html << "<button class=\"gallery-content-btn\" onclick=\"showcaseGallery.showContent('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}', '#{kind}', this.getAttribute('data-content'))\" data-content=\"#{escaped_content}\">VIEW SOURCE</button>"
+      html << "<button class=\"gallery-expand-btn\" onclick=\"showcaseGallery.expandItem('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}')\" title=\"Expand\">⛶</button>"
       html << "</div>"
       html << "</div>"
       html << "<div class=\"gallery-item-image\">"
-      html << ensure_utf8(svg_content)
+      # Wrap SVG inner content in a <g> to follow the UI animation rule (nested group for transforms)
+      # This regex finds the opening <svg ...> tag and the closing </svg> tag, and wraps everything between them.
+      processed_svg = ensure_utf8(svg_content).sub(/(<svg[^>]*>)(.*)(<\/svg>)/m, '\1<g class="docops-transform-group">\2</g>\3')
+
+      html << processed_svg
       html << "</div>"
       html << "</div>"
     end

@@ -501,7 +501,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     targetDir.absolutePath
                 }
 
-                if (markdownConverter.convertMarkdownToHtml(file, outputSubDir)) {
+                if (markdownConverter.convertMarkdownToHtml(file, outputSubDir, cssTheme = "brutalist-markdown-theme.css")) {
                     mdConverted++
                 } else {
                     mdFailed++
