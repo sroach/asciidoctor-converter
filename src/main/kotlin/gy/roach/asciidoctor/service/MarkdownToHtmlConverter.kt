@@ -45,7 +45,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
             SimTocExtension.create(),
             AdmonitionExtension.create(),
             WikiLinkExtension.create()))
-        set(DocOpsMacroExtension.WEBSERVER, converterSettings.panelServer)
+        set(DocOpsMacroExtension.WEBSERVER, converterSettings.panelWebserver)
         set(DocOpsMacroExtension.DEFAULT_SCALE, "1.0")
         set(DocOpsMacroExtension.DEFAULT_USE_DARK, "false")
 
@@ -205,6 +205,45 @@ object MermaidFlexmark {
                             closeModal();
                         }
                     });
+                    const docopsCopy = {
+                        url: (btn) => {
+                                const url = btn.closest('.docops-media-card').getAttribute('data-url');
+                                navigator.clipboard.writeText(url).then(() => {
+                                    const originalText = btn.innerText;
+                                    btn.innerText = 'COPIED!';
+                                    setTimeout(() => btn.innerText = originalText, 2000);
+                                });
+                            },
+                        svg: (btn) => {
+                            const svg = btn.closest('.docops-media-card').querySelector('svg').outerHTML;
+                            navigator.clipboard.writeText(svg).then(() => {
+                                const originalText = btn.innerText;
+                                btn.innerText = 'COPIED!';
+                                setTimeout(() => btn.innerText = originalText, 2000);
+                            });
+                        },
+                        png: (btn) => {
+                            const svgElement = btn.closest('.docops-media-card').querySelector('svg');
+                            const svgData = new XMLSerializer().serializeToString(svgElement);
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            const img = new Image();
+                            
+                            img.onload = () => {
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+                                ctx.drawImage(img, 0, 0);
+                                canvas.toBlob(blob => {
+                                    const item = new ClipboardItem({ "image/png": blob });
+                                    navigator.clipboard.write([item]);
+                                    const originalText = btn.innerText;
+                                    btn.innerText = 'COPIED!';
+                                    setTimeout(() => btn.innerText = originalText, 2000);
+                                });
+                            };
+                            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                        }
+                    };
                 </script>
                 <script>
                     mermaid.initialize({ startOnLoad: true });

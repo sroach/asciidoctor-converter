@@ -346,7 +346,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
      * @param toDir The directory where files will be written
      * @return Statistics about the conversion process
      */
-    fun convert(sourceDir: File, toDir: String): ConversionStats {
+    fun convert(sourceDir: File, toDir: String, cssTheme: String = "github-markdown-css.css"): ConversionStats {
         val stats = ConversionStats()
         val targetDir = File(toDir)
 
@@ -501,7 +501,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     targetDir.absolutePath
                 }
 
-                if (markdownConverter.convertMarkdownToHtml(file, outputSubDir, cssTheme = "brutalist-markdown-theme.css")) {
+                if (markdownConverter.convertMarkdownToHtml(file, outputSubDir, cssTheme= cssTheme)) {
                     mdConverted++
                 } else {
                     mdFailed++

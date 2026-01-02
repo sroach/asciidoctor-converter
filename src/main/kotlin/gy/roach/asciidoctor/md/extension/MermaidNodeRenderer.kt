@@ -32,10 +32,15 @@ class MermaidNodeRenderer : NodeRenderer {
 
             // Disable HTML processing temporarily and output everything as one raw block
             val fullContent = buildString {
-                appendLine("<div class=\"example-item\">")
-                appendLine("<div class='mermaid svg-container' onclick='openModal(this);'>")
+                appendLine("<div class=\"docops-media-card\">")
+                appendLine("  <div class='mermaid svg-container' onclick='openModal(this);'>")
                 appendLine(mermaidContent)
-                appendLine("</div>")
+                appendLine("  </div>")
+                appendLine("  <div class=\"docops-control-bar\">")
+                appendLine("    <button class=\"docops-btn\" onclick=\"openModal(this.closest('.docops-media-card').querySelector('.svg-container'))\" title=\"View Large\">VIEW</button>")
+                appendLine("    <button class=\"docops-btn\" onclick=\"docopsCopy.svg(this)\" title=\"Copy SVG Source\">SVG</button>")
+                appendLine("    <button class=\"docops-btn\" onclick=\"docopsCopy.png(this)\" title=\"Copy as PNG\">PNG</button>")
+                appendLine("  </div>")
                 appendLine("</div>")
             }
 

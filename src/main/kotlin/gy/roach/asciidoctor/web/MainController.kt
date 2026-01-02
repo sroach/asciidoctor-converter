@@ -50,7 +50,8 @@ class MainController(private val convert: AsciiDoctorConverter,
     @GetMapping("/test", produces = ["text/html"])
     fun localConversion(
         @RequestParam("sourceDir") sourceDirectory: String,
-        @RequestParam("outputDir") outputDirectory: String
+        @RequestParam("outputDir") outputDirectory: String,
+        @RequestParam("cssTheme", defaultValue = "github-markdown-css.css") cssTheme: String
     ): ResponseEntity<String> {
 
         // Capture start time
@@ -141,7 +142,7 @@ class MainController(private val convert: AsciiDoctorConverter,
             }
 
             // Convert files and get statistics
-            val stats = convert.convert(localDirectory, validatedOutputDir.toString())
+            val stats = convert.convert(localDirectory, validatedOutputDir.toString(), cssTheme = cssTheme)
 
             // Calculate execution duration
             val endTime = System.currentTimeMillis()
@@ -486,7 +487,8 @@ class MainController(private val convert: AsciiDoctorConverter,
     fun convertToMultipleFormats(
         @RequestParam("sourceDir") sourceDirectory: String,
         @RequestParam("outputDir") outputDirectory: String,
-        @RequestParam("formats", defaultValue = "") formats: String
+        @RequestParam("formats", defaultValue = "") formats: String,
+        @RequestParam("cssTheme", defaultValue = "github-markdown-css.css") cssTheme: String
     ): ResponseEntity<Map<String, Any>> {
 
         // Validate paths
@@ -529,7 +531,7 @@ class MainController(private val convert: AsciiDoctorConverter,
             try {
                 when (format) {
                     "html" -> {
-                        val stats = convert.convert(localDirectory, validatedOutputDir.toString())
+                        val stats = convert.convert(localDirectory, validatedOutputDir.toString(), cssTheme)
                         conversionResults[format] = mapOf(
                             "status" to "completed",
                             "stats" to stats
@@ -721,7 +723,8 @@ class MainController(private val convert: AsciiDoctorConverter,
     fun convertSingleFileToMultipleFormats(
         @RequestParam("sourceFile") sourceFile: String,
         @RequestParam("outputDir") outputDir: String,
-        @RequestParam("formats", defaultValue = "") formats: String
+        @RequestParam("formats", defaultValue = "") formats: String,
+        @RequestParam("cssTheme", defaultValue = "github-markdown-css.css") cssTheme: String
     ): ResponseEntity<Map<String, Any>> {
 
         // Validate paths
@@ -765,7 +768,7 @@ class MainController(private val convert: AsciiDoctorConverter,
                         // For HTML, we can convert directly (assuming you have a single file HTML method)
                         // Or you could create a temporary directory with just this file
                         val parentDir = sourceFileObj.parentFile
-                        val stats = convert.convert(parentDir, validatedOutputDir.toString())
+                        val stats = convert.convert(parentDir, validatedOutputDir.toString(), cssTheme = cssTheme)
                         conversionResults[format] = mapOf(
                             "status" to "completed",
                             "stats" to stats
