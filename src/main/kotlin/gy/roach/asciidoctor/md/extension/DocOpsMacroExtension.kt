@@ -233,19 +233,27 @@ class DocOpsMacroExtension private constructor() :
                 </object>
             """.trimIndent())*/
             val content = """
-                    <div class="docops-media-card" data-url="$urlString">
-                       <div class="svg-container docops-container" onclick="openModal(this)">
-                         $svgRaw
-                       </div>
-                       <div class="docops-control-bar">
-                         <button class="docops-btn" onclick="openModal(this.closest('.docops-media-card').querySelector('.svg-container'))">VIEW</button>
-                         <button class="docops-btn" onclick="docopsCopy.url(this)">LINK</button>
-                         <button class="docops-btn" onclick="docopsCopy.svg(this)">SVG</button>
-                         <button class="docops-btn" onclick="docopsCopy.png(this)">PNG</button>
-                       </div>
-                    </div>
+                        <div class="docops-media-card" data-url="$urlString">
+                           <div class="svg-container docops-container" onclick="openModal(this)">
+                             $svgRaw
+                           </div>
+                           <div class="docops-control-bar">
+                             <button class="docops-btn" onclick="openModal(this.closest('.docops-media-card').querySelector('.svg-container'))">VIEW</button>
+                             <button class="docops-btn" onclick="docopsData.toggle(this)">DATA</button>
+                             <button class="docops-btn" onclick="docopsCopy.url(this)">LINK</button>
+                             <button class="docops-btn" onclick="docopsCopy.svg(this)">SVG</button>
+                             <button class="docops-btn" onclick="docopsCopy.png(this)">PNG</button>
+                           </div>
+                           <div class="docops-data-panel" style="display: none;">
+                             <div class="docops-data-header">
+                                <span>Embedded Data</span>
+                                <button onclick="this.closest('.docops-data-panel').style.display='none'">×</button>
+                             </div>
+                             <div class="docops-data-table-container"></div>
+                           </div>
+                        </div>
                 
-                """.trimIndent()
+                    """.trimIndent()
             html.raw(content)
         }
 
