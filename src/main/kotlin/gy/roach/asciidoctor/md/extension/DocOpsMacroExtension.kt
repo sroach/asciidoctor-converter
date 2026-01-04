@@ -60,7 +60,7 @@ class DocOpsMacroExtension private constructor() :
         val WEBSERVER = DataKey("DOCOPS_WEBSERVER", "http://localhost:8080")
         val DEFAULT_SCALE = DataKey("DOCOPS_DEFAULT_SCALE", "1.0")
         val DEFAULT_TYPE = DataKey("DOCOPS_DEFAULT_TYPE", "svg")
-        val DEFAULT_USE_DARK = DataKey("DOCOPS_DEFAULT_USE_DARK", "false")
+        val DEFAULT_USE_DARK = DataKey("DOCOPS_DEFAULT_USE_DARK", false)
         val DEFAULT_USE_GLASS = DataKey("DOCOPS_DEFAULT_USE_GLASS", "false")
         val DEFAULT_BACKEND = DataKey("DOCOPS_DEFAULT_BACKEND", "html5")
 
@@ -210,6 +210,7 @@ class DocOpsMacroExtension private constructor() :
             val payload = compressAndEncode(node.body)
             val opts = node.options
 
+            println(defaultUseDark)
             // Build URL with parameters
             val urlString = buildString {
                 append("$webserver/api/docops/svg?")
@@ -234,7 +235,7 @@ class DocOpsMacroExtension private constructor() :
             """.trimIndent())*/
             val content = """
                         <div class="docops-media-card" data-url="$urlString">
-                           <div class="svg-container docops-container" onclick="openModal(this)">
+                           <div class="svg-container">
                              $svgRaw
                            </div>
                            <div class="docops-control-bar">

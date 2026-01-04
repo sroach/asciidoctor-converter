@@ -5,7 +5,6 @@ import com.vladsch.flexmark.ext.aside.AsideExtension
 import com.vladsch.flexmark.ext.definition.DefinitionExtension
 import com.vladsch.flexmark.ext.emoji.EmojiExtension
 import com.vladsch.flexmark.ext.footnotes.FootnoteExtension
-import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughSubscriptExtension
 import com.vladsch.flexmark.ext.ins.InsExtension
 import com.vladsch.flexmark.ext.superscript.SuperscriptExtension
@@ -47,7 +46,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
             WikiLinkExtension.create()))
         set(DocOpsMacroExtension.WEBSERVER, converterSettings.panelWebserver)
         set(DocOpsMacroExtension.DEFAULT_SCALE, "1.0")
-        set(DocOpsMacroExtension.DEFAULT_USE_DARK, "false")
+        set(DocOpsMacroExtension.DEFAULT_USE_DARK, false)
 
     }
     fun convertMarkdownToHtml(sourceFile: File, outputDir: String, cssTheme: String = "github-markdown-css.css"): Boolean {
@@ -82,7 +81,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
 }
 
 object MermaidFlexmark {
-    private fun convertMarkdownWithMermaid(markdown: String, converterSettings: ConverterSettings): String {
+    private fun convertMarkdownWithMermaid(markdown: String, converterSettings: ConverterSettings, useDark: Boolean): String {
         val options = MutableDataSet().apply {
             set(Parser.EXTENSIONS, listOf(DocOpsMacroExtension.create(),
                 GitHubAdmonitionExtension.create(),
@@ -100,7 +99,7 @@ object MermaidFlexmark {
                 WikiLinkExtension.create()))
             set(DocOpsMacroExtension.WEBSERVER, converterSettings.panelServer)
             set(DocOpsMacroExtension.DEFAULT_SCALE, "1.0")
-            set(DocOpsMacroExtension.DEFAULT_USE_DARK, "false")
+            set(DocOpsMacroExtension.DEFAULT_USE_DARK, useDark)
 
         }
 
@@ -114,7 +113,8 @@ object MermaidFlexmark {
     }
 
     fun createFullHtmlWithMermaid(markdownContent: String, converterSettings: ConverterSettings, title: String, cssTheme: String): String {
-        val htmlBody = convertMarkdownWithMermaid(markdownContent, converterSettings = converterSettings)
+        val useDark = cssTheme.contains("dark") || cssTheme.contains("brutalist")
+        val htmlBody = convertMarkdownWithMermaid(markdownContent, converterSettings = converterSettings, useDark = useDark)
 
         val mdStyleSheet = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/$cssTheme")?.readAllBytes()?.decodeToString()
         val modalOverlay = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/modal-overlay.css")?.readAllBytes()?.decodeToString()
