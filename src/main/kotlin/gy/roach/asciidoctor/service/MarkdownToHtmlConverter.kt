@@ -51,7 +51,8 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
     }
     fun convertMarkdownToHtml(sourceFile: File, outputDir: String, cssTheme: String = "github-markdown-css.css"): Boolean {
         return try {
-
+            val useDark = cssTheme.contains("dark") || cssTheme.contains("brutalist")
+            options.set(DocOpsMacroExtension.DEFAULT_USE_DARK, useDark)
             val parser = Parser.builder(options).build()
             val renderer = HtmlRenderer.builder(options).nodeRendererFactory(MermaidNodeRendererFactory()).build()
             val markdownContent = sourceFile.readText()
@@ -259,16 +260,34 @@ object MermaidFlexmark {
                     <div class="modal-content" id="modalContent">
                         <button class="close-button" onclick="closeModal()" aria-label="Close modal">×</button>
                         <div id="modalSvgContainer"></div>
+                        <div class="modal-zoom-controls">
+                            <button class="modal-zoom-btn" onclick="modalZoomOut()" title="Zoom Out">−</button>
+                            <span class="modal-zoom-level" id="modalZoomLevel">100%</span>
+                            <button class="modal-zoom-btn" onclick="modalZoomIn()" title="Zoom In">+</button>
+                            <button class="modal-zoom-btn" onclick="modalZoomReset()" title="Reset Zoom">⟲</button>
+                        </div>
                     </div>
                 </div>
                 <script>
                     const modalOverlay = document.getElementById('modalOverlay');
                     const modalSvgContainer = document.getElementById('modalSvgContainer');
+                    
+                    // Zoom state
+                    let modalZoomLevel = 1;
+                    const MODAL_ZOOM_MIN = 0.25;
+                    const MODAL_ZOOM_MAX = 4;
+                    const MODAL_ZOOM_STEP = 0.25;
 
                     function openModal(container) {
+                        // Reset zoom level
+                        modalZoomLevel = 1;
+                        updateZoomDisplay();
+                        
                         // Clone the SVG from the clicked container
                         const svg = container.querySelector('svg');
                         const svgClone = svg.cloneNode(true);
+                        svgClone.style.transform = 'scale(1)';
+                        svgClone.style.transition = 'transform 0.2s ease';
 
                         // Clear previous content and add new SVG
                         modalSvgContainer.innerHTML = '';
@@ -284,12 +303,47 @@ object MermaidFlexmark {
                     function closeModal() {
                         modalOverlay.classList.remove('active');
                         document.body.style.overflow = '';
+                        modalZoomLevel = 1;
                     }
 
                     function closeModalOnBackdrop(event) {
                         // Only close if clicking the overlay itself, not the content
                         if (event.target === modalOverlay) {
                             closeModal();
+                        }
+                    }
+                    
+                    function modalZoomIn() {
+                        if (modalZoomLevel < MODAL_ZOOM_MAX) {
+                            modalZoomLevel = Math.min(modalZoomLevel + MODAL_ZOOM_STEP, MODAL_ZOOM_MAX);
+                            applyModalZoom();
+                        }
+                    }
+                    
+                    function modalZoomOut() {
+                        if (modalZoomLevel > MODAL_ZOOM_MIN) {
+                            modalZoomLevel = Math.max(modalZoomLevel - MODAL_ZOOM_STEP, MODAL_ZOOM_MIN);
+                            applyModalZoom();
+                        }
+                    }
+                    
+                    function modalZoomReset() {
+                        modalZoomLevel = 1;
+                        applyModalZoom();
+                    }
+                    
+                    function applyModalZoom() {
+                        const svg = modalSvgContainer.querySelector('svg');
+                        if (svg) {
+                            svg.style.transform = `scale(${'$'}{modalZoomLevel})`;
+                        }
+                        updateZoomDisplay();
+                    }
+                    
+                    function updateZoomDisplay() {
+                        const display = document.getElementById('modalZoomLevel');
+                        if (display) {
+                            display.textContent = `${'$'}{Math.round(modalZoomLevel * 100)}%`;
                         }
                     }
 

@@ -13,6 +13,7 @@ import com.vladsch.flexmark.util.data.DataHolder
 import com.vladsch.flexmark.util.data.DataKey
 import com.vladsch.flexmark.util.data.MutableDataHolder
 import com.vladsch.flexmark.util.sequence.BasedSequence
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.net.URLEncoder
@@ -78,18 +79,21 @@ class DocOpsMacroExtension private constructor() :
         }
 
         // Patterns for parsing
-        private val OPEN_PATTERN = Pattern.compile("""^\[docops:(\w+)((?:\s+\w+=\S+)*)\s*]\s*$""")
+        private val OPEN_PATTERN = Pattern.compile("""^\[docops:(\w+)(.*?)]\s*$""")
         private val CLOSE_PATTERN = Pattern.compile("""^\[/docops]\s*$""")
 
         private fun parseOptions(optionsStr: String): Map<String, String> {
             if (optionsStr.isBlank()) return emptyMap()
-
             val options = mutableMapOf<String, String>()
-            val optionPattern = Pattern.compile("""(\w+)=(\S+)""")
+            // Updated pattern to handle quoted values with spaces
+            val optionPattern = Pattern.compile("""(\w+)=(?:"([^"]*)"|'([^']*)'|(\S+))""")
             val matcher = optionPattern.matcher(optionsStr)
 
             while (matcher.find()) {
-                options[matcher.group(1)] = matcher.group(2)
+                val key = matcher.group(1)
+                // Value is in group 2 (double quotes), group 3 (single quotes), or group 4 (unquoted)
+                val value = matcher.group(2) ?: matcher.group(3) ?: matcher.group(4)
+                options[key] = value
             }
             return options
         }
@@ -189,7 +193,7 @@ class DocOpsMacroExtension private constructor() :
      * Renderer for DocOpsMacroBlock
      */
     class DocOpsMacroRenderer(private val options: DataHolder) : NodeRenderer {
-
+        private val logger = LoggerFactory.getLogger(DocOpsMacroRenderer::class.java)
         private val webserver = WEBSERVER[options]
         private val defaultScale = DEFAULT_SCALE[options]
         private val defaultType = DEFAULT_TYPE[options]
@@ -210,7 +214,6 @@ class DocOpsMacroExtension private constructor() :
             val payload = compressAndEncode(node.body)
             val opts = node.options
 
-            println(defaultUseDark)
             // Build URL with parameters
             val urlString = buildString {
                 append("$webserver/api/docops/svg?")
@@ -228,11 +231,6 @@ class DocOpsMacroExtension private constructor() :
 
             // Render as an object tag for interactive inline SVG
             val svgRaw = getContentFromServer(urlString, debug = true)
-            /*html.raw("""
-                <object type="image/svg+xml" data="$urlString" class="docops-svg docops-$kind">
-                    <img src="$urlString" alt="DocOps $kind diagram" />
-                </object>
-            """.trimIndent())*/
             val content = """
                         <div class="docops-media-card" data-url="$urlString">
                            <div class="svg-container">
@@ -265,7 +263,7 @@ class DocOpsMacroExtension private constructor() :
         }
         fun getContentFromServer(url: String,  debug: Boolean = false): String {
             if (debug) {
-                println("getting image from url $url")
+                logger.info("getting image from url $url")
             }
             val client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(20))
@@ -278,8 +276,7 @@ class DocOpsMacroExtension private constructor() :
                 val response = client.send(request, HttpResponse.BodyHandlers.ofString())
                 response.body()
             } catch (e: Exception) {
-
-                e.printStackTrace()
+                logger.error("Error fetching content from $url: ${e.message}", e)
                 ""
             }
         }
