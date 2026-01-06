@@ -228,6 +228,16 @@ class DocOpsMacroExtension private constructor() :
                 opts["docname"]?.let { append("&docname=${URLEncoder.encode(it, "UTF-8")}") }
                 append("&filename=generated.svg")
             }
+            val excludeControlsFilter = listOf("badge", "wordcloud", "buttons")
+            val controls = if(excludeControlsFilter.contains(kind)) {""} else {"""
+                <div class="docops-control-bar">
+                 <button class="docops-btn" onclick="openModal(this.closest('.docops-media-card').querySelector('.svg-container'))">VIEW</button>
+                 <button class="docops-btn" onclick="docopsData.toggle(this)">DATA</button>
+                 <button class="docops-btn" onclick="docopsCopy.url(this)">LINK</button>
+                 <button class="docops-btn" onclick="docopsCopy.svg(this)">SVG</button>
+                 <button class="docops-btn" onclick="docopsCopy.png(this)">PNG</button>
+               </div>
+            """.trimIndent()}
 
             // Render as an object tag for interactive inline SVG
             val svgRaw = getContentFromServer(urlString, debug = true)
@@ -236,13 +246,7 @@ class DocOpsMacroExtension private constructor() :
                            <div class="svg-container">
                              $svgRaw
                            </div>
-                           <div class="docops-control-bar">
-                             <button class="docops-btn" onclick="openModal(this.closest('.docops-media-card').querySelector('.svg-container'))">VIEW</button>
-                             <button class="docops-btn" onclick="docopsData.toggle(this)">DATA</button>
-                             <button class="docops-btn" onclick="docopsCopy.url(this)">LINK</button>
-                             <button class="docops-btn" onclick="docopsCopy.svg(this)">SVG</button>
-                             <button class="docops-btn" onclick="docopsCopy.png(this)">PNG</button>
-                           </div>
+                           $controls
                            <div class="docops-data-panel" style="display: none;">
                              <div class="docops-data-header">
                                 <span>Embedded Data</span>
@@ -251,7 +255,6 @@ class DocOpsMacroExtension private constructor() :
                              <div class="docops-data-table-container"></div>
                            </div>
                         </div>
-                
                     """.trimIndent()
             html.raw(content)
         }

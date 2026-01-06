@@ -1,4 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;600&display=swap');
+body {
+    background-color: #0d0d12; /* Matches the end of your radial gradient */
+    margin: 0;
+    padding: 2rem 0; /* Adds some breathing room at the top and bottom */
+}
 
 .markdown-body {
     /* Custom Variables - High Contrast & Sharp Accents */
@@ -15,7 +20,7 @@
     font-family: var(--font-body);
     line-height: 1.7;
     padding: 3rem;
-    max-width: 900px;
+    max-width: 980px;
     margin: 0 auto;
     border-radius: 12px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);

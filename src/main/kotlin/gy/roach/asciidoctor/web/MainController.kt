@@ -516,8 +516,11 @@ class MainController(private val convert: AsciiDoctorConverter,
         val adocFiles = localDirectory.walkTopDown()
             .filter { it.isFile && it.extension == "adoc" }
             .toList()
+        val mdFiles = localDirectory.walkTopDown()
+            .filter { it.isFile && it.extension == "md" }
+            .toList()
 
-        if (adocFiles.isEmpty()) {
+        if (adocFiles.isEmpty() && mdFiles.isEmpty()) {
             return ResponseEntity.badRequest().body(mapOf(
                 "error" to "No AsciiDoc files found in source directory"
             ))

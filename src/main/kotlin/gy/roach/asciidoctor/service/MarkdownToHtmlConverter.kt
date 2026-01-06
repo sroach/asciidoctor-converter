@@ -117,6 +117,7 @@ object MermaidFlexmark {
         val useDark = cssTheme.contains("dark") || cssTheme.contains("brutalist")
         val htmlBody = convertMarkdownWithMermaid(markdownContent, converterSettings = converterSettings, useDark = useDark)
 
+        val baseMdStyleSheet = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/md.css")?.readAllBytes()?.decodeToString()
         val mdStyleSheet = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/$cssTheme")?.readAllBytes()?.decodeToString()
         val modalOverlay = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/modal-overlay.css")?.readAllBytes()?.decodeToString()
         val admonitionCss = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/admonition.css")?.readAllBytes()?.decodeToString()
@@ -135,19 +136,16 @@ object MermaidFlexmark {
                 $mdStyleSheet
                 </style>
                 <style>
+                $baseMdStyleSheet
+                </style>
+                <style>
                 $modalOverlay
                 </style>
                 <style>
                 $admonitionCss
                 </style>
                 <style>
-                    body {
-                        box-sizing: border-box;
-                        min-width: 200px;
-                        max-width: 980px;
-                        margin: 0 auto;
-                        padding: 45px;
-                    }       
+                      
         .docops-data-panel {
             background: linear-gradient(145deg, #1a1a2e 0%, #0d0d12 100%);
             border-top: 1px solid var(--accent-primary);

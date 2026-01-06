@@ -39,15 +39,7 @@
     transform: translateY(-4px);
 }
 
-.svg-container {
-    padding: 2.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.01);
-    /* Force default cursor to remove the zoom/search icon */
-    cursor: default !important;
-}
+
 
 
 .docops-control-bar {

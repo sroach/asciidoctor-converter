@@ -216,49 +216,34 @@ class ReadingTimeService {
 /* Reading Time Styles */
 .reading-time {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid #e1e8ed;
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-size: 14px;
-    color: #657786;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-    backdrop-filter: blur(10px);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    top: 1.5rem;
+    right: 2rem;
+    background: var(--bg-base); /* Uses the dynamic background variable */
+    backdrop-filter: blur(12px);
+    border: 2px solid var(--accent-secondary);
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    z-index: 1005;
+    
+    /* Double-accent shadow follows the light/dark mode logic */
+    box-shadow: 6px 6px 0px var(--accent-pink);
+    
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-main); /* Switches between grey and dark slate */
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .reading-time p {
     margin: 0 !important;
-    font-weight: 500;
+    font-weight: 600;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .reading-time {
-        background: rgba(32, 35, 42, 0.95);
-        border-color: #444;
-        color: #8899a6;
-    }
-}
-
-/* Mobile responsive */
-@media (max-width: 768px) {
-    .reading-time {
-        top: 10px;
-        right: 10px;
-        font-size: 12px;
-        padding: 6px 12px;
-    }
-}
-
-/* Print styles */
-@media print {
-    .reading-time {
-        display: none;
-    }
+/* Light Mode specific opacity tweak */
+body.light-mode .reading-time {
+    background: rgba(255, 255, 255, 0.85); /* Slightly clearer for light backgrounds */
 }
         """.trimIndent()
     }

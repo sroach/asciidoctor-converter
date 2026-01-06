@@ -1248,270 +1248,7 @@
         tracker.trackPageView(userInfo);
     });
 </script>
-<script>
-    // Collapsible TOC JavaScript
-    document.addEventListener('DOMContentLoaded', function() {
-        const toc = document.getElementById('toc');
 
-        if (!toc) return;
-
-        // Transform the existing TOC structure to be collapsible
-        function initializeCollapsibleTOC() {
-            const tocLinks = toc.querySelectorAll('a');
-            const processedItems = new Set();
-
-            tocLinks.forEach(link => {
-                const listItem = link.parentElement;
-
-                if (processedItems.has(listItem)) return;
-                processedItems.add(listItem);
-
-                // Check if this item has nested lists (children)
-                const nestedList = listItem.querySelector('ul');
-                if (nestedList) {
-                    listItem.classList.add('toc-item', 'has-children');
-                    nestedList.classList.add('toc-list');
-
-                    // Add click handler to the arrow area
-                    link.addEventListener('click', function(e) {
-                        // Only handle clicks on the arrow area (first 20px)
-                        const rect = link.getBoundingClientRect();
-                        const clickX = e.clientX - rect.left;
-
-                        if (clickX <= 20) {
-                            e.preventDefault();
-                            toggleTOCItem(listItem);
-                        }
-                    });
-
-                    // Make nested items collapsible too
-                    const nestedItems = nestedList.querySelectorAll('li');
-                    nestedItems.forEach(nestedItem => {
-                        nestedItem.classList.add('toc-item');
-                        const nestedNestedList = nestedItem.querySelector('ul');
-                        if (nestedNestedList) {
-                            nestedItem.classList.add('has-children');
-                            nestedNestedList.classList.add('toc-list');
-                        }
-                    });
-                } else {
-                    listItem.classList.add('toc-item');
-                }
-            });
-
-            // Initially collapse all items beyond level 1
-            const level2Items = toc.querySelectorAll('.toc-list .toc-item.has-children');
-            level2Items.forEach(item => {
-                // item.classList.remove('expanded'); // Start collapsed
-            });
-        }
-
-        // Toggle a TOC item's expanded/collapsed state
-        function toggleTOCItem(item) {
-            item.classList.toggle('expanded');
-
-            // Update aria attributes for accessibility
-            const link = item.querySelector('a');
-            const isExpanded = item.classList.contains('expanded');
-            link.setAttribute('aria-expanded', isExpanded.toString());
-        }
-
-        // Add control buttons (optional)
-        function addTOCControls() {
-            const tocTitle = toc.querySelector('#toctitle, .title');
-            if (!tocTitle) return;
-
-            const controls = document.createElement('div');
-            controls.className = 'toc-controls';
-
-            const expandAllBtn = document.createElement('button');
-            expandAllBtn.className = 'toc-control-btn';
-            expandAllBtn.textContent = 'Expand All';
-            expandAllBtn.onclick = () => expandAllTOCItems(true);
-
-            const collapseAllBtn = document.createElement('button');
-            collapseAllBtn.className = 'toc-control-btn';
-            collapseAllBtn.textContent = 'Collapse All';
-            collapseAllBtn.onclick = () => expandAllTOCItems(false);
-
-            controls.appendChild(expandAllBtn);
-            controls.appendChild(collapseAllBtn);
-
-            tocTitle.parentNode.insertBefore(controls, tocTitle.nextSibling);
-        }
-
-        // Expand or collapse all TOC items
-        function expandAllTOCItems(expand) {
-            const tocItems = toc.querySelectorAll('.toc-item.has-children');
-            tocItems.forEach(item => {
-                if (expand) {
-                    item.classList.add('expanded');
-                } else {
-                    item.classList.remove('expanded');
-                }
-
-                const link = item.querySelector('a');
-                link.setAttribute('aria-expanded', expand.toString());
-            });
-        }
-
-        // Highlight current section in TOC
-        function highlightCurrentSection() {
-            const sections = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-            const tocLinks = toc.querySelectorAll('a[href^="#"]');
-
-            function updateActiveSection() {
-                let currentSection = null;
-                const scrollPos = window.scrollY + 100; // Offset for better UX
-
-                sections.forEach(section => {
-                    const sectionTop = section.offsetTop;
-                    if (scrollPos >= sectionTop) {
-                        currentSection = section;
-                    }
-                });
-
-                // Remove all active classes
-                tocLinks.forEach(link => link.classList.remove('active'));
-
-                // Add active class to current section
-                if (currentSection && currentSection.id) {
-                    const activeLink = toc.querySelector(`a[href="#${currentSection.id}"]`);
-                    if (activeLink) {
-                        activeLink.classList.add('active');
-
-                        // Expand parent items to show active link
-                        let parent = activeLink.parentElement;
-                        while (parent && parent !== toc) {
-                            if (parent.classList.contains('has-children')) {
-                                parent.classList.add('expanded');
-                            }
-                            parent = parent.parentElement;
-                        }
-                    }
-                }
-            }
-
-            // Update on scroll (throttled)
-            let scrollTimeout;
-            window.addEventListener('scroll', () => {
-                if (scrollTimeout) clearTimeout(scrollTimeout);
-                scrollTimeout = setTimeout(updateActiveSection, 100);
-            });
-
-            // Initial update
-            updateActiveSection();
-        }
-
-        // Initialize everything
-        initializeCollapsibleTOC();
-        addTOCControls(); // Optional: comment out if you don't want control buttons
-        highlightCurrentSection();
-    });
-
-    // TOC Toggle Functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const body = document.body;
-        const toc = document.getElementById('toc');
-
-        // Only add toggle functionality if TOC exists and is in sidebar mode (toc2)
-        if (toc && toc.classList.contains('toc2')) {
-            // Create toggle button
-            const toggleButton = document.createElement('button');
-            toggleButton.className = 'toc-toggle';
-            toggleButton.innerHTML = '☰';
-            toggleButton.setAttribute('aria-label', 'Toggle Table of Contents');
-            toggleButton.setAttribute('title', 'Toggle Table of Contents');
-
-            // Create overlay for mobile
-            const overlay = document.createElement('div');
-            overlay.className = 'toc-overlay';
-
-            // Add elements to DOM
-            body.appendChild(toggleButton);
-            body.appendChild(overlay);
-
-            // Toggle function
-            function toggleTOC() {
-                const isCollapsed = toc.classList.contains('toc-collapsed');
-                const isMobile = window.innerWidth <= 768;
-
-                if (isCollapsed) {
-                    // Show TOC
-                    toc.classList.remove('toc-collapsed');
-                    body.classList.remove('toc-collapsed');
-                    if (isMobile) {
-                        toc.classList.add('toc-mobile-open');
-                        overlay.classList.add('active');
-                    }
-                    toggleButton.innerHTML = '✕';
-                    toggleButton.setAttribute('title', 'Hide Table of Contents');
-                } else {
-                    // Hide TOC
-                    toc.classList.add('toc-collapsed');
-                    body.classList.add('toc-collapsed');
-                    if (isMobile) {
-                        toc.classList.remove('toc-mobile-open');
-                        overlay.classList.remove('active');
-                    }
-                    toggleButton.innerHTML = '☰';
-                    toggleButton.setAttribute('title', 'Show Table of Contents');
-                }
-            }
-
-            // Event listeners
-            toggleButton.addEventListener('click', toggleTOC);
-
-            // Close TOC when clicking overlay (mobile)
-            overlay.addEventListener('click', function() {
-                if (window.innerWidth <= 768) {
-                    if (!toc.classList.contains('toc-collapsed')) {
-                        toggleTOC();
-                    }
-                }
-            });
-
-            // Handle window resize
-            window.addEventListener('resize', function() {
-                const isMobile = window.innerWidth <= 768;
-                if (isMobile) {
-                    // On mobile, always start with TOC hidden
-                    if (!toc.classList.contains('toc-collapsed')) {
-                        toc.classList.add('toc-collapsed');
-                        body.classList.add('toc-collapsed');
-                        toc.classList.remove('toc-mobile-open');
-                        overlay.classList.remove('active');
-                        toggleButton.innerHTML = '☰';
-                    }
-                } else {
-                    // On desktop, remove mobile classes
-                    toc.classList.remove('toc-mobile-open');
-                    overlay.classList.remove('active');
-                }
-            });
-
-            // Keyboard support
-            document.addEventListener('keydown', function(e) {
-                // Toggle TOC with Ctrl/Cmd + \
-                if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
-                    e.preventDefault();
-                    toggleTOC();
-                }
-                // Close TOC with Escape key (when open)
-                else if (e.key === 'Escape' && !toc.classList.contains('toc-collapsed')) {
-                    toggleTOC();
-                }
-            });
-
-            // Auto-hide TOC on mobile by default
-            if (window.innerWidth <= 768) {
-                toc.classList.add('toc-collapsed');
-                body.classList.add('toc-collapsed');
-                toggleButton.innerHTML = '☰';
-            }
-        }
-    });
-</script>
 <script>
     window.showcaseGallery = window.showcaseGallery || (function() {
         let currentContent = '';
@@ -1646,4 +1383,125 @@
             });
         });
     })();
+</script>
+<script>
+    class ThemeToggleTop {
+        constructor() {
+            this.init();
+        }
+
+        init() {
+            this.createToggleButton();
+            this.loadSavedTheme();
+            this.setupEventListeners();
+        }
+
+        createToggleButton() {
+            const button = document.createElement('button');
+            button.className = 'theme-toggle';
+            button.setAttribute('aria-label', 'Toggle theme');
+            button.innerHTML = `
+            <span class="light-icon">☀️</span>
+            <span class="dark-icon">🌙</span>
+        `;
+            document.body.appendChild(button);
+            this.toggleButton = button;
+        }
+
+        setupEventListeners() {
+            this.toggleButton.addEventListener('click', () => this.toggleTheme());
+
+            // Listen for system theme changes only when in auto mode
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (this.getThemePreference() === 'auto') {
+                    this.updateTheme();
+                }
+            });
+        }
+
+        toggleTheme() {
+            const currentTheme = this.getThemePreference();
+            let newTheme;
+
+            switch (currentTheme) {
+                case 'light':
+                    newTheme = 'dark';
+                    break;
+                case 'dark':
+                    newTheme = 'auto';
+                    break;
+                case 'auto':
+                    newTheme = 'light';
+                    break;
+                default:
+                    // Check current state of the document
+                    const root = document.documentElement;
+                    if (root.classList.contains('dark-mode') || root.classList.contains('dark-mode-auto')) {
+                        newTheme = 'light';
+                    } else {
+                        newTheme = 'dark';
+                    }
+            }
+
+            this.setTheme(newTheme);
+        }
+
+        setTheme(theme) {
+            localStorage.setItem('theme', theme);
+            this.updateTheme();
+        }
+
+        getThemePreference() {
+            const saved = localStorage.getItem('theme');
+            if (saved) {
+                return saved;
+            }
+
+            // If no saved preference, detect current state from DOM
+            const root = document.documentElement;
+            if (root.classList.contains('dark-mode')) {
+                return 'dark';
+            } else if (root.classList.contains('dark-mode-auto')) {
+                return 'auto';
+            }
+            return 'light';
+        }
+
+        updateTheme() {
+            const theme = this.getThemePreference();
+            const root = document.documentElement;
+
+            // Remove existing theme classes
+            root.classList.remove('dark-mode', 'dark-mode-auto');
+
+            switch (theme) {
+                case 'dark':
+                    root.classList.add('dark-mode');
+                    break;
+                case 'auto':
+                    root.classList.add('dark-mode-auto');
+                    break;
+                // 'light' theme uses default styles
+            }
+
+            // Update button aria-label
+            const themeNames = {
+                light: 'light',
+                dark: 'dark',
+                auto: 'auto (follows system)'
+            };
+            this.toggleButton.setAttribute('aria-label', `Current theme: ${themeNames[theme]}. Click to change.`);
+        }
+
+        loadSavedTheme() {
+            this.updateTheme();
+        }
+    }
+
+    // Initialize theme toggle when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => new ThemeToggleTop());
+    } else {
+        new ThemeToggleTop();
+    }
 </script>
