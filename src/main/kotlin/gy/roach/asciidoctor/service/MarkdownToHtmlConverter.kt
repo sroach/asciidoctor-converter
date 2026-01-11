@@ -115,8 +115,13 @@ object MermaidFlexmark {
 
     fun createFullHtmlWithMermaid(markdownContent: String, converterSettings: ConverterSettings, title: String, cssTheme: String): String {
         val useDark = cssTheme.contains("dark") || cssTheme.contains("brutalist")
+        val themeAttr = if (useDark) "dark" else "light"
         val htmlBody = convertMarkdownWithMermaid(markdownContent, converterSettings = converterSettings, useDark = useDark)
-
+        val bodyBack = if(useDark) {
+            "#0d1117"
+        } else {
+            "#f5f5f5"
+        }
         val baseMdStyleSheet = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/md.css")?.readAllBytes()?.decodeToString()
         val mdStyleSheet = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/$cssTheme")?.readAllBytes()?.decodeToString()
         val modalOverlay = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/modal-overlay.css")?.readAllBytes()?.decodeToString()
@@ -127,7 +132,7 @@ object MermaidFlexmark {
         //language=html
         return """
             <!DOCTYPE html>
-            <html lang="en">
+            <html lang="en" data-theme="$themeAttr">
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -242,7 +247,7 @@ object MermaidFlexmark {
         
                     @media (prefers-color-scheme: dark) {
                         body {
-                            background-color: #0d1117;
+                            background-color: $bodyBack;
                         }
                     }
                 </style>

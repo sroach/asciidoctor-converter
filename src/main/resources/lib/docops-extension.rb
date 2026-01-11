@@ -635,7 +635,7 @@ class DocOpsShowcaseProcessor
     gallery_id = "docops-gallery-#{SecureRandom.hex(8)}"
 
     html = []
-    html << "<div class=\"docops-showcase-gallery\" id=\"#{gallery_id}\">"
+    html << "<div class=\"docops-workbench-showcase\" id=\"#{gallery_id}\">"
 
     image_urls.each_with_index do |img_data, index|
       img_url = img_data[:url]
@@ -644,28 +644,26 @@ class DocOpsShowcaseProcessor
       content = img_data[:content]
       item_id = "gallery-item-#{gallery_id}-#{index}"
 
-      # Fetch SVG content inline
       svg_content = get_content_from_server(img_url)
-
-      # Escape content for HTML attribute
       escaped_content = CGI.escape_html(content)
 
-      html << "<div class=\"gallery-item\" data-kind=\"#{kind}\" id=\"#{item_id}\">"
-      html << "<div class=\"gallery-item-header\">"
-      html << "<div class=\"gallery-item-title\">#{ensure_utf8(title)}</div>"
-      html << "<div class=\"gallery-item-actions\">"
-      # Using more creative button labels instead of symbols
-      html << "<button class=\"gallery-content-btn\" onclick=\"showcaseGallery.showContent('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}', '#{kind}', this.getAttribute('data-content'))\" data-content=\"#{escaped_content}\">VIEW SOURCE</button>"
-      html << "<button class=\"gallery-expand-btn\" onclick=\"showcaseGallery.expandItem('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}')\" title=\"Expand\">⛶</button>"
-      html << "</div>"
-      html << "</div>"
-      html << "<div class=\"gallery-item-image\">"
-      # Wrap SVG inner content in a <g> to follow the UI animation rule (nested group for transforms)
-      # This regex finds the opening <svg ...> tag and the closing </svg> tag, and wraps everything between them.
+      # Wrap SVG content in <g> for UI.MD animation rule
       processed_svg = ensure_utf8(svg_content).sub(/(<svg[^>]*>)(.*)(<\/svg>)/m, '\1<g class="docops-transform-group">\2</g>\3')
 
-      html << processed_svg
-      html << "</div>"
+      html << "<div class=\"workbench-item\" data-kind=\"#{kind}\" id=\"#{item_id}\">"
+      html << "  <div class=\"workbench-chrome\">"
+      html << "    <span class=\"workbench-kind\">// #{kind.upcase}</span>"
+      html << "    <div class=\"workbench-actions\">"
+      html << "      <button class=\"action-btn src-btn\" onclick=\"showcaseGallery.showContent('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}', '#{kind}', this.getAttribute('data-content'))\" data-content=\"#{escaped_content}\">VIEW SOURCE</button>"
+      html << "      <button class=\"action-btn expand-btn\" onclick=\"showcaseGallery.expandItem('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}')\">EXPAND</button>"
+      html << "    </div>"
+      html << "  </div>"
+      html << "  <div class=\"workbench-canvas\">"
+      html << "    #{processed_svg}"
+      html << "  </div>"
+      html << "  <div class=\"workbench-footer\">"
+      html << "    <span class=\"workbench-title\">#{ensure_utf8(title)}</span>"
+      html << "  </div>"
       html << "</div>"
     end
 

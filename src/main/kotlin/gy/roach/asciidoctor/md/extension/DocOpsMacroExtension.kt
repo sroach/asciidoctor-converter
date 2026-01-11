@@ -239,13 +239,22 @@ class DocOpsMacroExtension private constructor() :
                </div>
             """.trimIndent()}
 
+            var caption = opts["caption"] ?: ""
+
+            if(caption.isNotEmpty()) {
+                caption = "Figure. $caption"
+            }
+
             // Render as an object tag for interactive inline SVG
             val svgRaw = getContentFromServer(urlString, debug = true)
             val content = """
                         <div class="docops-media-card" data-url="$urlString">
+                            <figure class="docops-figure-card">
                            <div class="svg-container">
                              $svgRaw
                            </div>
+                           <figcaption>$caption</figcaption>
+                           </figure>
                            $controls
                            <div class="docops-data-panel" style="display: none;">
                              <div class="docops-data-header">

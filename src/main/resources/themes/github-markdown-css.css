@@ -123,16 +123,30 @@
     }
 }
 
+#wrapper {
+    max-width: 740px;
+    padding: 3em;
+}
+
+
+/* Ensure images/SVGs center within the body if they are smaller than 860px */
+.markdown-body img, .markdown-body svg {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
 .markdown-body {
     -ms-text-size-adjust: 100%;
     -webkit-text-size-adjust: 100%;
-    margin: 0;
+    margin: 8px auto;
     color: var(--fgColor-default);
     background-color: var(--bgColor-default);
     font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";
     font-size: 16px;
     line-height: 1.5;
     word-wrap: break-word;
+    text-align: left;
+    max-width: 860px;
 }
 
 .markdown-body .octicon {

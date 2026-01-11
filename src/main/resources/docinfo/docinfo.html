@@ -345,308 +345,52 @@
     }
 
 </style>
+
+<!--slide show style-->
 <style>
-    /* Atmosphere & Depth */
-    .docops-showcase-gallery {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 2.5rem;
-        padding: 3rem;
-        background: var(--docops-bg);
-        background-image:
-                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
-        border-radius: 24px;
-        margin: 2rem 0;
-    }
-
-    /* Staggered Reveal Animation */
-    .gallery-item {
-        opacity: 0;
-        transform: translateY(20px);
-        animation: revealIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        background: var(--docops-card-bg);
-        backdrop-filter: var(--docops-glass);
-        border: 1px solid var(--docops-border);
-        border-radius: 16px;
-        padding: 1.5rem;
-        transition: all 0.4s ease;
-    }
-
-    /* Generating 10 delays for the staggered effect */
-    .gallery-item:nth-child(1) { animation-delay: 0.1s; }
-    .gallery-item:nth-child(2) { animation-delay: 0.15s; }
-    .gallery-item:nth-child(3) { animation-delay: 0.2s; }
-    .gallery-item:nth-child(4) { animation-delay: 0.25s; }
-    .gallery-item:nth-child(5) { animation-delay: 0.3s; }
-
-
-    @keyframes revealIn {
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .gallery-item:hover {
-        border-color: var(--docops-accent);
-        box-shadow: 0 0 30px var(--docops-accent-glow);
-        transform: scale(1.02);
-    }
-
-    .gallery-item-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        border-bottom: 1px solid var(--docops-border);
-        padding-bottom: 0.75rem;
-    }
-
-    .gallery-item-title {
-        font-family: var(--docops-font-main);
-        font-weight: 600;
-        font-size: 1.25rem;
-        color: var(--docops-text);
-        letter-spacing: -0.02em;
-    }
-
-    .gallery-item-actions {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-    }
-
-    .gallery-expand-btn,
-    .gallery-content-btn {
-        background: rgba(139, 92, 246, 0.2);
-        color: #c084fc;
-        border: 1px solid rgba(139, 92, 246, 0.3);
-        padding: 0.4rem 0.8rem;
-        border-radius: 8px;
-        font-family: var(--docops-font-mono);
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .gallery-content-btn:hover {
-        background: #8b5cf6;
-        color: white;
-    }
-
-    .gallery-content-btn {
-        color: #9b59b6;
-        font-weight: bold;
-    }
-
-    .gallery-expand-btn:hover {
-        color: #2980b9;
-        transform: scale(1.2);
-    }
-
-
-
-    .gallery-item-image {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 200px;
-    }
-
-    .gallery-item-image svg {
-        max-width: 100%;
-        height: auto;
-    }
-
-    /* Modal Styles */
-    .showcase-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
+    /* Slideshow Container */
+    .docops-slideshow {
+        position: relative;
         width: 100%;
-        height: 100%;
-        z-index: 10000;
+        height: 500px;
+        background: var(--bg-surface);
+        border: 2px solid var(--accent-primary);
+        box-shadow: 8px 8px 0px var(--accent-pink, #f472b6); /* Rule #4: 8pt grid adjustment */
+        margin: 3rem 0;
+        overflow: hidden;
         display: flex;
-        align-items: center;
-        justify-content: center;
+        flex-direction: column;
     }
-
-    .showcase-modal-overlay {
+    /* Progress Bar (The "Movement" Indicator) */
+    .slideshow-progress-container {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
+        height: 3px;
+        background: rgba(0,0,0,0.05);
+        z-index: 30;
+    }
+    .slideshow-progress-bar {
         height: 100%;
-        background: rgba(2, 6, 23, 0.85);
-        backdrop-filter: none;
+        width: 0%;
+        background: var(--accent-primary);
+        transition: width linear;
     }
 
-    /* Modal Overhaul */
-    .showcase-modal-content {
-        position: relative;
-        background: #ffffff; /* Keep white for SVG viewing */
-        border-radius: 16px;
-        max-width: 95vw;
-        max-height: 95vh;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        overflow: hidden;
-        border: 1px solid var(--docops-border);
-    }
-
-    .showcase-content-code {
+    /* Slide Counter */
+    .slideshow-counter {
+        position: absolute;
+        top: 1.5rem;
+        left: 1.5rem;
         font-family: var(--docops-font-mono);
-        background: #0f172a !important;
-        color: #e2e8f0;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--accent-primary);
+        opacity: 0.5;
+        z-index: 20;
+        letter-spacing: 0.2em;
     }
-
-    .showcase-content-modal-content {
-        max-width: 90vw;
-        width: 1000px;
-        background: #020617; /* Dark background only for the source viewer */
-    }
-
-    .showcase-modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--docops-border);
-        background: #f8fafc;
-    }
-
-    .showcase-content-modal-content .showcase-modal-header {
-        background: #1e293b;
-        border-bottom: 1px solid var(--docops-border);
-    }
-
-    .showcase-modal-title {
-        font-family: var(--docops-font-main);
-        font-weight: 600;
-        font-size: 1.1rem;
-        color: #1e293b;
-    }
-
-    .showcase-content-modal-content .showcase-modal-title {
-        color: var(--docops-text);
-    }
-    .showcase-modal-close {
-        background: none;
-        border: none;
-        font-size: 2rem;
-        cursor: pointer;
-        padding: 0;
-        width: 2rem;
-        height: 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #7f8c8d;
-        transition: color 0.2s;
-        line-height: 1;
-    }
-
-    .showcase-modal-close:hover {
-        color: #e74c3c;
-    }
-
-    .showcase-modal-body {
-        padding: 2rem;
-        overflow: auto;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #ffffff; /* Default background for SVG viewing */
-    }
-
-
-    .showcase-content-body {
-        padding: 0;
-        align-items: stretch;
-        justify-content: stretch;
-        background: #0f172a; /* Explicit deep slate background for source code */
-    }
-
-    .showcase-content-pre {
-        margin: 0;
-        width: 100%;
-        max-height: calc(95vh - 150px);
-        overflow: auto;
-        background: transparent;
-    }
-
-    .showcase-content-code {
-        display: block;
-        padding: 1.5rem;
-        color: #e2e8f0; /* Light slate text for high contrast */
-        font-family: var(--docops-font-mono);
-        font-size: 0.9rem;
-        line-height: 1.6;
-        white-space: pre;
-        tab-size: 4;
-    }
-
-
-    .showcase-content-footer {
-        padding: 1rem 1.5rem;
-        border-top: 1px solid #e0e0e0;
-        background: #f8f9fa;
-        display: flex;
-        justify-content: flex-end;
-    }
-
-    .showcase-copy-btn {
-        background: #3498db;
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 0.95rem;
-        transition: background 0.2s;
-    }
-
-    .showcase-copy-btn:hover {
-        background: #2980b9;
-    }
-
-    .showcase-copy-btn.copied {
-        background: #27ae60;
-    }
-
-    .showcase-modal-body svg {
-        max-width: 100%;
-        max-height: calc(95vh - 100px);
-        width: auto;
-        height: auto;
-    }
-
-    @media (max-width: 768px) {
-        .docops-showcase-gallery {
-            grid-template-columns: 1fr;
-            padding: 1rem;
-        }
-
-        .showcase-modal-content {
-            max-width: 100vw;
-            max-height: 100vh;
-            border-radius: 0;
-        }
-
-        .showcase-modal-body {
-            padding: 1rem;
-        }
-
-        .showcase-content-modal-content {
-            width: 100vw;
-        }
-    }
-    /* Slideshow Enhancements */
-    .docops-slideshow {
-        background: #020617;
-        border: 1px solid var(--docops-border);
-        height: 650px;
-    }
-
     .docops-slide {
         position: absolute;
         top: 0;
@@ -654,21 +398,22 @@
         width: 100%;
         height: 100%;
         opacity: 0;
-        transition: opacity 1s ease-in-out;
+        visibility: hidden;
+        transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 1rem;
+        padding: 2rem;
         box-sizing: border-box;
     }
 
     .docops-slide.active {
         opacity: 1;
-        position: relative;
+        visibility: visible;
+        z-index: 2;
     }
 
-    .docops-slide .slide-content {
+    .slide-content {
         width: 100%;
         height: 100%;
         display: flex;
@@ -678,55 +423,416 @@
     }
 
     .slide-title {
-        font-family: var(--docops-font-main);
-        color: var(--docops-accent);
+        font-family: var(--font-heading);
+        font-size: 1.5rem;
+        color: var(--accent-secondary);
+        margin-bottom: 1.5rem;
         text-transform: uppercase;
         letter-spacing: 0.1em;
-        font-size: 0.9rem;
+        text-shadow: 2px 2px 0px rgba(0,0,0,0.2);
     }
 
-    .docops-slide .slide-title {
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-bottom: 1rem;
-        color: #333;
-        text-align: center;
-        flex-shrink: 0;
-    }
-
-    .docops-slide .slide-image {
+    .slide-image {
         flex: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
         width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         overflow: hidden;
     }
 
-    .docops-slide .slide-image svg {
+    .slide-image svg {
         max-width: 100%;
         max-height: 100%;
-        width: auto;
+        filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+    }
+
+    /* Navigation Dots */
+    .slideshow-nav {
+        position: absolute;
+        bottom: 1.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 12px; /* Rule #4: 8pt grid (1.5 * 8) */
+        z-index: 10;
+    }
+
+    .nav-dot {
+        width: 8px; /* Rule #4: 8px */
+        height: 8px;
+        background: transparent;
+        border: 1.5px solid var(--accent-primary);
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-dot.active {
+        background: var(--accent-primary);
+        width: 24px; /* Distinctive shape change for active state */
+        border-color: var(--accent-primary);
+    }
+
+</style>
+
+<!--gallery showcase style-->
+<style>
+    /* Showcase Gallery Layout */
+    .docops-workbench-showcase {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+        margin: 3rem 0;
+        perspective: 1000px;
+    }
+
+    .workbench-item {
+        background: var(--bg-surface);
+        border: 2px solid var(--accent-primary);
+        box-shadow: 6px 6px 0px var(--accent-pink);
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: itemSlideIn 0.6s ease forwards;
+    }
+
+    .workbench-item:hover {
+        transform: translate(-4px, -4px) rotate(0.5deg);
+        box-shadow: 12px 12px 0px var(--accent-pink);
+        border-color: var(--accent-secondary);
+    }
+
+    /* Workbench Chrome (Header) */
+    .workbench-chrome {
+        background: #1a1a2e;
+        padding: 0.75rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--accent-primary);
+    }
+
+    .workbench-kind {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--accent-secondary);
+        font-weight: 500;
+    }
+
+    .workbench-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .action-btn {
+        background: transparent;
+        border: 1px solid var(--accent-primary);
+        color: #fff;
+        font-family: var(--font-heading);
+        font-size: 0.6rem;
+        padding: 2px 8px;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+        background: var(--accent-primary);
+        color: #fff;
+    }
+
+    /* Canvas & Content */
+    .workbench-canvas {
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        background: radial-gradient(circle at center, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+    }
+
+    .workbench-canvas svg {
+        max-width: 100%;
         height: auto;
-        object-fit: contain;
+        transition: transform 0.5s ease;
     }
 
-    /* Responsive: Scale down on smaller screens */
-    @media (max-width: 820px) {
-        .docops-slideshow {
-            width: 100%;
-            height: calc(100vw * 0.75); /* Maintain 4:3 aspect ratio */
-            max-height: 600px;
-        }
+    .workbench-footer {
+        padding: 0.75rem 1rem;
+        background: rgba(0,0,0,0.1);
+        border-top: 1px solid rgba(255,255,255,0.05);
     }
 
-    @media (max-width: 600px) {
-        .docops-slide .slide-title {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
+    .workbench-title {
+        font-family: var(--font-body);
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-heading);
+    }
+
+    /* Modal System */
+    .showcase-modal {
+        position: fixed; /* Lock to viewport, ignore page scroll */
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 5000; /* Significant jump to stay on top of everything */
+        display: none;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden; /* Lock container */
+    }
+
+    .showcase-modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(13, 13, 18, 0.98); /* Near opaque for focus */
+        backdrop-filter: blur(20px);
+        z-index: 5001;
+    }
+
+    .showcase-modal-content {
+        position: relative;
+        z-index: 5002;
+        background: var(--bg-base);
+        border: 4px solid var(--accent-secondary);
+        box-shadow: 25px 25px 0px var(--accent-pink);
+        width: 95%;
+        max-width: 1200px;
+        max-height: 90vh; /* Stay within viewport */
+        display: flex;
+        flex-direction: column;
+        animation: brutalistReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes brutalistReveal {
+        from { transform: scale(0.9) translateY(30px); opacity: 0; }
+        to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .showcase-modal-body {
+        padding: 3rem;
+        overflow-y: auto; /* Internal scrolling only */
+        flex: 1;
+        display: block; /* Important for scroll calculations */
+    }
+
+    /* Centering Fix for SVG diagrams */
+    .modal-svg-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100%;
+        width: 100%;
+    }
+
+    .modal-svg-wrapper svg {
+        max-width: 100%;
+        height: auto !important; /* Allow natural aspect ratio */
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    /* Body locking when modal is open */
+    body.modal-open {
+        overflow: hidden !important;
+        padding-right: 15px; /* Prevent layout shift from scrollbar removal */
     }
 </style>
+<!--Slide show script-->
+<script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const slideshows = document.querySelectorAll('.docops-slideshow');
+
+        slideshows.forEach(ss => {
+            const slides = ss.querySelectorAll('.docops-slide');
+            if (slides.length === 0) return; // Skip empty slideshows
+
+            const interval = parseInt(ss.dataset.interval) || 5000;
+            let currentIndex = 0;
+
+            // Add Progress Bar
+            const progressCont = document.createElement('div');
+            progressCont.className = 'slideshow-progress-container';
+            const progressBar = document.createElement('div');
+            progressBar.className = 'slideshow-progress-bar';
+            progressCont.appendChild(progressBar);
+            ss.appendChild(progressCont);
+
+            // Add Counter
+            const counter = document.createElement('div');
+            counter.className = 'slideshow-counter';
+            ss.appendChild(counter);
+
+            // Create navigation dots
+            const nav = document.createElement('div');
+            nav.className = 'slideshow-nav';
+            slides.forEach((_, i) => {
+                const dot = document.createElement('div');
+                dot.className = `nav-dot ${i === 0 ? 'active' : ''}`;
+                dot.onclick = (e) => {
+                    e.stopPropagation();
+                    goToSlide(i);
+                };
+                nav.appendChild(dot);
+            });
+            ss.appendChild(nav);
+
+            function updateCounter() {
+                counter.textContent = `${String(currentIndex + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+            }
+
+            function resetProgress() {
+                progressBar.style.transition = 'none';
+                progressBar.style.width = '0%';
+                setTimeout(() => {
+                    progressBar.style.transition = `width ${interval}ms linear`;
+                    progressBar.style.width = '100%';
+                }, 50);
+            }
+
+            function goToSlide(index) {
+                slides[currentIndex].classList.remove('active');
+                nav.children[currentIndex].classList.remove('active');
+
+                currentIndex = index;
+
+                slides[currentIndex].classList.add('active');
+                nav.children[currentIndex].classList.add('active');
+                updateCounter();
+                resetProgress();
+            }
+
+            function nextSlide() {
+                let next = (currentIndex + 1) % slides.length;
+                goToSlide(next);
+            }
+
+            // Initial State
+            updateCounter();
+            resetProgress();
+
+            // Start autoplay
+            let slideTimer = setInterval(nextSlide, interval);
+
+            // Pause on hover
+            ss.addEventListener('mouseenter', () => {
+                clearInterval(slideTimer);
+                progressBar.style.opacity = '0.3';
+            });
+            ss.addEventListener('mouseleave', () => {
+                slideTimer = setInterval(nextSlide, interval);
+                progressBar.style.opacity = '1';
+                resetProgress();
+            });
+        });
+    });
+</script>
+<!-- Showcase Gallery Script -->
+<script>
+    window.showcaseGallery = {
+        // Track TOC state so we can restore it exactly as it was
+        tocWasActive: false,
+
+        hideTOC() {
+            const toc = document.getElementById('toc');
+            const toggle = document.querySelector('.toc-toggle');
+
+            if (toc) {
+                // Save current state
+                this.tocWasActive = toc.classList.contains('toc-active');
+                // Force hide
+                toc.classList.remove('toc-active');
+            }
+            if (toggle) {
+                toggle.classList.remove('active');
+                toggle.style.display = 'none'; // Completely remove from UI during modal
+            }
+            document.body.classList.add('modal-open');
+        },
+
+        restoreTOC() {
+            const toc = document.getElementById('toc');
+            const toggle = document.querySelector('.toc-toggle');
+
+            document.body.classList.remove('modal-open');
+
+            if (toggle) {
+                toggle.style.display = 'flex'; // Bring toggle back
+            }
+
+            // Restore TOC to its previous state (if it was open, re-open it)
+            if (toc && this.tocWasActive) {
+                toc.classList.add('toc-active');
+                if (toggle) {
+                    toggle.classList.add('active');
+                    toggle.querySelector('span').textContent = 'CLOSE';
+                }
+            } else if (toggle) {
+                toggle.querySelector('span').textContent = 'CONTENTS';
+            }
+        },
+
+        showContent(itemId, title, kind, content) {
+            const modal = document.getElementById('showcase-content-modal');
+            modal.querySelector('.showcase-modal-title').textContent = `${kind.toUpperCase()} SOURCE: ${title}`;
+            modal.querySelector('.showcase-content-code').textContent = content;
+
+            this.hideTOC(); // Hide TOC before showing modal
+            modal.style.display = 'flex';
+            modal.querySelector('.showcase-modal-body').scrollTop = 0;
+        },
+
+        expandItem(itemId, title) {
+            const item = document.getElementById(itemId);
+            const svgContent = item.querySelector('.workbench-canvas').innerHTML;
+            const modal = document.getElementById('showcase-gallery-modal');
+
+            modal.querySelector('.showcase-modal-title').textContent = title;
+            modal.querySelector('.showcase-modal-body').innerHTML =
+                `<div class="modal-svg-wrapper">${svgContent}</div>`;
+
+            this.hideTOC(); // Hide TOC before showing modal
+            modal.style.display = 'flex';
+            modal.querySelector('.showcase-modal-body').scrollTop = 0;
+        },
+
+        closeContentModal() {
+            document.getElementById('showcase-content-modal').style.display = 'none';
+            this.restoreTOC(); // Restore TOC state
+        },
+
+        closeModal() {
+            document.getElementById('showcase-gallery-modal').style.display = 'none';
+            this.restoreTOC(); // Restore TOC state
+        },
+
+        copyContent() {
+            const code = document.querySelector('.showcase-content-code').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = document.querySelector('.showcase-copy-btn');
+                const oldText = btn.textContent;
+                btn.textContent = 'COPIED! ✅';
+                setTimeout(() => btn.textContent = oldText, 2000);
+            });
+        }
+    };
+
+    // Escape key to close modals
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            showcaseGallery.closeModal();
+            showcaseGallery.closeContentModal();
+        }
+    });
+</script>
 <script>
     window.svgViewer = window.svgViewer || {
         toggleControls(id) {
@@ -965,160 +1071,140 @@
                 container.style.display = 'block';
                 this.loadCsvData(id);
             }
-    },
+        },
 
-    closeCsv(id) {
-        const container = document.getElementById(`csv-container-${id}`);
-        container.style.display = 'none';
-    },
-    async loadCsvData(id) {
-        const svgContainer = document.getElementById(id);
-        const svg = svgContainer.querySelector('svg');
+        closeCsv(id) {
+            const container = document.getElementById(`csv-container-${id}`);
+            container.style.display = 'none';
+        },
+        async loadCsvData(id) {
+            const svgContainer = document.getElementById(id);
+            const svg = svgContainer.querySelector('svg');
 
-        if (!svg) {
-            console.error('No SVG found');
-            return;
-        }
-
-        try {
-            // Method 1: Standard metadata with type
-            let csvMetadata = svg.querySelector('metadata[type="text/csv"]');
-            if (csvMetadata) {
-                const csvData = JSON.parse(csvMetadata.textContent.trim());
-                this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData);
+            if (!svg) {
+                console.error('No SVG found');
                 return;
             }
 
-            // Method 2: Custom csv-data element
-            csvMetadata = svg.querySelector('metadata csv-data');
-            if (csvMetadata) {
-                const csvData = JSON.parse(csvMetadata.textContent.trim());
-                this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData, `csv-table-${id}`);
-                return;
-            }
-
-            // Method 3: Data attribute
-            const csvDataAttr = svg.getAttribute('data-csv');
-            if (csvDataAttr) {
-                const csvData = JSON.parse(decodeURIComponent(csvDataAttr));
-                this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData, `csv-table-${id}`);
-                return;
-            }
-
-            console.error('No CSV data found in SVG');
-        } catch (error) {
-            console.error('Failed to parse CSV data:', error);
-        }
-    },
-
-    renderCsvTable(container, csvData, tableId) {
-        if (!csvData || !csvData.headers || !csvData.rows) {
-            container.innerHTML = '<div class="csv-error">Invalid CSV data format</div>';
-            return;
-        }
-
-        // Generate a unique table ID if not provided or make existing ID unique
-        const uniqueTableId = tableId ? `${tableId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` : `csv-table-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-        const table = document.createElement('table');
-        table.className = 'csv-table';
-        table.id = uniqueTableId;
-        // Create header
-        const thead = document.createElement('thead');
-        const headerRow = document.createElement('tr');
-
-        csvData.headers.forEach(header => {
-            const th = document.createElement('th');
-            th.textContent = header;
-            headerRow.appendChild(th);
-        });
-
-        // Add button cell to header
-        const buttonTh = document.createElement('th');
-        buttonTh.className = 'csv-header-button-cell';
-
-        // Create copy button
-        const copyButton = document.createElement('button');
-        copyButton.className = 'csv-copy-button';
-        copyButton.textContent = 'Copy';
-        copyButton.title = 'Copy as Tab-Delimited';
-        copyButton.onclick = () => this.copyCsvAsTabDelimited(csvData);
-
-        buttonTh.appendChild(copyButton);
-        headerRow.appendChild(buttonTh);
-
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        // Create body
-        const tbody = document.createElement('tbody');
-
-        csvData.rows.forEach(row => {
-            const tr = document.createElement('tr');
-            row.forEach(cell => {
-                const td = document.createElement('td');
-                td.textContent = cell;
-                tr.appendChild(td);
-            });
-            // Add empty cell for button column
-            const emptyTd = document.createElement('td');
-            tr.appendChild(emptyTd);
-            tbody.appendChild(tr);
-        });
-
-        table.appendChild(tbody);
-        container.innerHTML = '';
-        container.appendChild(table);
-        const tableElement = document.getElementById(uniqueTableId);
-        if (tableElement) {
-            tableElement.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }
-
-
-    },
-
-    copyCsvAsTabDelimited(csvData) {
-        if (!csvData || !csvData.headers || !csvData.rows) {
-            console.error('Invalid CSV data for copying');
-            return;
-        }
-
-        // Create tab-delimited string
-        let tabDelimitedData = '';
-
-        // Add headers
-        tabDelimitedData += csvData.headers.join('\t') + '\n';
-
-        // Add rows
-        csvData.rows.forEach(row => {
-            tabDelimitedData += row.join('\t') + '\n';
-        });
-
-        // Copy to clipboard
-        navigator.clipboard.writeText(tabDelimitedData).then(() => {
-            // Provide visual feedback
-            const buttons = document.querySelectorAll('.csv-copy-button');
-            buttons.forEach(button => {
-                const originalText = button.textContent;
-                button.textContent = 'Copied!';
-                button.style.background = '#28a745';
-                setTimeout(() => {
-                    button.textContent = originalText;
-                    button.style.background = '#007acc';
-                }, 2000);
-            });
-        }).catch(err => {
-            console.error('Failed to copy to clipboard:', err);
-            // Fallback for older browsers
-            const textArea = document.createElement('textarea');
-            textArea.value = tabDelimitedData;
-            document.body.appendChild(textArea);
-            textArea.select();
             try {
-                document.execCommand('copy');
+                // Method 1: Standard metadata with type
+                let csvMetadata = svg.querySelector('metadata[type="text/csv"]');
+                if (csvMetadata) {
+                    const csvData = JSON.parse(csvMetadata.textContent.trim());
+                    this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData);
+                    return;
+                }
+
+                // Method 2: Custom csv-data element
+                csvMetadata = svg.querySelector('metadata csv-data');
+                if (csvMetadata) {
+                    const csvData = JSON.parse(csvMetadata.textContent.trim());
+                    this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData, `csv-table-${id}`);
+                    return;
+                }
+
+                // Method 3: Data attribute
+                const csvDataAttr = svg.getAttribute('data-csv');
+                if (csvDataAttr) {
+                    const csvData = JSON.parse(decodeURIComponent(csvDataAttr));
+                    this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData, `csv-table-${id}`);
+                    return;
+                }
+
+                console.error('No CSV data found in SVG');
+            } catch (error) {
+                console.error('Failed to parse CSV data:', error);
+            }
+        },
+
+        renderCsvTable(container, csvData, tableId) {
+            if (!csvData || !csvData.headers || !csvData.rows) {
+                container.innerHTML = '<div class="csv-error">Invalid CSV data format</div>';
+                return;
+            }
+
+            // Generate a unique table ID if not provided or make existing ID unique
+            const uniqueTableId = tableId ? `${tableId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` : `csv-table-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+            const table = document.createElement('table');
+            table.className = 'csv-table';
+            table.id = uniqueTableId;
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+
+            csvData.headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+
+            // Add button cell to header
+            const buttonTh = document.createElement('th');
+            buttonTh.className = 'csv-header-button-cell';
+
+            // Create copy button
+            const copyButton = document.createElement('button');
+            copyButton.className = 'csv-copy-button';
+            copyButton.textContent = 'Copy';
+            copyButton.title = 'Copy as Tab-Delimited';
+            copyButton.onclick = () => this.copyCsvAsTabDelimited(csvData);
+
+            buttonTh.appendChild(copyButton);
+            headerRow.appendChild(buttonTh);
+
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Create body
+            const tbody = document.createElement('tbody');
+
+            csvData.rows.forEach(row => {
+                const tr = document.createElement('tr');
+                row.forEach(cell => {
+                    const td = document.createElement('td');
+                    td.textContent = cell;
+                    tr.appendChild(td);
+                });
+                // Add empty cell for button column
+                const emptyTd = document.createElement('td');
+                tr.appendChild(emptyTd);
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+            container.innerHTML = '';
+            container.appendChild(table);
+            const tableElement = document.getElementById(uniqueTableId);
+            if (tableElement) {
+                tableElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+
+
+        },
+
+        copyCsvAsTabDelimited(csvData) {
+            if (!csvData || !csvData.headers || !csvData.rows) {
+                console.error('Invalid CSV data for copying');
+                return;
+            }
+
+            // Create tab-delimited string
+            let tabDelimitedData = '';
+
+            // Add headers
+            tabDelimitedData += csvData.headers.join('\t') + '\n';
+
+            // Add rows
+            csvData.rows.forEach(row => {
+                tabDelimitedData += row.join('\t') + '\n';
+            });
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(tabDelimitedData).then(() => {
                 // Provide visual feedback
                 const buttons = document.querySelectorAll('.csv-copy-button');
                 buttons.forEach(button => {
@@ -1130,13 +1216,33 @@
                         button.style.background = '#007acc';
                     }, 2000);
                 });
-            } catch (fallbackErr) {
-                console.error('Fallback copy failed:', fallbackErr);
-                alert('Copy failed. Please select and copy the data manually.');
-            }
-            document.body.removeChild(textArea);
-        });
-    }
+            }).catch(err => {
+                console.error('Failed to copy to clipboard:', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = tabDelimitedData;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    // Provide visual feedback
+                    const buttons = document.querySelectorAll('.csv-copy-button');
+                    buttons.forEach(button => {
+                        const originalText = button.textContent;
+                        button.textContent = 'Copied!';
+                        button.style.background = '#28a745';
+                        setTimeout(() => {
+                            button.textContent = originalText;
+                            button.style.background = '#007acc';
+                        }, 2000);
+                    });
+                } catch (fallbackErr) {
+                    console.error('Fallback copy failed:', fallbackErr);
+                    alert('Copy failed. Please select and copy the data manually.');
+                }
+                document.body.removeChild(textArea);
+            });
+        }
     };
 
     // Close controls when clicking outside
@@ -1249,141 +1355,7 @@
     });
 </script>
 
-<script>
-    window.showcaseGallery = window.showcaseGallery || (function() {
-        let currentContent = '';
-        let currentSvg = null;
 
-        return {
-            expandItem: function(itemId, title) {
-                const galleryItem = document.getElementById(itemId);
-                const svgElement = galleryItem.querySelector('.gallery-item-image svg');
-
-                if (!svgElement) return;
-
-                const modal = document.getElementById('showcase-gallery-modal');
-                const modalTitle = modal.querySelector('.showcase-modal-title');
-                const modalBody = modal.querySelector('.showcase-modal-body');
-
-                // Clone the SVG for the modal
-                const clonedSvg = svgElement.cloneNode(true);
-
-                modalTitle.textContent = title;
-                modalBody.innerHTML = '';
-                modalBody.appendChild(clonedSvg);
-
-                modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-
-                document.addEventListener('keydown', this.handleEscKey);
-            },
-
-            closeModal: function() {
-                const modal = document.getElementById('showcase-gallery-modal');
-                const modalBody = modal.querySelector('.showcase-modal-body');
-
-                modal.style.display = 'none';
-                modalBody.innerHTML = '';
-                document.body.style.overflow = '';
-
-                document.removeEventListener('keydown', this.handleEscKey);
-            },
-
-            showContent: function(itemId, title, kind, content) {
-                const modal = document.getElementById('showcase-content-modal');
-                const modalTitle = modal.querySelector('.showcase-modal-title');
-                const codeElement = modal.querySelector('.showcase-content-code');
-
-                // Decode HTML entities
-                const textarea = document.createElement('textarea');
-                textarea.innerHTML = content;
-                const decodedContent = textarea.value;
-
-                currentContent = decodedContent;
-
-                modalTitle.textContent = title + ' (' + kind + ')';
-                codeElement.textContent = decodedContent;
-
-                modal.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-
-                document.addEventListener('keydown', this.handleContentEscKey);
-            },
-
-            closeContentModal: function() {
-                const modal = document.getElementById('showcase-content-modal');
-                modal.style.display = 'none';
-                document.body.style.overflow = '';
-                currentContent = '';
-
-                document.removeEventListener('keydown', this.handleContentEscKey);
-            },
-
-            copyContent: function() {
-                const btn = document.querySelector('.showcase-copy-btn');
-
-                navigator.clipboard.writeText(currentContent).then(function() {
-                    btn.textContent = '✓ Copied!';
-                    btn.classList.add('copied');
-
-                    setTimeout(function() {
-                        btn.textContent = '📋 Copy';
-                        btn.classList.remove('copied');
-                    }, 2000);
-                }).catch(function(err) {
-                    console.error('Failed to copy:', err);
-                });
-            },
-
-            handleEscKey: function(e) {
-                if (e.key === 'Escape') {
-                    showcaseGallery.closeModal();
-                }
-            },
-
-            handleContentEscKey: function(e) {
-                if (e.key === 'Escape') {
-                    showcaseGallery.closeContentModal();
-                }
-            }
-        };
-    })();
-
-    (function() {
-        document.addEventListener('DOMContentLoaded', function() {
-            const slideshows = document.querySelectorAll('.docops-slideshow');
-
-            slideshows.forEach(slideshow => {
-                const slides = slideshow.querySelectorAll('.docops-slide');
-                const interval = parseInt(slideshow.dataset.interval) || 30000;
-                let currentIndex = 0;
-
-                if (slides.length === 0) return;
-
-                function showSlide(index) {
-                    slides.forEach((slide, i) => {
-                        if (i === index) {
-                            slide.classList.add('active');
-                        } else {
-                            slide.classList.remove('active');
-                        }
-                    });
-                }
-
-                function nextSlide() {
-                    currentIndex = (currentIndex + 1) % slides.length;
-                    showSlide(currentIndex);
-                }
-
-                // Auto-advance slides every 30 seconds
-                setInterval(nextSlide, interval);
-
-                // Initialize first slide
-                showSlide(0);
-            });
-        });
-    })();
-</script>
 <script>
     class ThemeToggleTop {
         constructor() {
@@ -1505,3 +1477,36 @@
         new ThemeToggleTop();
     }
 </script>
+<style>
+    #footer-navigation {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 2rem 0;
+        margin-top: 4rem;
+        border-top: 1px solid var(--docops-border);
+        font-family: var(--docops-font-main);
+    }
+
+    .nav-link {
+        text-decoration: none;
+        color: var(--docops-accent);
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border: 1px solid transparent;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nav-link:hover {
+        color: #fff;
+        background: var(--docops-accent-glow);
+        border-color: var(--docops-accent);
+        box-shadow: 0 0 15px var(--docops-accent-glow);
+    }
+
+    .nav-link.next::after { content: ' →'; }
+    .nav-link.prev::before { content: '← '; }
+</style>
