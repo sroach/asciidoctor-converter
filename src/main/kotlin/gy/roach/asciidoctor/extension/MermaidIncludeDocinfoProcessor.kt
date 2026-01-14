@@ -9,7 +9,7 @@ import org.asciidoctor.extension.LocationType
 class MermaidIncludeDocinfoProcessor: DocinfoProcessor() {
     override fun process(document: Document): String {
         return """
-            <script src='https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.9.0/mermaid.min.js'></script>
+            <script src='https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js'></script>
             <script src='https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js'></script>
         """.trimIndent()
     }

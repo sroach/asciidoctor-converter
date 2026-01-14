@@ -15,6 +15,32 @@ class DocOpsMermaidDocinfoProcessor : DocinfoProcessor(){
     override fun process(document: Document): String {
         //language=html
         return """
+            <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
+                <div class="modal-content" id="modalContent">
+                    <button class="close-button" onclick="closeModal()" aria-label="Close modal">×</button>
+                    <!-- The JS specifically fails because this ID is missing -->
+                    <div id="modalSvgContainer"></div>
+
+                    <div class="modal-zoom-controls">
+                        <button class="modal-zoom-btn" onclick="modalZoomOut()" title="Zoom Out">−</button>
+                        <span class="modal-zoom-level" id="modalZoomLevel">100%</span>
+                        <button class="modal-zoom-btn" onclick="modalZoomIn()" title="Zoom In">+</button>
+                        <button class="modal-zoom-btn" onclick="modalZoomReset()" title="Reset Zoom">⟲</button>
+                    </div>
+                </div>
+            </div>
+            <script>
+              mermaid.initialize({
+                startOnLoad: true,
+                theme: 'neo',
+                look: 'neo'
+            });
+            </script>
+        """.trimIndent()
+    }
+     fun processOld(document: Document): String {
+        //language=html
+        return """
             <style>
             /* Universal diagram modal styles */
             .diagram-modal {
