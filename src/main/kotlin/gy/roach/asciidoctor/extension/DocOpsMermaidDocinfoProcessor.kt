@@ -30,10 +30,59 @@ class DocOpsMermaidDocinfoProcessor : DocinfoProcessor(){
                 </div>
             </div>
             <script>
-              mermaid.initialize({
+            mermaid.initialize({
                 startOnLoad: true,
-                theme: 'neo',
-                look: 'neo'
+                theme: 'base',
+                themeVariables: {
+                    // Typography - Matching pro-style.css
+                    fontFamily: "'Outfit', sans-serif",
+                    fontSize: "14px",
+                    
+                    // Colors - Using your CSS Variables
+                    primaryColor: 'var(--bg-surface)',
+                    primaryTextColor: 'var(--text-main)',
+                    primaryBorderColor: 'var(--accent-primary)',
+                    lineColor: 'var(--accent-secondary)',
+                    secondaryColor: 'var(--bg-base)',
+                    tertiaryColor: 'var(--bg-surface)',
+                    
+                    // Specific Element Overrides
+                    nodeBorder: 'var(--accent-primary)',
+                    clusterBkg: 'var(--bg-base)',
+                    clusterBorder: 'var(--border-color)',
+                    titleColor: 'var(--text-heading)',
+                    edgeLabelBackground: 'var(--bg-surface)',
+                    
+                    // Sequence Diagram specific
+                    actorBkg: 'var(--bg-surface)',
+                    actorBorder: 'var(--accent-primary)',
+                    actorTextColor: 'var(--text-heading)',
+                    noteBkgColor: 'var(--accent-glow)',
+                    noteTextColor: 'var(--accent-primary)',
+                },
+                // Custom CSS for "AI Assistant" flair
+                themeCSS: `
+                    .node rect, .node circle, .node ellipse, .node polygon {
+                        stroke-width: 2px;
+                        filter: drop-shadow(2px 2px 0px var(--accent-glow));
+                    }
+                    .label-container {
+                        fill: var(--bg-surface);
+                    }
+                    .edgePath .path {
+                        stroke: var(--accent-secondary) !important;
+                        stroke-width: 1.5px !important;
+                    }
+                    .marker {
+                        fill: var(--accent-secondary) !important;
+                        stroke: var(--accent-secondary) !important;
+                    }
+                    text.titleText {
+                        font-family: 'Syne', sans-serif !important;
+                        font-weight: 800 !important;
+                        text-transform: uppercase;
+                    }
+                `
             });
             </script>
         """.trimIndent()

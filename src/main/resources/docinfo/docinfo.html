@@ -1511,11 +1511,8 @@
     .nav-link.prev::before { content: '← '; }
     .modal-overlay {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(13, 13, 18, 0.95);
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--modal-overlay-bg); /* Use variable */
         backdrop-filter: blur(15px);
         display: flex;
         align-items: center;
@@ -1535,8 +1532,9 @@
         position: relative;
         width: 90vw;
         height: 85vh;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--modal-content-bg); /* Use variable */
+        border: 1px solid var(--modal-content-border); /* Use variable */
+        box-shadow: var(--modal-shadow);
         border-radius: 20px;
         display: flex;
         align-items: center;
@@ -1566,9 +1564,9 @@
         position: absolute;
         top: 20px;
         right: 20px;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.1);
+        color: var(--docops-accent);
         border: none;
-        color: #fff;
         width: 40px;
         height: 40px;
         border-radius: 50%;
@@ -1591,11 +1589,12 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        background: rgba(0, 0, 0, 0.6);
+        background: rgba(0, 0, 0, 0.8);
         padding: 8px 12px;
         border-radius: 8px;
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
     }
 
     .modal-zoom-btn {
