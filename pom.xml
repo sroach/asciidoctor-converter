@@ -10,7 +10,7 @@
     </parent>
     <groupId>gy.roach.asciidoctor</groupId>
     <artifactId>converter</artifactId>
-    <version>2025.0.0</version>
+    <version>2026.0.0</version>
     <name>converter</name>
     <description>A JVM based service solution for converting AsciiDoctor files located in git</description>
     <url>https://github.com/steveroach/asciidoctor-converter</url>
