@@ -83,3 +83,20 @@
     font-size: 14px;
     overflow-x: auto;
 }
+
+/* Ensure nested <code> doesn't override <pre> contrast */
+.markdown-body pre code {
+    color: inherit;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.55;
+    white-space: pre; /* keep the ASCII block crisp */
+}
+
+/* If the renderer wraps tokens in spans, keep them readable too */
+.markdown-body pre code span {
+    color: inherit;
+}
