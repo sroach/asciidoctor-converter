@@ -80,3 +80,30 @@ logging:
       file-name-pattern: logs/application-%d{yyyy-MM-dd}.%i.log.gz
       # Clean up old files on application startup
       clean-history-on-start: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+app:
+  execution-history:
+    max-size: 100
+  encryption:
+    key: ${ENCRYPTION_KEY}
+  security:
+    allowed-base-paths:
+      - "/trvapps"
+      - "/var/app/output"
+      - "/opt/docops/data"
+
+
+github:
+  staging:
+    directory: "/trvapps/docops/staging"
+  web:
+    directory: "/trvapps/docops/www"
+  disable:
+    ssl:
+      validation: false
