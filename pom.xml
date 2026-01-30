@@ -107,12 +107,7 @@
         </dependency>
 
 
-        <!-- https://mvnrepository.com/artifact/org.asciidoctor/asciidoctorj-epub3 -->
-        <dependency>
-            <groupId>org.asciidoctor</groupId>
-            <artifactId>asciidoctorj-epub3</artifactId>
-            <version>2.2.0</version>
-        </dependency>
+
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
