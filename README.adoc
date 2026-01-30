@@ -116,6 +116,22 @@ curl -X POST "http://localhost:7202/converter/convert-directory" \
   -d '{"sourceDir": "/path/to/source", "targetDir": "/path/to/output"}'
 ----
 
+
+== Converting a GitBub Repo
+
+[source,bash]
+----
+curl -X POST "http://localhost:7202/converter/github/process" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repoName": "owner/repository-name",
+    "encryptedPat": "your-encrypted-personal-access-token",
+    "name": "project-name",
+    "gitUrl": "https://github.com/owner/repository-name.git",
+    "branch": "main"
+  }'
+----
+
 == For Engineers
 
 [quote, A satisfied developer]
