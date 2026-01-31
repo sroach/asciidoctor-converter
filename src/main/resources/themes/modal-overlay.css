@@ -61,6 +61,8 @@
     border-radius: 12px;
     overflow: hidden;
     transition: transform 0.3s ease;
+    width: 100%;
+    max-width: 100%;
 }
 
 .docops-media-card:hover {
@@ -121,6 +123,10 @@
 }
 
 .svg-container svg {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 1200px;
+    min-width: 600px;
     display: block;
 }
 
