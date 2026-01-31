@@ -122,8 +122,21 @@ object MermaidFlexmark {
         } else {
             "#f5f5f5"
         }
+        var styleRef = ""
+        if(cssTheme.startsWith("http://", true) || cssTheme.startsWith("https://", true))
+        {
+            styleRef = """
+                <link rel="stylesheet" href="$cssTheme">
+            """.trimIndent()
+        } else {
+            val mdStyleSheet = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/$cssTheme")?.readAllBytes()?.decodeToString()
+            styleRef = """
+                <style>
+                    $mdStyleSheet
+                </style>
+            """.trimIndent()
+        }
         val baseMdStyleSheet = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/md.css")?.readAllBytes()?.decodeToString()
-        val mdStyleSheet = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/$cssTheme")?.readAllBytes()?.decodeToString()
         val modalOverlay = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/modal-overlay.css")?.readAllBytes()?.decodeToString()
         val admonitionCss = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/admonition.css")?.readAllBytes()?.decodeToString()
         val admonitionJs = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/admonition.js")?.readAllBytes()?.decodeToString()
@@ -137,9 +150,7 @@ object MermaidFlexmark {
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>$title</title>
-                <style>
-                $mdStyleSheet
-                </style>
+                $styleRef
                 <style>
                 $baseMdStyleSheet
                 </style>

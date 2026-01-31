@@ -42,7 +42,8 @@ class GithubController(
         val encryptedPat: String, // Changed from 'pat' to 'encryptedPat' to be explicit
         val name: String,
         val gitUrl: String,
-        val branch: String = "main"
+        val branch: String = "main",
+        val cssTheme: String = "github-md-light"
     )
 
     /**
@@ -150,7 +151,7 @@ class GithubController(
 
             try {
                 // Convert files and get statistics
-                val stats = convert.convert(localDirectory, validatedOutputDir.toString())
+                val stats = convert.convert(localDirectory, validatedOutputDir.toString(), cssTheme= request.cssTheme)
 
                 // Calculate execution duration
                 val endTime = System.currentTimeMillis()

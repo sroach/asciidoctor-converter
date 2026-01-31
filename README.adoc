@@ -128,7 +128,8 @@ curl -X POST "http://localhost:7202/converter/github/process" \
     "encryptedPat": "your-encrypted-personal-access-token",
     "name": "project-name",
     "gitUrl": "https://github.com/owner/repository-name.git",
-    "branch": "main"
+    "branch": "main",
+    "cssTheme: "https://www.abc.com/styles/abc.css"
   }'
 ----
 
