@@ -8,7 +8,6 @@ import gy.roach.asciidoctor.extension.ReadingTimeDocinfoProcessor
 import gy.roach.asciidoctor.tabs.BlockSwitchDocinfoProcessor
 import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
-import org.asciidoctor.AttributesBuilder
 import org.asciidoctor.Options
 import org.asciidoctor.SafeMode
 import org.slf4j.LoggerFactory
