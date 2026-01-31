@@ -47,6 +47,24 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
     // Pattern to match include directives in Asciidoctor files
     private val includePattern = Pattern.compile("include::([^\\[\\]]+)(?:\\[.*?\\])?")
 
+
+    // Files and directories to exclude from copying
+    private val excludedPatterns = setOf(
+        ".git",
+        ".github",
+        ".gitignore",
+        ".gitattributes",
+        ".gitmodules",
+        ".gitkeep",
+        ".DS_Store",
+        "Thumbs.db",
+        ".idea",
+        ".vscode",
+        "node_modules",
+        ".env",
+        ".env.local"
+    )
+
     init {
         asciidoctor.requireLibrary("asciidoctor-diagram")
         asciidoctor.javaExtensionRegistry().docinfoProcessor(BlockSwitchDocinfoProcessor::class.java)
@@ -318,6 +336,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
         return directory.walkTopDown()
             .filter { it.isFile && it.extension == "adoc" }
+            .filter { !shouldExcludeFile(it) }
             .toList()
     }
 
@@ -335,9 +354,30 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
         return directory.walkTopDown()
             .filter { it.isFile && (it.extension != "adoc" || it.extension == "md")}
+            .filter { !shouldExcludeFile(it) }
             .toList()
     }
 
+    /**
+     * Check if a file or any of its parent directories should be excluded
+     */
+    private fun shouldExcludeFile(file: File): Boolean {
+        // Check the file name itself
+        if (excludedPatterns.contains(file.name)) {
+            return true
+        }
+
+        // Check if any parent directory is in the exclusion list
+        var parent = file.parentFile
+        while (parent != null) {
+            if (excludedPatterns.contains(parent.name)) {
+                return true
+            }
+            parent = parent.parentFile
+        }
+
+        return false
+    }
     /**
      * Converts all .adoc files in the source directory to HTML in the target directory
      * and copies all other files as-is.
