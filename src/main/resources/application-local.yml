@@ -11,9 +11,9 @@ management:
 
 github:
   staging:
-    directory: ${GITHUB_STAGING_DIR:"/trvapps/docops/staging/docs"}
+    directory: ${GITHUB_STAGING_DIR:/Users/steveroach/development/docops/asciidoc-staging}
   web:
-    directory: ${GITHUB_WEB_DIR:"/trvapps/docops/www/docs"}
+    directory: ${GITHUB_WEB_DIR:/Users/steveroach/development/docops/asciidoc-web}
   disable:
     ssl:
       validation: ${GITHUB_DISABLE_SSL:false}
@@ -49,9 +49,9 @@ app:
     key: ${ENCRYPTION_KEY:your-32-character-secret-key-here}
   security:
     allowed-base-paths:
-      - "/trvapps"
-      - "/var/app/output"
-      - "/opt/docops/data"
+      - "/Users/steveroach/IdeaProjects"
+      - "/tmp/asciidoc-conversion"
+      - "/usr/local/docops/stage/docops.io"
 
 spring:
   threads:
@@ -80,3 +80,4 @@ logging:
       file-name-pattern: logs/application-%d{yyyy-MM-dd}.%i.log.gz
       # Clean up old files on application startup
       clean-history-on-start: true
+
