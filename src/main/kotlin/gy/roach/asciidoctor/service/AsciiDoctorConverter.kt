@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import java.io.File
+import java.net.URI
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.CompletableFuture
@@ -212,6 +213,8 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .dataUri(true)
             .copyCss(true)
             .noFooter(true)
+            .icons(Attributes.FONT_ICONS)
+            .iconFontCdn(URI("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"))
             .attribute("docinfodir", docinfoDir)
             .attribute("docinfo", "shared")
             .attribute("encoding", "utf-8")
