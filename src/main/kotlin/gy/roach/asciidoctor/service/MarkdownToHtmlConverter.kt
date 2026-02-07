@@ -161,168 +161,313 @@ object MermaidFlexmark {
                 $admonitionCss
                 </style>
                 <style>
-                      @media (prefers-color-scheme: dark) {
-                          body {
-                              background-color: $bodyBack;
+                          @media (prefers-color-scheme: dark) {
+                              body {
+                                  background-color: $bodyBack;
+                              }
                           }
-                      }
-                </style>
+                          
+                          /* Consistent Modal Styles matching AsciiDoc implementation */
+                          .svg-modal-overlay {
+                              display: none;
+                              position: fixed;
+                              top: 0;
+                              left: 0;
+                              width: 100vw;
+                              height: 100vh;
+                              background: rgba(15, 20, 25, 0.95);
+                              backdrop-filter: blur(8px);
+                              z-index: 2147483647;
+                              align-items: center;
+                              justify-content: center;
+                              padding: 40px;
+                              box-sizing: border-box;
+                          }
+                          .svg-modal-overlay.active {
+                              display: flex;
+                          }
+                          .svg-modal-content {
+                              width: 95vw;
+                              max-width: 1400px;
+                              height: 90vh;
+                              background: var(--docops-card-bg, #1e293b);
+                              border-radius: 20px;
+                              padding: 48px 24px 24px 24px;
+                              position: relative;
+                              border: 1px solid rgba(255,255,255,0.1);
+                              display: flex;
+                              flex-direction: column;
+                              overflow: hidden;
+                              box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                              animation: scaleInModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                          }
+                          .svg-modal-close {
+                              position: absolute;
+                              top: 12px;
+                              right: 12px;
+                              background: rgba(255,255,255,0.1);
+                              color: #fff;
+                              border: none;
+                              width: 36px;
+                              height: 36px;
+                              border-radius: 50%;
+                              font-size: 24px;
+                              cursor: pointer;
+                              display: flex;
+                              align-items: center;
+                              justify-content: center;
+                              transition: all 0.2s ease;
+                              z-index: 10;
+                          }
+                          .svg-modal-close:hover {
+                              background: rgba(255,255,255,0.2);
+                              transform: rotate(90deg);
+                          }
+                          .svg-modal-body {
+                              flex: 1;
+                              display: flex;
+                              align-items: center;
+                              justify-content: center;
+                              width: 100%;
+                              height: 100%;
+                              overflow: auto;
+                              padding: 10px;
+                          }
+                          .svg-modal-body svg {
+                              max-width: 100%;
+                              max-height: 100%;
+                              width: auto;
+                              height: auto;
+                              object-fit: contain;
+                          }
+                          @keyframes scaleInModal {
+                              from { opacity: 0; transform: scale(0.9); }
+                              to { opacity: 1; transform: scale(1); }
+                          }
+                          /* CSV Modal Styles */
+                          #globalCsvModal .csv-table {
+                              width: 100%;
+                              border-collapse: collapse;
+                              color: #e2e8f0;
+                              font-family: 'JetBrains Mono', monospace;
+                              font-size: 13px;
+                              background: transparent;
+                          }
+                          #globalCsvModal .csv-table th {
+                              text-align: left;
+                              padding: 12px;
+                              border-bottom: 1px solid rgba(255,255,255,0.1);
+                              background: rgba(255,255,255,0.1);
+                              color: #fff;
+                              position: sticky;
+                              top: 0;
+                          }
+                          #globalCsvModal .csv-table td {
+                              padding: 12px;
+                              border-bottom: 1px solid rgba(255,255,255,0.05);
+                              color: #cbd5e1;
+                          }
+                          #globalCsvModal .csv-table tr {
+                              background: transparent;
+                          }
+                          #globalCsvModal .csv-table tr:hover {
+                              background: rgba(255,255,255,0.05);
+                          }
+                    </style>
                 <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js"></script>
                 
             </head>
             <body>
-                <article class="markdown-body">
-                    $htmlBody
-                </article>
-                <!-- Modal Overlay -->
-                <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBackdrop(event)">
-                    <div class="modal-content" id="modalContent">
-                        <button class="close-button" onclick="closeModal()" aria-label="Close modal">×</button>
-                        <div id="modalSvgContainer"></div>
-                        <div class="modal-zoom-controls">
-                            <button class="modal-zoom-btn" onclick="modalZoomOut()" title="Zoom Out">−</button>
-                            <span class="modal-zoom-level" id="modalZoomLevel">100%</span>
-                            <button class="modal-zoom-btn" onclick="modalZoomIn()" title="Zoom In">+</button>
-                            <button class="modal-zoom-btn" onclick="modalZoomReset()" title="Reset Zoom">⟲</button>
+                    <article class="markdown-body">
+                        $htmlBody
+                    </article>
+                    
+                    <!-- Global Shared Modal for Markdown View -->
+                    <div class="svg-modal-overlay" id="globalSvgModal" onclick="if(event.target === this) closeGlobalModal()">
+                        <div class="svg-modal-content">
+                            <button class="svg-modal-close" onclick="closeGlobalModal()">×</button>
+                            <div id="globalModalBody" class="svg-modal-body"></div>
                         </div>
                     </div>
-                </div>
-                <script>
-                    const modalOverlay = document.getElementById('modalOverlay');
-                    const modalSvgContainer = document.getElementById('modalSvgContainer');
-                    
-                    // Zoom state
-                    let modalZoomLevel = 1;
-                    const MODAL_ZOOM_MIN = 0.25;
-                    const MODAL_ZOOM_MAX = 4;
-                    const MODAL_ZOOM_STEP = 0.25;
 
-                    function openModal(container) {
-                        // Reset zoom level
-                        modalZoomLevel = 1;
-                        updateZoomDisplay();
+                    <!-- Global Shared Modal for Data View -->
+                    <div class="svg-modal-overlay" id="globalCsvModal" onclick="if(event.target === this) closeGlobalCsvModal()">
+                        <div class="svg-modal-content">
+                            <button class="svg-modal-close" onclick="closeGlobalCsvModal()">×</button>
+                            <div class="svg-modal-header" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                                <h3 style="margin:0; color:white; font-family:'JetBrains Mono', monospace;">Data Source</h3>
+                            </div>
+                            <div id="globalCsvModalBody" class="svg-modal-body" style="display: block; overflow: auto;"></div>
+                        </div>
+                    </div>
+
+                    <script>
+                        // Unified Modal Logic for Markdown
+                        function openModal(container) {
+                            const modal = document.getElementById('globalSvgModal');
+                            const targetContainer = document.getElementById('globalModalBody');
+                            
+                            // Find SVG in the container passed from the button
+                            const sourceSvg = container.querySelector ? container.querySelector('svg') : container; 
+                            
+                            if (sourceSvg && targetContainer) {
+                                targetContainer.innerHTML = '';
+                                const clone = sourceSvg.cloneNode(true);
+                                
+                                // Reset dimensions to allow CSS to control scaling
+                                clone.removeAttribute('width');
+                                clone.removeAttribute('height');
+                                clone.style.width = '100%';
+                                clone.style.height = '100%';
+                                
+                                targetContainer.appendChild(clone);
+                                modal.classList.add('active');
+                                document.body.style.overflow = 'hidden';
+                            }
+                        }
+
+                        function closeGlobalModal() {
+                            const modal = document.getElementById('globalSvgModal');
+                            if (modal) {
+                                modal.classList.remove('active');
+                                document.body.style.overflow = '';
+                            }
+                        }
                         
-                        // Clone the SVG from the clicked container
-                        const svg = container.querySelector('svg');
-                        const svgClone = svg.cloneNode(true);
-                        svgClone.style.transform = 'scale(1)';
-                        svgClone.style.transition = 'transform 0.2s ease';
-
-                        // Clear previous content and add new SVG
-                        modalSvgContainer.innerHTML = '';
-                        modalSvgContainer.appendChild(svgClone);
-
-                        // Show modal with animation
-                        modalOverlay.classList.add('active');
-
-                        // Prevent body scroll when modal is open
-                        document.body.style.overflow = 'hidden';
-                    }
-
-                    function closeModal() {
-                        modalOverlay.classList.remove('active');
-                        document.body.style.overflow = '';
-                        modalZoomLevel = 1;
-                    }
-
-                    function closeModalOnBackdrop(event) {
-                        // Only close if clicking the overlay itself, not the content
-                        if (event.target === modalOverlay) {
-                            closeModal();
+                        function closeGlobalCsvModal() {
+                            const modal = document.getElementById('globalCsvModal');
+                            if (modal) {
+                                modal.classList.remove('active');
+                                document.body.style.overflow = '';
+                            }
                         }
-                    }
-                    
-                    function modalZoomIn() {
-                        if (modalZoomLevel < MODAL_ZOOM_MAX) {
-                            modalZoomLevel = Math.min(modalZoomLevel + MODAL_ZOOM_STEP, MODAL_ZOOM_MAX);
-                            applyModalZoom();
-                        }
-                    }
-                    
-                    function modalZoomOut() {
-                        if (modalZoomLevel > MODAL_ZOOM_MIN) {
-                            modalZoomLevel = Math.max(modalZoomLevel - MODAL_ZOOM_STEP, MODAL_ZOOM_MIN);
-                            applyModalZoom();
-                        }
-                    }
-                    
-                    function modalZoomReset() {
-                        modalZoomLevel = 1;
-                        applyModalZoom();
-                    }
-                    
-                    function applyModalZoom() {
-                        const svg = modalSvgContainer.querySelector('svg');
-                        if (svg) {
-                            svg.style.transform = `scale(${'$'}{modalZoomLevel})`;
-                        }
-                        updateZoomDisplay();
-                    }
-                    
-                    function updateZoomDisplay() {
-                        const display = document.getElementById('modalZoomLevel');
-                        if (display) {
-                            display.textContent = `${'$'}{Math.round(modalZoomLevel * 100)}%`;
-                        }
-                    }
 
-                    // Close modal with Escape key
-                    document.addEventListener('keydown', function(event) {
-                        if (event.key === 'Escape' && modalOverlay.classList.contains('active')) {
-                            closeModal();
-                        }
-                    });
-                    const docopsCopy = {
-                        url: (btn) => {
-                                const url = btn.closest('.docops-media-card').getAttribute('data-url');
-                                navigator.clipboard.writeText(url).then(() => {
+                        // Close modal with Escape key
+                        document.addEventListener('keydown', function(event) {
+                            if (event.key === 'Escape') {
+                                closeGlobalModal();
+                                closeGlobalCsvModal();
+                            }
+                        });
+                        
+                        const docopsData = {
+                            toggle: function(btn) {
+                                const container = btn.closest('.docops-media-card');
+                                const svg = container.querySelector('.svg-container svg') || container.querySelector('svg');
+                                
+                                if (!svg) return;
+                                
+                                let csvData = null;
+                                
+                                // Method 1: Standard metadata with type
+                                let csvMetadata = svg.querySelector('metadata[type="text/csv"]');
+                                if (csvMetadata) {
+                                    try {
+                                        csvData = JSON.parse(csvMetadata.textContent.trim());
+                                    } catch(e) { console.error("Error parsing CSV JSON", e); }
+                                }
+
+                                // Method 2: Custom csv-data element
+                                if (!csvData) {
+                                    csvMetadata = svg.querySelector('metadata csv-data');
+                                    if (csvMetadata) {
+                                        try {
+                                            csvData = JSON.parse(csvMetadata.textContent.trim());
+                                        } catch(e) {}
+                                    }
+                                }
+
+                                // Method 3: Data attribute
+                                if (!csvData) {
+                                    const csvDataAttr = svg.getAttribute('data-csv');
+                                    if (csvDataAttr) {
+                                        try {
+                                            csvData = JSON.parse(decodeURIComponent(csvDataAttr));
+                                        } catch(e) {}
+                                    }
+                                }
+                                
+                                if (csvData) {
+                                    const modal = document.getElementById('globalCsvModal');
+                                    const body = document.getElementById('globalCsvModalBody');
+                                    
+                                    let html = '<table class="csv-table">';
+                                     if (csvData.headers) {
+                                        html += '<thead><tr>';
+                                        csvData.headers.forEach(h => html += '<th>' + h + '</th>');
+                                        html += '</tr></thead>';
+                                    }
+                                    if (csvData.rows) {
+                                        html += '<tbody>';
+                                        csvData.rows.forEach(row => {
+                                            html += '<tr>';
+                                            row.forEach(cell => html += '<td>' + cell + '</td>');
+                                            html += '</tr>';
+                                        });
+                                        html += '</tbody>';
+                                    }
+                                    html += '</table>';
+                                    
+                                    body.innerHTML = html;
+                                    modal.classList.add('active');
+                                    document.body.style.overflow = 'hidden';
+                                } else {
+                                    console.log("No CSV data found in SVG");
+                                }
+                            }
+                        };
+                        
+                        const docopsCopy = {
+                            url: (btn) => {
+                                    const url = btn.closest('.docops-media-card').getAttribute('data-url');
+                                    navigator.clipboard.writeText(url).then(() => {
+                                        const originalText = btn.innerText;
+                                        btn.innerText = 'COPIED!';
+                                        setTimeout(() => btn.innerText = originalText, 2000);
+                                    });
+                                },
+                            svg: (btn) => {
+                                const svg = btn.closest('.docops-media-card').querySelector('svg').outerHTML;
+                                navigator.clipboard.writeText(svg).then(() => {
                                     const originalText = btn.innerText;
                                     btn.innerText = 'COPIED!';
                                     setTimeout(() => btn.innerText = originalText, 2000);
                                 });
                             },
-                        svg: (btn) => {
-                            const svg = btn.closest('.docops-media-card').querySelector('svg').outerHTML;
-                            navigator.clipboard.writeText(svg).then(() => {
-                                const originalText = btn.innerText;
-                                btn.innerText = 'COPIED!';
-                                setTimeout(() => btn.innerText = originalText, 2000);
-                            });
-                        },
-                        png: (btn) => {
-                            const svgElement = btn.closest('.docops-media-card').querySelector('svg');
-                            const svgData = new XMLSerializer().serializeToString(svgElement);
-                            const canvas = document.createElement('canvas');
-                            const ctx = canvas.getContext('2d');
-                            const img = new Image();
+                            png: (btn) => {
+                                const svgElement = btn.closest('.docops-media-card').querySelector('svg');
+                                const svgData = new XMLSerializer().serializeToString(svgElement);
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                const img = new Image();
                             
-                            img.onload = () => {
-                                canvas.width = img.width;
-                                canvas.height = img.height;
-                                ctx.drawImage(img, 0, 0);
-                                canvas.toBlob(blob => {
-                                    const item = new ClipboardItem({ "image/png": blob });
-                                    navigator.clipboard.write([item]);
-                                    const originalText = btn.innerText;
-                                    btn.innerText = 'COPIED!';
-                                    setTimeout(() => btn.innerText = originalText, 2000);
-                                });
-                            };
-                            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
-                        }
-                    };
+                                img.onload = () => {
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    ctx.drawImage(img, 0, 0);
+                                    canvas.toBlob(blob => {
+                                        const item = new ClipboardItem({ "image/png": blob });
+                                        navigator.clipboard.write([item]);
+                                        const originalText = btn.innerText;
+                                        btn.innerText = 'COPIED!';
+                                        setTimeout(() => btn.innerText = originalText, 2000);
+                                    });
+                                };
+                                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                            }
+                        };
                     
-                </script>
-                <script>
-                    mermaid.initialize({ startOnLoad: true });
-                </script>
-                <script>
-                $admonitionJs
-                $svgData
-                </script>
+                    </script>
+                    <script>
+                        mermaid.initialize({ startOnLoad: true });
+                    </script>
+                    <script>
+                    $admonitionJs
+                    $svgData
+                    </script>
                 
-            </body>
-            </html>
+                </body>
+                </html>
         """.trimIndent()
     }
 }
