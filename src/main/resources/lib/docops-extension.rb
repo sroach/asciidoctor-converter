@@ -194,8 +194,8 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
                  image, id, title,
                  show_controls, allow_copy, allow_zoom, allow_expand,  theme, role, allow_csv
                ).gsub(
-                 %(<div class="svg-with-controls" id="#{id}" data-theme="#{theme}">),
-                 %(<div class="svg-with-controls" id="#{id}" data-theme="#{theme}" data-original-content="#{content.gsub('"', '&quot;')}" data-kind="#{kind}">)
+                 %(<div class="svg-with-controls docops-media-card" id="#{id}" data-theme="#{theme}">),
+                 %(<div class="svg-with-controls docops-media-card" id="#{id}" data-theme="#{theme}" data-url="#{url}" data-original-content="#{content.gsub('"', '&quot;')}" data-kind="#{kind}">)
                )
 
                # Caption AFTER the image content
@@ -242,33 +242,87 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     alignment_style = get_alignment_style(role)
 
     html = []
+
+    # Add CSS for bottom controls
+    html << <<~CSS
+          <style>
+            .svg-with-controls {
+              position: relative;
+              display: inline-block;
+              border: 1px solid rgba(255,255,255,0.1);
+              border-radius: 8px;
+              overflow: hidden;
+            }
+            .svg-bottom-controls {
+              position: absolute;
+              bottom: 12px;
+              left: 50%;
+              transform: translateX(-50%) translateY(150%);
+              display: flex;
+              gap: 6px;
+              background: rgba(15, 20, 30, 0.85);
+              padding: 6px 8px;
+              border-radius: 6px;
+              border: 1px solid rgba(255,255,255,0.1);
+              opacity: 0;
+              transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+              z-index: 100;
+              backdrop-filter: blur(8px);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+            .svg-with-controls:hover .svg-bottom-controls {
+              opacity: 1;
+              transform: translateX(-50%) translateY(0);
+            }
+            .svg-control-btn {
+              background: transparent;
+              border: 1px solid rgba(255,255,255,0.15);
+              color: #94a3b8;
+              font-family: 'JetBrains Mono', monospace;
+              font-size: 10px;
+              font-weight: 600;
+              padding: 4px 10px;
+              border-radius: 4px;
+              cursor: pointer;
+              transition: all 0.2s;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            }
+            .svg-control-btn:hover {
+              background: rgba(255,255,255,0.1);
+              color: #fff;
+              border-color: rgba(255,255,255,0.3);
+              transform: translateY(-1px);
+            }
+          </style>
+        CSS
+
     html << "<div class=\"svg-viewer-container\" style=\"#{alignment_style}\">"
-    html << "<div class=\"svg-with-controls\" id=\"#{id}\" data-theme=\"#{theme}\">"
+    html << "<div class=\"svg-with-controls docops-media-card\" id=\"#{id}\" data-theme=\"#{theme}\">"
     html << ensure_utf8(svg_content)
 
     if show_controls
-      html << "<div class=\"svg-floating-controls\">"
-      html << "<button class=\"svg-controls-toggle\" onclick=\"svgViewer.toggleControls('#{id}')\" title=\"Controls\">⚙️</button>"
-      html << "<div class=\"svg-controls-panel\" id=\"controls-panel-#{id}\">"
+      html << "<div class=\"svg-bottom-controls\">"
 
-      html << ensure_utf8(build_zoom_controls(id)) if allow_zoom
-      html << ensure_utf8(build_expand_control(id)) if allow_expand
-      html << ensure_utf8(build_copy_control(id)) if allow_copy
-      html << ensure_utf8(build_csv_control(id)) if allow_csv
+      html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.toggleFullscreen('#{id}')\">VIEW</button>" if allow_expand
+      html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.toggleCsv('#{id}')\">DATA</button>" if allow_csv
+      html << "<button class=\"svg-control-btn\" onclick=\"docopsCopy.url(this)\">LINK</button>" if allow_copy
+      html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.copyAsSvg('#{id}')\">SVG</button>" if allow_copy
+      html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.copyAsPng('#{id}')\">PNG</button>" if allow_copy
 
       html << "</div>"
-      html << "</div>"
+
       html << <<~HTML.strip
-        <div class="csv-container" id="csv-container-#{id}" style="display: none;">
-            <div class="csv-header">
-                <span>CSV Data</span>
-                <button class="csv-close" onclick="svgViewer.closeCsv('#{id}')" title="Close CSV">×</button>
+            <div class="csv-container" id="csv-container-#{id}" style="display: none;">
+                <div class="csv-header">
+                    <span>CSV Data</span>
+                    <button class="csv-close" onclick="svgViewer.closeCsv('#{id}')" title="Close CSV">×</button>
+                </div>
+                <div class="csv-content" id="csv-content-#{id}">
+                    <div class="csv-loading">Loading CSV data...</div>
+                </div>
             </div>
-            <div class="csv-content" id="csv-content-#{id}">
-                <div class="csv-loading">Loading CSV data...</div>
-            </div>
-        </div>
-      HTML
+          HTML
 
     end
 
@@ -282,7 +336,6 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     }
     html.join("\n")
   end
-
 
   def get_alignment_style(role)
     case role.downcase
