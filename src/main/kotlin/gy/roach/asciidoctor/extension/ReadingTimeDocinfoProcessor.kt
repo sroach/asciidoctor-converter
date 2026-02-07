@@ -18,7 +18,7 @@ class ReadingTimeDocinfoProcessor(private val readingTimeService: ReadingTimeSer
 
     override fun process(document: Document): String {
         // Check if reading time is disabled via attribute
-        val readingTimeAttribute = document.getAttribute("docops-reading-time", "on")
+        val readingTimeAttribute = document.getAttribute("docops-reading-time", "off")
         if (readingTimeAttribute == "off") {
             logger.debug("Reading time disabled via docops-reading-time attribute")
             return ""
