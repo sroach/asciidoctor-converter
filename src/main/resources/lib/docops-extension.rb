@@ -241,9 +241,12 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     # Get alignment styling based on role
     alignment_style = get_alignment_style(role)
 
+    # Create a sanitized ID for JS variable names
+    js_id = id.gsub('-', '_')
+
     html = []
 
-    # Add CSS for bottom controls
+    # Add CSS for bottom controls AND the new modal
     html << <<~CSS
           <style>
             .svg-with-controls {
@@ -294,8 +297,136 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
               border-color: rgba(255,255,255,0.3);
               transform: translateY(-1px);
             }
+            
+            /* Specific Modal Styles for this SVG */
+            .svg-modal-#{id} {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(15, 20, 25, 0.95);
+                backdrop-filter: blur(8px);
+                z-index: 2147483647; /* Highest possible z-index */
+                align-items: center;
+                justify-content: center;
+                padding: 40px;
+                box-sizing: border-box;
+            }
+            .svg-modal-#{id}.active {
+                display: flex;
+            }
+            .svg-modal-content-#{id} {
+                width: 95vw;
+                max-width: 1400px;
+                height: 90vh;
+                background: var(--docops-card-bg, #1e293b);
+                border-radius: 20px;
+                padding: 48px 24px 24px 24px;
+                position: relative;
+                border: 1px solid rgba(255,255,255,0.1);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                animation: scaleInModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .svg-modal-close-#{id} {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                background: rgba(255,255,255,0.1);
+                color: #fff;
+                border: none;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                font-size: 24px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                z-index: 10;
+            }
+            .svg-modal-close-#{id}:hover {
+                background: rgba(255,255,255,0.2);
+                transform: rotate(90deg);
+            }
+            .svg-modal-body-#{id} {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+                overflow: auto;
+                padding: 10px;
+            }
+            .svg-modal-body-#{id} svg {
+                max-width: 100%;
+                max-height: 100%;
+                width: auto;
+                height: auto;
+                object-fit: contain;
+            }
           </style>
         CSS
+
+    # Add JavaScript object for managing this specific modal
+    html << <<~SCRIPT
+          <script>
+            window.svgModal#{js_id} = {
+                open: function() {
+                    const modal = document.getElementById('modal-#{id}');
+                    const sourceContainer = document.getElementById('#{id}');
+                    
+                    if (!modal || !sourceContainer) return;
+                    
+                    // Critical Fix: Move modal to body to break z-index/transform constraints
+                    if (modal.parentNode !== document.body) {
+                        document.body.appendChild(modal);
+                    }
+                    
+                    const sourceSvg = sourceContainer.querySelector('svg');
+                    const targetContainer = document.getElementById('modal-body-#{id}');
+                    
+                    if (sourceSvg && targetContainer) {
+                        targetContainer.innerHTML = '';
+                        const clone = sourceSvg.cloneNode(true);
+                        
+                        // Reset dimensions to allow CSS to control scaling
+                        clone.removeAttribute('width');
+                        clone.removeAttribute('height');
+                        clone.style.width = '100%';
+                        clone.style.height = '100%';
+                        
+                        targetContainer.appendChild(clone);
+                        modal.classList.add('active');
+                        document.body.style.overflow = 'hidden';
+                    }
+                },
+                close: function() {
+                    const modal = document.getElementById('modal-#{id}');
+                    if (modal) {
+                        modal.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                }
+            };
+            
+            // Register escape key handler
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const modal = document.getElementById('modal-#{id}');
+                    if (modal && modal.classList.contains('active')) {
+                        window.svgModal#{js_id}.close();
+                    }
+                }
+            });
+          </script>
+        SCRIPT
 
     html << "<div class=\"svg-viewer-container\" style=\"#{alignment_style}\">"
     html << "<div class=\"svg-with-controls docops-media-card\" id=\"#{id}\" data-theme=\"#{theme}\">"
@@ -304,7 +435,8 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     if show_controls
       html << "<div class=\"svg-bottom-controls\">"
 
-      html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.toggleFullscreen('#{id}')\">VIEW</button>" if allow_expand
+      # Updated VIEW button to use the new modal logic
+      html << "<button class=\"svg-control-btn\" onclick=\"svgModal#{js_id}.open()\">VIEW</button>" if allow_expand
       html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.toggleCsv('#{id}')\">DATA</button>" if allow_csv
       html << "<button class=\"svg-control-btn\" onclick=\"docopsCopy.url(this)\">LINK</button>" if allow_copy
       html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.copyAsSvg('#{id}')\">SVG</button>" if allow_copy
@@ -324,6 +456,16 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
             </div>
           HTML
 
+      # Add the Modal HTML structure (initially hidden)
+      html << <<~MODAL
+            <div id="modal-#{id}" class="svg-modal-#{id}" onclick="if(event.target === this) svgModal#{js_id}.close()">
+                <div class="svg-modal-content-#{id}">
+                    <button class="svg-modal-close-#{id}" onclick="svgModal#{js_id}.close()">×</button>
+                    <div id="modal-body-#{id}" class="svg-modal-body-#{id}"></div>
+                </div>
+            </div>
+          MODAL
+
     end
 
     html << "</div>" # Close svg-with-controls
@@ -336,7 +478,6 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     }
     html.join("\n")
   end
-
   def get_alignment_style(role)
     case role.downcase
     when 'left'
