@@ -161,106 +161,11 @@ object MermaidFlexmark {
                 $admonitionCss
                 </style>
                 <style>
-                      
-        .docops-data-panel {
-            background: linear-gradient(145deg, #1a1a2e 0%, #0d0d12 100%);
-            border-top: 1px solid var(--accent-primary);
-            padding: 2rem;
-            max-height: 400px;
-            overflow-y: auto;
-            position: relative;
-            box-shadow: inset 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        .docops-data-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            padding-bottom: 1rem;
-        }
-        .docops-data-actions {
-            display: flex;
-            gap: 12px;
-        }
-        .docops-action-btn {
-            background: rgba(126, 87, 255, 0.1);
-            border: 1px solid rgba(126, 87, 255, 0.3);
-            color: var(--accent-secondary);
-            font-family: 'Syne', sans-serif;
-            font-size: 0.65rem;
-            font-weight: 800;
-            padding: 6px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .docops-action-btn:hover {
-            background: var(--accent-primary);
-            color: #fff;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(126, 87, 255, 0.4);
-            border-color: var(--accent-primary);
-        }
-
-        .docops-data-header span {
-            font-family: 'Syne', sans-serif;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--accent-secondary);
-            font-size: 0.9rem;
-        }
-
-        /* ui.md: Distinctive Table Design */
-        .docops-data-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 4px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-        }
-
-        .docops-data-table th {
-            color: #fff;
-            padding: 12px;
-            text-align: left;
-            border-bottom: 2px solid var(--accent-primary);
-            font-weight: 500;
-        }
-
-        /* ui.md: Motion - Staggered Row Entry */
-        .docops-data-table tr {
-            opacity: 0;
-            transform: translateX(-10px);
-            animation: rowSlideIn 0.4s ease forwards;
-        }
-
-        @keyframes rowSlideIn {
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .docops-data-table td {
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            color: #94a3b8;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .docops-data-table tr:hover td {
-            background: rgba(126, 87, 255, 0.1);
-            color: #fff;
-        }
-        
-                    @media (prefers-color-scheme: dark) {
-                        body {
-                            background-color: $bodyBack;
-                        }
-                    }
+                      @media (prefers-color-scheme: dark) {
+                          body {
+                              background-color: $bodyBack;
+                          }
+                      }
                 </style>
                 <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js"></script>
                 
