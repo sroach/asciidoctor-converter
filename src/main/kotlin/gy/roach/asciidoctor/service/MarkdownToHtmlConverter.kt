@@ -167,6 +167,16 @@ object MermaidFlexmark {
                               }
                           }
                           
+                           /* Fix for DocOps visuals sizing - prevents them from being too large */
+                          .svg-container svg {
+                              width: auto !important;
+                              height: auto !important;
+                              max-width: 100% !important;
+                              min-width: 0 !important;
+                              margin: 0 auto;
+                              display: block;
+                          }
+                          
                           /* Consistent Modal Styles matching AsciiDoc implementation */
                           .svg-modal-overlay {
                               display: none;
@@ -244,6 +254,7 @@ object MermaidFlexmark {
                               from { opacity: 0; transform: scale(0.9); }
                               to { opacity: 1; transform: scale(1); }
                           }
+                          
                           /* CSV Modal Styles */
                           #globalCsvModal .csv-table {
                               width: 100%;
@@ -273,6 +284,7 @@ object MermaidFlexmark {
                           #globalCsvModal .csv-table tr:hover {
                               background: rgba(255,255,255,0.05);
                           }
+                          
                           /* Sliding Controls Styles (Consistent with Asciidoctor) */
                           .svg-with-controls {
                               position: relative;
