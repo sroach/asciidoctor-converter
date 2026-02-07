@@ -635,7 +635,372 @@ class DocOpsShowcaseProcessor
     gallery_id = "docops-gallery-#{SecureRandom.hex(8)}"
 
     html = []
-    html << "<div class=\"docops-workbench-showcase\" id=\"#{gallery_id}\">"
+
+    # Add the bento grid CSS
+    html << <<~CSS
+      <style>
+        .bento-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+          padding: 48px;
+          max-width: 1400px;
+          margin: 0 auto;
+        }
+
+        .bento-large {
+          grid-column: span 2;
+          grid-row: span 2;
+        }
+
+        .bento-medium {
+          grid-column: span 2;
+        }
+
+        .bento-grid > div {
+          background: linear-gradient(135deg, #1a1f3a 0%, #2d3561 100%);
+          border-radius: 24px;
+          padding: 32px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .bento-grid > div::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, rgba(126, 87, 255, 0.1) 0%, rgba(75, 192, 200, 0.1) 100%);
+          opacity: 0;
+          transition: opacity 0.4s ease;
+          pointer-events: none;
+        }
+
+        .bento-grid > div:hover::before {
+          opacity: 1;
+        }
+
+        .bento-grid > div:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 16px 48px rgba(126, 87, 255, 0.3);
+        }
+
+        .bento-svg-wrapper {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          z-index: 1;
+        }
+
+        .bento-svg-wrapper svg {
+          max-width: 100%;
+          max-height: 100%;
+          transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+          filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+        }
+
+        .bento-grid > div:hover .bento-svg-wrapper svg {
+          transform: scale(1.05) rotate(1deg);
+        }
+
+        .bento-label {
+          position: absolute;
+          top: 16px;
+          left: 20px;
+          font-family: 'JetBrains Mono', 'Courier New', monospace;
+          font-size: 0.65rem;
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.5);
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+          z-index: 2;
+          opacity: 0;
+          transform: translateY(-10px);
+          transition: all 0.3s ease;
+        }
+
+        .bento-grid > div:hover .bento-label {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .bento-title {
+          position: absolute;
+          bottom: 20px;
+          left: 20px;
+          right: 20px;
+          font-family: 'Space Grotesk', -apple-system, sans-serif;
+          font-size: 1rem;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.9);
+          z-index: 2;
+          opacity: 0;
+          transform: translateY(10px);
+          transition: all 0.3s ease 0.1s;
+        }
+
+        .bento-grid > div:hover .bento-title {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .bento-actions {
+          position: absolute;
+          bottom: 60px;
+          left: 20px;
+          right: 20px;
+          display: flex;
+          gap: 8px;
+          z-index: 3;
+          opacity: 0;
+          transform: translateY(10px);
+          transition: all 0.3s ease 0.15s;
+        }
+
+        .bento-grid > div:hover .bento-actions {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .bento-action-btn {
+          flex: 1;
+          padding: 8px 16px;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: rgba(255, 255, 255, 0.9);
+          border-radius: 8px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.7rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          backdrop-filter: blur(10px);
+          letter-spacing: 0.05em;
+        }
+
+        .bento-action-btn:hover {
+          background: rgba(126, 87, 255, 0.8);
+          border-color: rgba(126, 87, 255, 1);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(126, 87, 255, 0.4);
+        }
+
+        /* Modal styles for expanded view */
+        .bento-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(13, 13, 18, 0.95);
+          backdrop-filter: blur(20px);
+          display: none;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .bento-modal.active {
+          display: flex;
+          opacity: 1;
+        }
+
+        .bento-modal-content {
+          background: rgba(26, 31, 58, 0.9);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 20px;
+          padding: 40px;
+          max-width: 90vw;
+          max-height: 90vh;
+          overflow: auto;
+          position: relative;
+          transform: scale(0.9);
+          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .bento-modal.active .bento-modal-content {
+          transform: scale(1);
+        }
+
+        .bento-modal-close {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+          background: rgba(255, 255, 255, 0.1);
+          border: none;
+          color: #fff;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .bento-modal-close:hover {
+          background: rgba(126, 87, 255, 0.8);
+          transform: rotate(90deg);
+        }
+
+        .bento-modal-body {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 400px;
+        }
+
+        .bento-modal-body svg {
+          max-width: 100%;
+          max-height: 80vh;
+        }
+
+        .bento-source-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.9);
+          backdrop-filter: blur(10px);
+          display: none;
+          align-items: center;
+          justify-content: center;
+          z-index: 10001;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .bento-source-modal.active {
+          display: flex;
+          opacity: 1;
+        }
+
+        .bento-source-content {
+          background: #1e1e1e;
+          border: 1px solid #333;
+          border-radius: 12px;
+          padding: 24px;
+          max-width: 800px;
+          width: 90%;
+          max-height: 80vh;
+          overflow: auto;
+          position: relative;
+        }
+
+        .bento-source-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid #333;
+        }
+
+        .bento-source-title {
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #fff;
+        }
+
+        .bento-source-pre {
+          background: #0d0d12;
+          border-radius: 8px;
+          padding: 16px;
+          overflow: auto;
+          margin: 0;
+        }
+
+        .bento-source-code {
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.85rem;
+          line-height: 1.6;
+          color: #e0e0e0;
+        }
+
+        .bento-source-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 16px;
+        }
+
+        .bento-source-btn {
+          padding: 8px 16px;
+          background: rgba(126, 87, 255, 0.2);
+          border: 1px solid rgba(126, 87, 255, 0.4);
+          color: #b392ff;
+          border-radius: 6px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 0.75rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .bento-source-btn:hover {
+          background: rgba(126, 87, 255, 0.8);
+          color: #fff;
+        }
+
+        @media (max-width: 1024px) {
+          .bento-grid {
+            grid-template-columns: repeat(2, 1fr);
+            padding: 32px;
+          }
+          
+          .bento-large {
+            grid-column: span 2;
+            grid-row: span 1;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .bento-grid {
+            grid-template-columns: 1fr;
+            padding: 16px;
+            gap: 12px;
+          }
+          
+          .bento-large,
+          .bento-medium {
+            grid-column: span 1;
+            grid-row: span 1;
+          }
+        }
+
+        @keyframes bentoFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .bento-grid > div {
+          animation: bentoFadeIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+        }
+      </style>
+    CSS
+
+    html << "<div class=\"bento-grid\" id=\"#{gallery_id}\">"
 
     image_urls.each_with_index do |img_data, index|
       img_url = img_data[:url]
@@ -647,64 +1012,496 @@ class DocOpsShowcaseProcessor
       svg_content = get_content_from_server(img_url)
       escaped_content = CGI.escape_html(content)
 
-      # Wrap SVG content in <g> for UI.MD animation rule
-      processed_svg = ensure_utf8(svg_content).sub(/(<svg[^>]*>)(.*)(<\/svg>)/m, '\1<g class="docops-transform-group">\2</g>\3')
+      # Determine size class based on index pattern
+      size_class = case index % 6
+                   when 0
+                     'bento-large'
+                   when 3
+                     'bento-medium'
+                   else
+                     'bento-small'
+                   end
 
-      html << "<div class=\"workbench-item\" data-kind=\"#{kind}\" id=\"#{item_id}\">"
-      html << "  <div class=\"workbench-chrome\">"
-      html << "    <span class=\"workbench-kind\">// #{kind.upcase}</span>"
-      html << "    <div class=\"workbench-actions\">"
-      html << "      <button class=\"action-btn src-btn\" onclick=\"showcaseGallery.showContent('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}', '#{kind}', this.getAttribute('data-content'))\" data-content=\"#{escaped_content}\">VIEW SOURCE</button>"
-      html << "      <button class=\"action-btn expand-btn\" onclick=\"showcaseGallery.expandItem('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}')\">EXPAND</button>"
-      html << "    </div>"
+      # Animation delay
+      delay = (index * 0.1).to_f
+
+      html << "<div class=\"#{size_class}\" id=\"#{item_id}\" style=\"animation-delay: #{delay}s;\">"
+      html << "  <span class=\"bento-label\">// #{kind.upcase}</span>"
+      html << "  <div class=\"bento-svg-wrapper\">"
+      html << "    #{ensure_utf8(svg_content)}"
       html << "  </div>"
-      html << "  <div class=\"workbench-canvas\">"
-      html << "    #{processed_svg}"
-      html << "  </div>"
-      html << "  <div class=\"workbench-footer\">"
-      html << "    <span class=\"workbench-title\">#{ensure_utf8(title)}</span>"
+      html << "  <div class=\"bento-title\">#{ensure_utf8(title)}</div>"
+      html << "  <div class=\"bento-actions\">"
+      html << "    <button class=\"bento-action-btn\" onclick=\"showcaseGallery.showContent('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}', '#{kind}', this.getAttribute('data-content'))\" data-content=\"#{escaped_content}\">VIEW</button>"
+      html << "    <button class=\"bento-action-btn\" onclick=\"showcaseGallery.expandItem('#{item_id}', '#{ensure_utf8(title).gsub("'", "\\\\'")}')\">EXPAND</button>"
       html << "  </div>"
       html << "</div>"
     end
 
     html << "</div>"
-    html << get_gallery_modal
-    html << get_content_modal
+
+    # Add modals
+    html << <<~MODALS
+      <div class="bento-modal" id="bento-expand-modal">
+        <div class="bento-modal-content">
+          <button class="bento-modal-close" onclick="showcaseGallery.closeExpand()">×</button>
+          <div class="bento-modal-body" id="bento-expand-body"></div>
+        </div>
+      </div>
+
+      <div class="bento-source-modal" id="bento-source-modal">
+        <div class="bento-source-content">
+          <div class="bento-source-header">
+            <span class="bento-source-title" id="bento-source-title"></span>
+            <button class="bento-modal-close" onclick="showcaseGallery.closeSource()">×</button>
+          </div>
+          <pre class="bento-source-pre"><code class="bento-source-code" id="bento-source-code"></code></pre>
+          <div class="bento-source-actions">
+            <button class="bento-source-btn" onclick="showcaseGallery.copySource()">📋 Copy Source</button>
+          </div>
+        </div>
+      </div>
+    MODALS
+
+    # Add JavaScript
+    html << <<~SCRIPT
+      <script>
+      const showcaseGallery = {
+        expandItem(itemId, title) {
+          const item = document.getElementById(itemId);
+          const svg = item.querySelector('.bento-svg-wrapper svg');
+          const modal = document.getElementById('bento-expand-modal');
+          const body = document.getElementById('bento-expand-body');
+          
+          body.innerHTML = '';
+          body.appendChild(svg.cloneNode(true));
+          modal.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        },
+
+        closeExpand() {
+          const modal = document.getElementById('bento-expand-modal');
+          modal.classList.remove('active');
+          document.body.style.overflow = '';
+        },
+
+        showContent(itemId, title, kind, content) {
+          const modal = document.getElementById('bento-source-modal');
+          const titleEl = document.getElementById('bento-source-title');
+          const codeEl = document.getElementById('bento-source-code');
+          
+          titleEl.textContent = title + ' (' + kind + ')';
+          codeEl.textContent = decodeURIComponent(content.replace(/\\+/g, ' '));
+          modal.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        },
+
+        closeSource() {
+          const modal = document.getElementById('bento-source-modal');
+          modal.classList.remove('active');
+          document.body.style.overflow = '';
+        },
+
+        copySource() {
+          const code = document.getElementById('bento-source-code').textContent;
+          navigator.clipboard.writeText(code).then(() => {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Copied!';
+            setTimeout(() => btn.textContent = originalText, 2000);
+          });
+        }
+      };
+
+      // Close modals on escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          showcaseGallery.closeExpand();
+          showcaseGallery.closeSource();
+        }
+      });
+
+      // Close modals on overlay click
+      document.querySelectorAll('.bento-modal, .bento-source-modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            showcaseGallery.closeExpand();
+            showcaseGallery.closeSource();
+          }
+        });
+      });
+      </script>
+    SCRIPT
 
     html.join("\n")
   end
+
 
   def generate_html_slideshow(image_urls, interval = '30000')
     return "<p>No images to display</p>" if image_urls.empty?
 
-    slideshow_id = "docops-slideshow-#{SecureRandom.hex(8)}"
+    # Generate a clean ID without hyphens for JavaScript variable names
+    slideshow_id = "slideshow#{SecureRandom.hex(8)}"
 
     html = []
-    html << "<div class=\"docops-slideshow\" id=\"#{slideshow_id}\" data-interval=\"#{interval}\">"
 
+    # Add the card gallery CSS
+    html << <<~CSS
+    <style>
+      :root {
+        --slideshow-bg: #0F1419;
+        --slideshow-surface: #1A2027;
+        --slideshow-accent: #FF6B35;
+        --slideshow-accent-dim: #FF8C61;
+        --slideshow-text: #E8EAED;
+        --slideshow-text-muted: #9BA1A6;
+        --slideshow-spacing: 8px;
+        --slideshow-radius-card: 16px;
+        --slideshow-radius-inner: 8px;
+      }
+
+      .slideshow-gallery-container-#{slideshow_id} {
+        position: relative;
+        max-width: 1400px;
+        margin: 3rem auto;
+        padding: calc(var(--slideshow-spacing) * 8);
+        background: var(--slideshow-bg);
+        border-radius: var(--slideshow-radius-card);
+        overflow-x: hidden;
+      }
+
+      /* Geometric background pattern */
+      .slideshow-gallery-container-#{slideshow_id}::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+          repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255, 107, 53, 0.03) 35px, rgba(255, 107, 53, 0.03) 70px),
+          repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(255, 107, 53, 0.02) 35px, rgba(255, 107, 53, 0.02) 70px);
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .slideshow-gallery-grid-#{slideshow_id} {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: calc(var(--slideshow-spacing) * 3);
+        margin-bottom: calc(var(--slideshow-spacing) * 8);
+      }
+
+      .svg-slideshow-card-#{slideshow_id} {
+        background: var(--slideshow-surface);
+        border-radius: var(--slideshow-radius-card);
+        padding: calc(var(--slideshow-spacing) * 3);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        animation: fadeInUpSlide 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        border: 1px solid rgba(255, 107, 53, 0.1);
+      }
+
+      .svg-slideshow-card-#{slideshow_id}:nth-child(1) { animation-delay: 0.1s; }
+      .svg-slideshow-card-#{slideshow_id}:nth-child(2) { animation-delay: 0.15s; }
+      .svg-slideshow-card-#{slideshow_id}:nth-child(3) { animation-delay: 0.2s; }
+      .svg-slideshow-card-#{slideshow_id}:nth-child(4) { animation-delay: 0.25s; }
+      .svg-slideshow-card-#{slideshow_id}:nth-child(5) { animation-delay: 0.3s; }
+      .svg-slideshow-card-#{slideshow_id}:nth-child(6) { animation-delay: 0.35s; }
+      .svg-slideshow-card-#{slideshow_id}:nth-child(n+7) { animation-delay: 0.4s; }
+
+      .svg-slideshow-card-#{slideshow_id}::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, var(--slideshow-accent), var(--slideshow-accent-dim));
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .svg-slideshow-card-#{slideshow_id}:hover {
+        transform: translateY(-4px);
+      }
+
+      .svg-slideshow-card-#{slideshow_id}:hover::before {
+        transform: scaleX(1);
+      }
+
+      .svg-slideshow-preview-#{slideshow_id} {
+        width: 100%;
+        height: 200px;
+        background: var(--slideshow-bg);
+        border-radius: var(--slideshow-radius-inner);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: calc(var(--slideshow-spacing) * 2);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .svg-slideshow-preview-#{slideshow_id} svg {
+        max-width: 80%;
+        max-height: 80%;
+        filter: drop-shadow(0 4px 12px rgba(255, 107, 53, 0.2));
+      }
+
+      .svg-slideshow-info-#{slideshow_id} {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--slideshow-spacing) * 1);
+      }
+
+      .svg-slideshow-name-#{slideshow_id} {
+        font-family: 'Courier New', monospace;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--slideshow-text);
+        letter-spacing: 0;
+      }
+
+      .svg-slideshow-meta-#{slideshow_id} {
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        color: var(--slideshow-text-muted);
+      }
+
+      /* Modal for full view */
+      .slideshow-modal-#{slideshow_id} {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 20, 25, 0.95);
+        backdrop-filter: blur(8px);
+        z-index: 2147483647; /* Max z-index to ensure it's on top */
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        box-sizing: border-box;
+      }
+
+      .slideshow-modal-#{slideshow_id}.active {
+        display: flex;
+      }
+
+      .slideshow-modal-content-#{slideshow_id} {
+        width: 95vw;
+        max-width: 1400px;
+        height: 90vh;
+        background: var(--slideshow-surface);
+        border-radius: 20px;
+        padding: 48px 24px 24px 24px;
+        position: relative;
+        animation: scaleInModal 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        border: 2px solid var(--slideshow-accent);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      }
+
+      .slideshow-modal-close-#{slideshow_id} {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: var(--slideshow-accent);
+        color: var(--slideshow-bg);
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s ease;
+        font-weight: 700;
+        z-index: 10;
+      }
+
+      .slideshow-modal-close-#{slideshow_id}:hover {
+        transform: rotate(90deg) scale(1.1);
+      }
+
+      .slideshow-modal-svg-#{slideshow_id} {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        overflow: auto; /* Allow scrolling if SVG is truly massive */
+        padding: 10px;
+      }
+
+      .slideshow-modal-svg-#{slideshow_id} svg {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+      }
+
+      @keyframes fadeInUpSlide {
+        from {
+          opacity: 0;
+          transform: translateY(24px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeInModal {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes scaleInModal {
+        from {
+          opacity: 0;
+          transform: scale(0.9);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+    </style>
+  CSS
+
+    # JavaScript object definition first
+    html << <<~SCRIPT
+    <script>
+    window.gallery#{slideshow_id} = {
+      openModal: function(cardId) {
+        const card = document.getElementById(cardId);
+        if (!card) {
+          console.error('Card not found:', cardId);
+          return;
+        }
+        
+        const previewDiv = card.querySelector('.svg-slideshow-preview-#{slideshow_id}');
+        if (!previewDiv) {
+          console.error('Preview div not found');
+          return;
+        }
+        
+        const svg = previewDiv.querySelector('svg');
+        if (!svg) {
+          console.error('SVG not found in card');
+          return;
+        }
+        
+        const modal = document.getElementById('modal-#{slideshow_id}');
+        const modalContent = document.getElementById('modalContent-#{slideshow_id}');
+        
+        if (!modal || !modalContent) {
+          console.error('Modal elements not found');
+          return;
+        }
+        
+        // CRITICAL FIX: Move modal to body to break out of any CSS transforms/containers
+        // that interfere with position: fixed
+        if (modal.parentNode !== document.body) {
+          document.body.appendChild(modal);
+        }
+        
+        // Clear previous content
+        modalContent.innerHTML = '';
+        
+        // Clone the SVG with deep clone
+        const clonedSvg = svg.cloneNode(true);
+        
+        // Reset explicit width/height attributes if they cause scaling issues
+        // We let CSS handle the constraints
+        clonedSvg.removeAttribute('width');
+        clonedSvg.removeAttribute('height');
+        clonedSvg.style.width = '100%';
+        clonedSvg.style.height = '100%';
+        
+        modalContent.appendChild(clonedSvg);
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      },
+
+      closeModal: function() {
+        const modal = document.getElementById('modal-#{slideshow_id}');
+        if (modal) {
+          modal.classList.remove('active');
+          document.body.style.overflow = '';
+        }
+      }
+    };
+    </script>
+  SCRIPT
+
+    html << "<div class=\"slideshow-gallery-container-#{slideshow_id}\">"
+    html << "<div class=\"slideshow-gallery-grid-#{slideshow_id}\" id=\"galleryGrid-#{slideshow_id}\">"
+
+    # Generate cards for each SVG with inline onclick
     image_urls.each_with_index do |img_data, index|
       img_url = img_data[:url]
       title = img_data[:title]
       kind = img_data[:kind]
-      active_class = index == 0 ? ' active' : ''
+      card_id = "card-#{slideshow_id}-#{index}"
 
-      # Fetch SVG content inline
       svg_content = get_content_from_server(img_url)
 
-      html << "<div class=\"docops-slide#{active_class}\" data-title=\"#{ensure_utf8(title)}\" data-kind=\"#{kind}\">"
-      html << "<div class=\"slide-content\">"
-      html << "<div class=\"slide-title\">#{ensure_utf8(title)}</div>"
-      html << "<div class=\"slide-image\">"
-      html << ensure_utf8(svg_content)
-      html << "</div>"
-      html << "</div>"
+      html << "<div class=\"svg-slideshow-card-#{slideshow_id}\" id=\"#{card_id}\" onclick=\"gallery#{slideshow_id}.openModal('#{card_id}')\">"
+      html << "  <div class=\"svg-slideshow-preview-#{slideshow_id}\">"
+      html << "    #{ensure_utf8(svg_content)}"
+      html << "  </div>"
+      html << "  <div class=\"svg-slideshow-info-#{slideshow_id}\">"
+      html << "    <div class=\"svg-slideshow-name-#{slideshow_id}\">#{ensure_utf8(title)}</div>"
+      html << "    <div class=\"svg-slideshow-meta-#{slideshow_id}\">#{kind.upcase}</div>"
+      html << "  </div>"
       html << "</div>"
     end
 
-    html << "</div>"
+    html << "</div>" # Close grid
+    html << "</div>" # Close container
+
+    # Modal with inline handlers
+    html << <<~MODAL
+    <div class="slideshow-modal-#{slideshow_id}" id="modal-#{slideshow_id}" onclick="if(event.target.id === 'modal-#{slideshow_id}') gallery#{slideshow_id}.closeModal()">
+      <div class="slideshow-modal-content-#{slideshow_id}">
+        <button class="slideshow-modal-close-#{slideshow_id}" onclick="event.stopPropagation(); gallery#{slideshow_id}.closeModal()">×</button>
+        <div class="slideshow-modal-svg-#{slideshow_id}" id="modalContent-#{slideshow_id}"></div>
+      </div>
+    </div>
+  MODAL
+
+    # Escape key handler
+    html << <<~SCRIPT
+    <script>
+    (function() {
+      const handleEscape = function(e) {
+        if (e.key === 'Escape') {
+          gallery#{slideshow_id}.closeModal();
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+    })();
+    </script>
+  SCRIPT
 
     html.join("\n")
   end
+
   def generate_asciidoc_table(image_urls)
     return "" if image_urls.empty?
 
