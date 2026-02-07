@@ -230,14 +230,14 @@ class DocOpsMacroExtension private constructor() :
             }
             val excludeControlsFilter = listOf("badge", "wordcloud", "buttons")
             val controls = if(excludeControlsFilter.contains(kind)) {""} else {"""
-                <div class="docops-control-bar">
-                 <button class="docops-btn" onclick="openModal(this.closest('.docops-media-card').querySelector('.svg-container'))">VIEW</button>
-                 <button class="docops-btn" onclick="docopsData.toggle(this)">DATA</button>
-                 <button class="docops-btn" onclick="docopsCopy.url(this)">LINK</button>
-                 <button class="docops-btn" onclick="docopsCopy.svg(this)">SVG</button>
-                 <button class="docops-btn" onclick="docopsCopy.png(this)">PNG</button>
-               </div>
-            """.trimIndent()}
+                    <div class="svg-bottom-controls">
+                     <button class="svg-control-btn" onclick="openModal(this.closest('.docops-media-card').querySelector('.svg-container'))">VIEW</button>
+                     <button class="svg-control-btn" onclick="docopsData.toggle(this)">DATA</button>
+                     <button class="svg-control-btn" onclick="docopsCopy.url(this)">LINK</button>
+                     <button class="svg-control-btn" onclick="docopsCopy.svg(this)">SVG</button>
+                     <button class="svg-control-btn" onclick="docopsCopy.png(this)">PNG</button>
+                   </div>
+                """.trimIndent()}
 
             var caption = opts["caption"] ?: ""
 
@@ -248,23 +248,23 @@ class DocOpsMacroExtension private constructor() :
             // Render as an object tag for interactive inline SVG
             val svgRaw = getContentFromServer(urlString, debug = true)
             val content = """
-                        <div class="docops-media-card" data-url="$urlString">
-                            <figure class="docops-figure-card">
-                           <div class="svg-container">
-                             $svgRaw
-                           </div>
-                           <figcaption>$caption</figcaption>
-                           </figure>
-                           $controls
-                           <div class="docops-data-panel" style="display: none;">
-                             <div class="docops-data-header">
-                                <span>Embedded Data</span>
-                                <button onclick="this.closest('.docops-data-panel').style.display='none'">×</button>
-                             </div>
-                             <div class="docops-data-table-container"></div>
-                           </div>
-                        </div>
-                    """.trimIndent()
+                            <div class="docops-media-card svg-with-controls" data-url="$urlString">
+                                <figure class="docops-figure-card">
+                               <div class="svg-container">
+                                 $svgRaw
+                               </div>
+                               <figcaption>$caption</figcaption>
+                               </figure>
+                               $controls
+                               <div class="docops-data-panel" style="display: none;">
+                                 <div class="docops-data-header">
+                                    <span>Embedded Data</span>
+                                    <button onclick="this.closest('.docops-data-panel').style.display='none'">×</button>
+                                 </div>
+                                 <div class="docops-data-table-container"></div>
+                               </div>
+                            </div>
+                        """.trimIndent()
             html.raw(content)
         }
 
