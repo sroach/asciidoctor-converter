@@ -50,45 +50,7 @@
     --btn-border: rgba(106, 61, 232, 0.4);
 }
 
-.docops-container {
-    display: inline-block;
-}
-.docops-media-card {
-    position: relative;
-    display: inline-block;
-    margin: 2rem 0;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 12px;
-    overflow: hidden;
-    transition: transform 0.3s ease;
-    width: 100%;
-    max-width: 100%;
-}
 
-.docops-media-card:hover {
-    transform: translateY(-4px);
-}
-
-.docops-control-bar {
-    display: flex;
-    background: var(--control-bar-bg);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid var(--control-bar-border);
-    padding: 8px;
-    gap: 8px;
-    justify-content: flex-end;
-}
-
-@media (prefers-color-scheme: light) {
-    .docops-control-bar {
-        background: rgba(255, 255, 255, 0.7);
-        border-top: 1px solid rgba(0, 0, 0, 0.1);
-    }
-    .docops-btn {
-        border-color: rgba(126, 87, 255, 0.6);
-        color: #6a3de8;
-    }
-}
 
 .docops-btn {
     background: transparent;
