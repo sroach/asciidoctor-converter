@@ -246,7 +246,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
 
     html = []
 
-    # Add CSS for bottom controls AND the new modal
+    # Add CSS for bottom controls AND the new modals
     html << <<~CSS
           <style>
             .svg-with-controls {
@@ -298,7 +298,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
               transform: translateY(-1px);
             }
             
-            /* Specific Modal Styles for this SVG */
+            /* Shared Modal Styles */
             .svg-modal-#{id} {
                 display: none;
                 position: fixed;
@@ -371,12 +371,47 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
                 height: auto;
                 object-fit: contain;
             }
+            
+            /* CSV Modal Specific Overrides */
+            #csv-modal-#{id} .csv-content {
+                background: transparent !important;
+            }
+            #csv-modal-#{id} .csv-table {
+               width: 100%;
+                border-collapse: collapse;
+                color: #e2e8f0 !important;
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 13px;
+                background: transparent !important; 
+            }
+            #csv-modal-#{id} .csv-table th {
+                text-align: left;
+                padding: 12px;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+                background: rgba(255,255,255,0.1) !important;
+                color: #fff !important;
+                position: sticky;
+                top: 0;
+            }
+            #csv-modal-#{id} .csv-table td {
+                padding: 12px;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+                color: #cbd5e1 !important;
+            }
+            #csv-modal-#{id} .csv-table tr {
+                background: transparent !important;
+            }
+            #csv-modal-#{id} .csv-table tr:hover {
+                background: rgba(255,255,255,0.05) !important;
+            }
+            
           </style>
         CSS
 
-    # Add JavaScript object for managing this specific modal
+    # Add JavaScript objects for managing both modals
     html << <<~SCRIPT
           <script>
+            // View Modal Control
             window.svgModal#{js_id} = {
                 open: function() {
                     const modal = document.getElementById('modal-#{id}');
@@ -384,7 +419,6 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
                     
                     if (!modal || !sourceContainer) return;
                     
-                    // Critical Fix: Move modal to body to break z-index/transform constraints
                     if (modal.parentNode !== document.body) {
                         document.body.appendChild(modal);
                     }
@@ -396,7 +430,6 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
                         targetContainer.innerHTML = '';
                         const clone = sourceSvg.cloneNode(true);
                         
-                        // Reset dimensions to allow CSS to control scaling
                         clone.removeAttribute('width');
                         clone.removeAttribute('height');
                         clone.style.width = '100%';
@@ -415,13 +448,43 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
                     }
                 }
             };
+
+            // Data Modal Control
+            window.csvModal#{js_id} = {
+                open: function() {
+                    const modal = document.getElementById('csv-modal-#{id}');
+                    if (!modal) return;
+                    
+                    if (modal.parentNode !== document.body) {
+                        document.body.appendChild(modal);
+                    }
+                    
+                    modal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    
+                    if (window.svgViewer && window.svgViewer.loadCsvData) {
+                        window.svgViewer.loadCsvData('#{id}');
+                    }
+                },
+                close: function() {
+                    const modal = document.getElementById('csv-modal-#{id}');
+                    if (modal) {
+                        modal.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                }
+            };
             
-            // Register escape key handler
+            // Register escape key handler for both
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
-                    const modal = document.getElementById('modal-#{id}');
-                    if (modal && modal.classList.contains('active')) {
+                    const viewModal = document.getElementById('modal-#{id}');
+                    if (viewModal && viewModal.classList.contains('active')) {
                         window.svgModal#{js_id}.close();
+                    }
+                    const csvModal = document.getElementById('csv-modal-#{id}');
+                    if (csvModal && csvModal.classList.contains('active')) {
+                        window.csvModal#{js_id}.close();
                     }
                 }
             });
@@ -435,33 +498,39 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     if show_controls
       html << "<div class=\"svg-bottom-controls\">"
 
-      # Updated VIEW button to use the new modal logic
+      # View Button
       html << "<button class=\"svg-control-btn\" onclick=\"svgModal#{js_id}.open()\">VIEW</button>" if allow_expand
-      html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.toggleCsv('#{id}')\">DATA</button>" if allow_csv
+
+      # Data Button - now opens popup
+      html << "<button class=\"svg-control-btn\" onclick=\"csvModal#{js_id}.open()\">DATA</button>" if allow_csv
+
       html << "<button class=\"svg-control-btn\" onclick=\"docopsCopy.url(this)\">LINK</button>" if allow_copy
       html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.copyAsSvg('#{id}')\">SVG</button>" if allow_copy
       html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.copyAsPng('#{id}')\">PNG</button>" if allow_copy
 
       html << "</div>"
 
-      html << <<~HTML.strip
-            <div class="csv-container" id="csv-container-#{id}" style="display: none;">
-                <div class="csv-header">
-                    <span>CSV Data</span>
-                    <button class="csv-close" onclick="svgViewer.closeCsv('#{id}')" title="Close CSV">×</button>
-                </div>
-                <div class="csv-content" id="csv-content-#{id}">
-                    <div class="csv-loading">Loading CSV data...</div>
-                </div>
-            </div>
-          HTML
-
-      # Add the Modal HTML structure (initially hidden)
+      # View Modal HTML (Hidden initially)
       html << <<~MODAL
             <div id="modal-#{id}" class="svg-modal-#{id}" onclick="if(event.target === this) svgModal#{js_id}.close()">
                 <div class="svg-modal-content-#{id}">
                     <button class="svg-modal-close-#{id}" onclick="svgModal#{js_id}.close()">×</button>
                     <div id="modal-body-#{id}" class="svg-modal-body-#{id}"></div>
+                </div>
+            </div>
+          MODAL
+
+      # Data Modal HTML (Hidden initially)
+      html << <<~MODAL
+            <div id="csv-modal-#{id}" class="svg-modal-#{id}" onclick="if(event.target === this) csvModal#{js_id}.close()">
+                <div class="svg-modal-content-#{id}">
+                    <button class="svg-modal-close-#{id}" onclick="csvModal#{js_id}.close()">×</button>
+                    <div class="svg-modal-header-#{id}" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                        <h3 style="margin:0; color:white; font-family:'JetBrains Mono', monospace;">Data Source</h3>
+                    </div>
+                    <div id="csv-content-#{id}" class="svg-modal-body-#{id}" style="display: block; overflow: auto;">
+                        <div class="csv-loading" style="color: rgba(255,255,255,0.7);">Loading CSV data...</div>
+                    </div>
                 </div>
             </div>
           MODAL
@@ -478,6 +547,8 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     }
     html.join("\n")
   end
+
+
   def get_alignment_style(role)
     case role.downcase
     when 'left'
