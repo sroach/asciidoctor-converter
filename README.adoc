@@ -117,7 +117,7 @@ curl -X POST "http://localhost:7202/converter/convert-directory" \
 ----
 
 
-== Converting a GitBub Repo
+== Converting a GitHub Repo
 
 [source,bash]
 ----
