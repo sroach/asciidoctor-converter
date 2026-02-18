@@ -11,7 +11,7 @@ management:
 
 github:
   staging:
-    directory: ${GITHUB_STAGING_DIR:"/trvapps/docops/staging/docs"}
+    directory: ${GITHUB_STAGING_DIR:"/trvapps/docops/stage/docs"}
   web:
     directory: ${GITHUB_WEB_DIR:"/trvapps/docops/www/docs"}
   disable:
