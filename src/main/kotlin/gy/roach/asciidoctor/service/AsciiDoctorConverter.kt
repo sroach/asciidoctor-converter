@@ -10,6 +10,7 @@ import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
 import org.asciidoctor.Options
 import org.asciidoctor.SafeMode
+import org.asciidoctor.ast.Document
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
@@ -78,39 +79,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/page_navigation_postprocessor.rb"))
     }
 
-    /**
-     * Parses an Asciidoctor file and extracts all include directives.
-     * Returns a set of File objects representing the included files.
-     */
-    private fun extractIncludes(file: File): Set<File> {
-        if (!file.exists() || !file.isFile) {
-            return emptySet()
-        }
 
-        val content = file.readText()
-        val includes = mutableSetOf<File>()
-        val matcher = includePattern.matcher(content)
-
-        while (matcher.find()) {
-            val includePath = matcher.group(1)
-            // Resolve the include path relative to the parent file
-            val parentDir = file.parentFile
-            val includedFile = File(parentDir, includePath)
-
-            if (includedFile.exists() && includedFile.isFile) {
-                includes.add(includedFile)
-                // Only recursively extract includes from AsciiDoc files to avoid infinite loops
-                // Non-AsciiDoc files (like JSON, XML, etc.) are leaf nodes in the dependency tree
-                if (includedFile.extension == "adoc") {
-                    includes.addAll(extractIncludes(includedFile))
-                }
-            } else {
-                logger.warn("Included file not found: $includePath in ${file.name}")
-            }
-        }
-
-        return includes
-    }
 
     /**
      * Builds a comprehensive dependency map between files and their includes.
@@ -1004,5 +973,73 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                 }
             }
             .build()
+    }
+
+    /**
+     * Load the AsciiDoc document in "header-only" mode so Asciidoctor builds the attribute table
+     * (including attributes from the file header and the attributes provided via buildAttributes()).
+     */
+    private fun loadHeaderOnlyDocument(file: File): Document {
+        val headerOnlyOptions = Options.builder()
+            .backend("html")
+            .safe(SafeMode.UNSAFE) // match conversion environment; header-only won't execute includes anyway
+            .baseDir(file.parentFile)
+            .attributes(buildAttributes())
+            .option("parse_header_only", true)
+            .build()
+
+        return asciidoctor.loadFile(file, headerOnlyOptions)
+    }
+    /**
+     * Substitute {attr} tokens using the attribute table produced by Asciidoctor.
+     * (We still do the replacement ourselves; the *values* come from Asciidoctor.)
+     */
+    private fun substituteAttributesWithAsciidoctor(input: String, doc: Document, maxPasses: Int = 5): String {
+        var out = input
+        repeat(maxPasses) {
+            val replaced = Regex("\\{([^}]+)\\}").replace(out) { mr ->
+                val key = mr.groupValues[1]
+                val value = doc.getAttribute(key)
+                value?.toString() ?: mr.value
+            }
+            if (replaced == out) return out
+            out = replaced
+        }
+        return out
+    }
+    /**
+     * Parses an Asciidoctor file and extracts all include directives.
+     * Returns a set of File objects representing the included files.
+     */
+    private fun extractIncludes(file: File): Set<File> {
+        if (!file.exists() || !file.isFile) return emptySet()
+
+        val content = file.readText()
+        val includes = mutableSetOf<File>()
+        val matcher = includePattern.matcher(content)
+
+        // Build the attribute table the same way conversion does (but header-only)
+        val headerDoc = loadHeaderOnlyDocument(file)
+
+        while (matcher.find()) {
+            val rawIncludeTarget = matcher.group(1).trim()
+            val resolvedIncludeTarget = substituteAttributesWithAsciidoctor(rawIncludeTarget, headerDoc).trim()
+
+            val parentDir = file.parentFile
+            val includedFile = File(parentDir, resolvedIncludeTarget)
+
+            if (includedFile.exists() && includedFile.isFile) {
+                includes.add(includedFile)
+                if (includedFile.extension == "adoc") {
+                    includes.addAll(extractIncludes(includedFile))
+                }
+            } else {
+                logger.warn(
+                    "Included file not found: $rawIncludeTarget (resolved to '$resolvedIncludeTarget') in ${file.name}"
+                )
+            }
+        }
+
+        return includes
     }
 }
