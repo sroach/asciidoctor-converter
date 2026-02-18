@@ -1,4 +1,4 @@
-const docopsData = {
+const docopsDataX = {
     toggle(btn) {
         const card = btn.closest('.docops-media-card');
         const panel = card.querySelector('.docops-data-panel');

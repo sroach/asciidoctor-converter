@@ -32,7 +32,7 @@ class MermaidNodeRenderer : NodeRenderer {
 
             // Disable HTML processing temporarily and output everything as one raw block
             val fullContent = buildString {
-                appendLine("<div class=\"docops-media-card\">")
+                appendLine("<div class=\"docops-media-card\" data-original-content=\"${mermaidContent.replace("\"", "&quot;")}\">")
                 appendLine("  <div class='mermaid svg-container' onclick='openModal(this);'>")
                 appendLine(mermaidContent)
                 appendLine("  </div>")
@@ -40,6 +40,14 @@ class MermaidNodeRenderer : NodeRenderer {
                 appendLine("    <button class=\"docops-btn\" onclick=\"openModal(this.closest('.docops-media-card').querySelector('.svg-container'))\" title=\"View Large\">VIEW</button>")
                 appendLine("    <button class=\"docops-btn\" onclick=\"docopsCopy.svg(this)\" title=\"Copy SVG Source\">SVG</button>")
                 appendLine("    <button class=\"docops-btn\" onclick=\"docopsCopy.png(this)\" title=\"Copy as PNG\">PNG</button>")
+                appendLine("    <button class=\"docops-btn\" onclick=\"docopsSource.toggle(this)\" title=\"View Original Source\">SOURCE</button>")
+                appendLine("  </div>")
+                appendLine("  <div class=\"docops-source-panel\" style=\"display: none;\">")
+                appendLine("    <div class=\"docops-source-header\">")
+                appendLine("      <span>Original Source</span>")
+                appendLine("      <button class=\"docops-btn-close\" onclick=\"this.closest('.docops-source-panel').style.display='none'\">×</button>")
+                appendLine("    </div>")
+                appendLine("    <div class=\"docops-source-container\"></div>")
                 appendLine("  </div>")
                 appendLine("</div>")
             }

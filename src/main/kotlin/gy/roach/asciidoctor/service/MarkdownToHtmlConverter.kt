@@ -351,131 +351,232 @@ object MermaidFlexmark {
                     </div>
 
                     <!-- Global Shared Modal for Data View -->
-                    <div class="svg-modal-overlay" id="globalCsvModal" onclick="if(event.target === this) closeGlobalCsvModal()">
-                        <div class="svg-modal-content">
-                            <button class="svg-modal-close" onclick="closeGlobalCsvModal()">×</button>
-                            <div class="svg-modal-header" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
-                                <h3 style="margin:0; color:white; font-family:'JetBrains Mono', monospace;">Data Source</h3>
+                        <div class="svg-modal-overlay" id="globalCsvModal" onclick="if(event.target === this) closeGlobalCsvModal()">
+                            <div class="svg-modal-content">
+                                <button class="svg-modal-close" onclick="closeGlobalCsvModal()">×</button>
+                                <div class="svg-modal-header" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                                    <h3 style="margin:0; color:white; font-family:'JetBrains Mono', monospace;">Data Source</h3>
+                                </div>
+                                <div id="globalCsvModalBody" class="svg-modal-body" style="display: block; overflow: auto;"></div>
                             </div>
-                            <div id="globalCsvModalBody" class="svg-modal-body" style="display: block; overflow: auto;"></div>
                         </div>
-                    </div>
+
+                        <!-- Global Shared Modal for Source View -->
+                        <div class="svg-modal-overlay" id="globalSourceModal" onclick="if(event.target === this) closeGlobalSourceModal()">
+                            <div class="svg-modal-content">
+                                <button class="svg-modal-close" onclick="closeGlobalSourceModal()">×</button>
+                                <div class="svg-modal-header" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                                    <h3 style="margin:0; color:white; font-family:'JetBrains Mono', monospace;">Original Source</h3>
+                                </div>
+                                <div id="globalSourceModalBody" class="svg-modal-body" style="display: block; overflow: auto;"></div>
+                            </div>
+                        </div>
 
                     <script>
-                        // Unified Modal Logic for Markdown
-                        function openModal(container) {
-                            const modal = document.getElementById('globalSvgModal');
-                            const targetContainer = document.getElementById('globalModalBody');
+                            // Unified Modal Logic for Markdown
+                            function openModal(container) {
+                                const modal = document.getElementById('globalSvgModal');
+                                const targetContainer = document.getElementById('globalModalBody');
                             
-                            // Find SVG in the container passed from the button
-                            const sourceSvg = container.querySelector ? container.querySelector('svg') : container; 
+                                // Find SVG in the container passed from the button
+                                const sourceSvg = container.querySelector ? container.querySelector('svg') : container; 
                             
-                            if (sourceSvg && targetContainer) {
-                                targetContainer.innerHTML = '';
-                                const clone = sourceSvg.cloneNode(true);
+                                if (sourceSvg && targetContainer) {
+                                    targetContainer.innerHTML = '';
+                                    const clone = sourceSvg.cloneNode(true);
                                 
-                                // Reset dimensions to allow CSS to control scaling
-                                clone.removeAttribute('width');
-                                clone.removeAttribute('height');
-                                clone.style.width = '100%';
-                                clone.style.height = '100%';
+                                    // Reset dimensions to allow CSS to control scaling
+                                    clone.removeAttribute('width');
+                                    clone.removeAttribute('height');
+                                    clone.style.width = '100%';
+                                    clone.style.height = '100%';
                                 
-                                targetContainer.appendChild(clone);
-                                modal.classList.add('active');
-                                document.body.style.overflow = 'hidden';
-                            }
-                        }
-
-                        function closeGlobalModal() {
-                            const modal = document.getElementById('globalSvgModal');
-                            if (modal) {
-                                modal.classList.remove('active');
-                                document.body.style.overflow = '';
-                            }
-                        }
-                        
-                        function closeGlobalCsvModal() {
-                            const modal = document.getElementById('globalCsvModal');
-                            if (modal) {
-                                modal.classList.remove('active');
-                                document.body.style.overflow = '';
-                            }
-                        }
-
-                        // Close modal with Escape key
-                        document.addEventListener('keydown', function(event) {
-                            if (event.key === 'Escape') {
-                                closeGlobalModal();
-                                closeGlobalCsvModal();
-                            }
-                        });
-                        
-                        const docopsData = {
-                            toggle: function(btn) {
-                                const container = btn.closest('.docops-media-card');
-                                const svg = container.querySelector('.svg-container svg') || container.querySelector('svg');
-                                
-                                if (!svg) return;
-                                
-                                let csvData = null;
-                                
-                                // Method 1: Standard metadata with type
-                                let csvMetadata = svg.querySelector('metadata[type="text/csv"]');
-                                if (csvMetadata) {
-                                    try {
-                                        csvData = JSON.parse(csvMetadata.textContent.trim());
-                                    } catch(e) { console.error("Error parsing CSV JSON", e); }
+                                    targetContainer.appendChild(clone);
+                                    modal.classList.add('active');
+                                    document.body.style.overflow = 'hidden';
                                 }
+                            }
 
-                                // Method 2: Custom csv-data element
-                                if (!csvData) {
-                                    csvMetadata = svg.querySelector('metadata csv-data');
+                            function closeGlobalModal() {
+                                const modal = document.getElementById('globalSvgModal');
+                                if (modal) {
+                                    modal.classList.remove('active');
+                                    document.body.style.overflow = '';
+                                }
+                            }
+                        
+                            function closeGlobalCsvModal() {
+                                const modal = document.getElementById('globalCsvModal');
+                                if (modal) {
+                                    modal.classList.remove('active');
+                                    document.body.style.overflow = '';
+                                }
+                            }
+                            
+                            function closeGlobalSourceModal() {
+                                const modal = document.getElementById('globalSourceModal');
+                                if (modal) {
+                                    modal.classList.remove('active');
+                                    document.body.style.overflow = '';
+                                }
+                            }
+
+                            // Close modals with Escape key
+                            document.addEventListener('keydown', function(event) {
+                                if (event.key === 'Escape') {
+                                    closeGlobalModal();
+                                    closeGlobalCsvModal();
+                                    closeGlobalSourceModal();
+                                }
+                            });
+                        
+                            const docopsData = {
+                                toggle: function(btn) {
+                                    const container = btn.closest('.docops-media-card');
+                                    const svg = container.querySelector('.svg-container svg') || container.querySelector('svg');
+                                
+                                    if (!svg) return;
+                                
+                                    let csvData = null;
+                                
+                                    // Method 1: Standard metadata with type
+                                    let csvMetadata = svg.querySelector('metadata[type="text/csv"]');
                                     if (csvMetadata) {
                                         try {
                                             csvData = JSON.parse(csvMetadata.textContent.trim());
-                                        } catch(e) {}
+                                        } catch(e) { console.error("Error parsing CSV JSON", e); }
                                     }
-                                }
 
-                                // Method 3: Data attribute
-                                if (!csvData) {
-                                    const csvDataAttr = svg.getAttribute('data-csv');
-                                    if (csvDataAttr) {
-                                        try {
-                                            csvData = JSON.parse(decodeURIComponent(csvDataAttr));
-                                        } catch(e) {}
+                                    // Method 2: Custom csv-data element
+                                    if (!csvData) {
+                                        csvMetadata = svg.querySelector('metadata csv-data');
+                                        if (csvMetadata) {
+                                            try {
+                                                csvData = JSON.parse(csvMetadata.textContent.trim());
+                                            } catch(e) {}
+                                        }
+                                    }
+
+                                    // Method 3: Data attribute
+                                    if (!csvData) {
+                                        const csvDataAttr = svg.getAttribute('data-csv');
+                                        if (csvDataAttr) {
+                                            try {
+                                                csvData = JSON.parse(decodeURIComponent(csvDataAttr));
+                                            } catch(e) {}
+                                        }
+                                    }
+                                
+                                    if (csvData) {
+                                        const modal = document.getElementById('globalCsvModal');
+                                        const body = document.getElementById('globalCsvModalBody');
+                                    
+                                        let html = '<table class="csv-table">';
+                                         if (csvData.headers) {
+                                            html += '<thead><tr>';
+                                            csvData.headers.forEach(h => html += '<th>' + h + '</th>');
+                                            html += '</tr></thead>';
+                                        }
+                                        if (csvData.rows) {
+                                            html += '<tbody>';
+                                            csvData.rows.forEach(row => {
+                                                html += '<tr>';
+                                                row.forEach(cell => html += '<td>' + cell + '</td>');
+                                                html += '</tr>';
+                                            });
+                                            html += '</tbody>';
+                                        }
+                                        html += '</table>';
+                                    
+                                        body.innerHTML = html;
+                                        modal.classList.add('active');
+                                        document.body.style.overflow = 'hidden';
+                                    } else {
+                                        console.log("No CSV data found in SVG");
                                     }
                                 }
-                                
-                                if (csvData) {
-                                    const modal = document.getElementById('globalCsvModal');
-                                    const body = document.getElementById('globalCsvModalBody');
+                            };
+                            
+                            const docopsSource = {
+                                toggle: function(btn) {
+                                    const container = btn.closest('.docops-media-card');
+                                    const originalContent = container.getAttribute('data-original-content');
+                                    const kind = container.getAttribute('data-kind') || 'source';
                                     
-                                    let html = '<table class="csv-table">';
-                                     if (csvData.headers) {
-                                        html += '<thead><tr>';
-                                        csvData.headers.forEach(h => html += '<th>' + h + '</th>');
-                                        html += '</tr></thead>';
+                                    if (!originalContent || !originalContent.trim()) {
+                                        console.log("No source content available");
+                                        return;
                                     }
-                                    if (csvData.rows) {
-                                        html += '<tbody>';
-                                        csvData.rows.forEach(row => {
-                                            html += '<tr>';
-                                            row.forEach(cell => html += '<td>' + cell + '</td>');
-                                            html += '</tr>';
-                                        });
-                                        html += '</tbody>';
-                                    }
-                                    html += '</table>';
                                     
-                                    body.innerHTML = html;
+                                    // Decode HTML entities
+                                    const decoded = originalContent
+                                        .replace(/&quot;/g, '"')
+                                        .replace(/&amp;/g, '&')
+                                        .replace(/&lt;/g, '<')
+                                        .replace(/&gt;/g, '>');
+                                    
+                                    const modal = document.getElementById('globalSourceModal');
+                                    const body = document.getElementById('globalSourceModalBody');
+                                    
+                                    const escapedHtml = decoded
+                                        .replace(/&/g, '&amp;')
+                                        .replace(/</g, '&lt;')
+                                        .replace(/>/g, '&gt;');
+                                    
+                                    body.innerHTML = `
+                                        <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem; padding: 0 1rem;">
+                                            <button class="docops-action-btn" onclick="docopsSource.copyFromModal()">
+                                                <span style="margin-right: 6px;">📋</span> COPY
+                                            </button>
+                                        </div>
+                                        <pre style="
+                                            background: rgba(0, 0, 0, 0.4);
+                                            border: 1px solid rgba(255, 255, 255, 0.1);
+                                            border-radius: 12px;
+                                            padding: 2rem;
+                                            overflow: auto;
+                                            margin: 0 1rem 1rem 1rem;
+                                            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+                                        "><code style="
+                                            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+                                            font-size: 0.85rem;
+                                            line-height: 1.7;
+                                            color: #e2e8f0;
+                                            display: block;
+                                            white-space: pre-wrap;
+                                            word-wrap: break-word;
+                                        ">${'$'}{escapedHtml}</code></pre>
+                                    `;
+                                    
+                                    // Store decoded content for copying
+                                    body.dataset.sourceContent = decoded;
+                                    
                                     modal.classList.add('active');
                                     document.body.style.overflow = 'hidden';
-                                } else {
-                                    console.log("No CSV data found in SVG");
+                                },
+                                
+                                copyFromModal: function() {
+                                    const body = document.getElementById('globalSourceModalBody');
+                                    const content = body.dataset.sourceContent;
+                                    
+                                    if (content) {
+                                        navigator.clipboard.writeText(content).then(() => {
+                                            const btn = document.querySelector('#globalSourceModal .docops-action-btn');
+                                            if (btn) {
+                                                const originalHtml = btn.innerHTML;
+                                                btn.innerHTML = '<span style="margin-right: 6px;">✓</span> COPIED!';
+                                                btn.style.background = 'rgba(34, 197, 94, 0.8)';
+                                                setTimeout(() => {
+                                                    btn.innerHTML = originalHtml;
+                                                    btn.style.background = '';
+                                                }, 2000);
+                                            }
+                                        }).catch(err => {
+                                            console.error('Copy failed:', err);
+                                        });
+                                    }
                                 }
-                            }
-                        };
+                            };
                         
                         const docopsCopy = {
                             url: (btn) => {
