@@ -504,6 +504,9 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
       # Data Button - now opens popup
       html << "<button class=\"svg-control-btn\" onclick=\"csvModal#{js_id}.open()\">DATA</button>" if allow_csv
 
+      # SOURCE Button
+      html << "<button class=\"svg-control-btn\" onclick=\"docopsSource.toggle(this)\">SOURCE</button>"
+
       html << "<button class=\"svg-control-btn\" onclick=\"docopsCopy.url(this)\">LINK</button>" if allow_copy
       html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.copyAsSvg('#{id}')\">SVG</button>" if allow_copy
       html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.copyAsPng('#{id}')\">PNG</button>" if allow_copy
@@ -535,6 +538,20 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
             </div>
           MODAL
 
+      # SOURCE Modal HTML (matches VIEW/DATA modal structure for consistency)
+      html << <<~MODAL
+          <div id="source-modal-#{id}" class="svg-modal-#{id}" onclick="if(event.target === this) docopsSource.close('#{id}')">
+              <div class="svg-modal-content-#{id}">
+                  <button class="svg-modal-close-#{id}" onclick="docopsSource.close('#{id}')">×</button>
+                  <div class="svg-modal-header-#{id}" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                      <h3 style="margin:0; color:white; font-family:'JetBrains Mono', monospace;">Original Source</h3>
+                  </div>
+                  <div id="source-content-#{id}" class="svg-modal-body-#{id}" style="display: block; overflow: auto;">
+                      <div class="source-modal-body"></div>
+                  </div>
+              </div>
+          </div>
+        MODAL
     end
 
     html << "</div>" # Close svg-with-controls
@@ -580,6 +597,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     <<~HTML
       <button class="svg-control-btn" onclick="svgViewer.copyAsSvg('#{id}')" title="Copy as SVG">📋 SVG</button>
       <button class="svg-control-btn" onclick="svgViewer.copyAsPng('#{id}')" title="Copy as PNG">📋 PNG</button>
+      <button class="svg-control-btn" onclick="docopsSource.toggle(this)">SOURCE</button>
     HTML
   end
 
