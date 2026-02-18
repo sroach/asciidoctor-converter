@@ -1,5 +1,5 @@
 server:
-  port: 7202
+  port: ${DOCOPS_CONVERTER_PORT:7202}
   servlet:
     context-path: /converter
 
