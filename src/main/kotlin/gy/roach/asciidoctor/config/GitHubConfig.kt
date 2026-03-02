@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 @ConfigurationProperties(prefix = "github")
-data class GitHubConfig(
+class GitHubConfig(
     var staging: StagingConfig = StagingConfig(),
     var web: WebConfig = WebConfig(),
     var disable: DisableConfig = DisableConfig()

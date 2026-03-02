@@ -32,7 +32,8 @@ class GithubClient(
             disableSslCertificateValidation()
             logger.warn("SSL certificate validation has been disabled. This should only be used in trusted environments.")
         }
-        
+
+        logger.info("Initializing GitHub client with staging base directory: ${githubConfig.stagingBaseDir} and web base directory: ${githubConfig.webBaseDir}")
         // Create base directories if they don't exist
         createDirectoryIfNotExists(githubConfig.stagingBaseDir)
         createDirectoryIfNotExists(githubConfig.webBaseDir)
@@ -200,6 +201,8 @@ class GithubClient(
             if (!dir.mkdirs()) {
                 throw GithubApiException("Failed to create directory: $directory")
             }
+        } else {
+            logger.info("Directory already exists: $directory")
         }
     }
     

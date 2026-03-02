@@ -1,0 +1,420 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+/* DocOps Design System — Signal (v1) : Markdown Light
+   Goals: calm, audit-friendly, high-contrast, “ink as authority”, cyan as action. */
+
+.markdown-body {
+  /* -----------------------------
+     1) Core tokens (DocOps Signal)
+     ----------------------------- */
+  --ds-brand-ink: #0b1220;
+  --ds-brand-cloud: #f6f8fb;
+  --ds-brand-slate: #2a3447;
+  --ds-brand-steel: #8a96ad;
+  --ds-brand-cyan: #00b7d6;
+  --ds-brand-gold: #c9a227;
+
+  --ds-semantic-success: #16a34a;
+  --ds-semantic-warning: #d97706;
+  --ds-semantic-error: #dc2626;
+  --ds-semantic-info: #2563eb;
+
+  --ds-canvas: var(--ds-brand-cloud);
+  --ds-surface-1: #ffffff;
+  --ds-surface-2: #eef2f7;
+  --ds-border: rgba(11, 18, 32, 0.12);
+
+  --ds-text-primary: var(--ds-brand-ink);
+  --ds-text-secondary: var(--ds-brand-slate);
+  --ds-text-tertiary: var(--ds-brand-steel);
+
+  --ds-accent: var(--ds-brand-cyan);
+
+  --ds-radius-sm: 8px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 16px;
+  --ds-radius-pill: 999px;
+
+  --ds-shadow-sm: 0 6px 18px rgba(11, 18, 32, 0.08);
+  --ds-shadow-md: 0 16px 40px rgba(11, 18, 32, 0.12);
+  --ds-focus-glow: 0 0 0 4px rgba(0, 183, 214, 0.22);
+
+  --ds-dur-fast: 120ms;
+  --ds-dur-base: 220ms;
+  --ds-dur-slow: 420ms;
+  --ds-ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+  --ds-ease-snappy: cubic-bezier(0.2, 0.9, 0.2, 1);
+
+  /* -----------------------------
+     2) Markdown-specific roles
+     ----------------------------- */
+  --md-max-width: 920px;
+  --md-pad-x: 48px;
+  --md-pad-y: 48px;
+
+  --md-prose: var(--ds-text-secondary);
+  --md-heading: var(--ds-text-primary);
+  --md-muted: var(--ds-text-tertiary);
+
+  --md-link: var(--ds-accent);
+  --md-link-underline: rgba(0, 183, 214, 0.28);
+  --md-link-hover-bg: rgba(0, 183, 214, 0.10);
+
+  --md-inline-code-bg: rgba(11, 18, 32, 0.06);
+  --md-inline-code-border: rgba(11, 18, 32, 0.12);
+
+  --md-code-bg: var(--ds-brand-ink);
+  --md-code-fg: #f1f5ff;
+  --md-code-border: rgba(11, 18, 32, 0.20);
+
+  --md-table-stripe: rgba(11, 18, 32, 0.03);
+
+  /* Atmosphere: “calm corporate depth” (subtle, not noisy) */
+  background:
+    radial-gradient(900px 420px at 12% 0%, rgba(0, 183, 214, 0.08), transparent 55%),
+    radial-gradient(760px 360px at 92% 18%, rgba(201, 162, 39, 0.08), transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.70)),
+    var(--ds-canvas);
+
+  color: var(--md-prose);
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+
+  max-width: var(--md-max-width);
+  margin: 40px auto;
+  padding: var(--md-pad-y) var(--md-pad-x);
+
+  border-radius: 24px;
+  border: 1px solid var(--ds-border);
+  box-shadow: var(--ds-shadow-sm);
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+
+  /* Let long IDs/URLs behave */
+  overflow-wrap: anywhere;
+}
+
+/* Responsive padding (keeps 8px rhythm while respecting smaller screens) */
+@media (max-width: 768px) {
+  .markdown-body {
+    --md-pad-x: 20px;
+    --md-pad-y: 28px;
+    margin: 16px;
+    border-radius: 18px;
+  }
+}
+
+/* -----------------------------
+   3) Page-load motion (restrained)
+   ----------------------------- */
+@keyframes docops-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.markdown-body {
+  animation: docops-reveal var(--ds-dur-slow) var(--ds-ease-standard) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .markdown-body { animation: none; }
+  .markdown-body * { scroll-behavior: auto; transition: none !important; }
+}
+
+/* -----------------------------
+   4) Typography (DocOps scale)
+   ----------------------------- */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  color: var(--md-heading);
+  font-weight: 600; /* Headline/Display mapping */
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+  margin-top: 32px;
+  margin-bottom: 12px;
+  scroll-margin-top: 96px;
+}
+
+.markdown-body h1 {
+  font-size: 40px;        /* Display (desktop) */
+  line-height: 48px;
+  letter-spacing: -0.6px;
+  margin-top: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ds-border);
+}
+
+.markdown-body h2 {
+  font-size: 28px;        /* Headline (desktop) */
+  line-height: 34px;
+  letter-spacing: -0.3px;
+  padding-top: 8px;
+}
+
+.markdown-body h3 {
+  font-size: 22px;        /* Title (desktop) */
+  line-height: 28px;
+  letter-spacing: -0.2px;
+}
+
+.markdown-body h4 {
+  font-size: 16px;        /* Body as “section label” */
+  line-height: 24px;
+  letter-spacing: 0;
+  font-weight: 600;
+  color: var(--ds-text-primary);
+}
+
+.markdown-body p {
+  margin: 0 0 16px 0;
+}
+
+.markdown-body strong {
+  color: var(--ds-text-primary);
+  font-weight: 600;
+}
+
+.markdown-body small {
+  color: var(--md-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* -----------------------------
+   5) Links + focus visibility
+   ----------------------------- */
+.markdown-body a {
+  color: var(--md-link);
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 2px solid var(--md-link-underline);
+  transition: background-color var(--ds-dur-fast) var(--ds-ease-standard),
+              border-color var(--ds-dur-fast) var(--ds-ease-standard),
+              color var(--ds-dur-fast) var(--ds-ease-standard);
+  padding: 0 2px;
+  border-radius: 6px;
+}
+
+.markdown-body a:hover {
+  background: var(--md-link-hover-bg);
+  border-bottom-color: rgba(0, 183, 214, 0.55);
+}
+
+.markdown-body a:focus-visible {
+  outline: 2px solid var(--ds-accent);
+  box-shadow: var(--ds-focus-glow);
+  border-bottom-color: transparent;
+}
+
+/* Selection should feel “system-level” */
+.markdown-body ::selection {
+  background: rgba(0, 183, 214, 0.18);
+}
+
+/* -----------------------------
+   6) Lists, rules, and spacing
+   ----------------------------- */
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0 0 16px 0;
+  padding-left: 24px;
+}
+
+.markdown-body li {
+  margin: 6px 0;
+}
+
+.markdown-body hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ds-border), transparent);
+  margin: 24px 0;
+}
+
+/* -----------------------------
+   7) Inline code + code blocks
+   ----------------------------- */
+.markdown-body code {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.95em;
+}
+
+.markdown-body :not(pre) > code {
+  background: var(--md-inline-code-bg);
+  border: 1px solid var(--md-inline-code-border);
+  color: var(--ds-text-primary);
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: break-spaces;
+}
+
+.markdown-body pre {
+  background: var(--md-code-bg);
+  color: var(--md-code-fg);
+  border: 1px solid var(--md-code-border);
+  box-shadow: var(--ds-shadow-sm);
+  padding: 16px;
+  border-radius: var(--ds-radius-lg);
+  overflow: auto;
+  margin: 0 0 24px 0;
+  line-height: 1.55;
+}
+
+.markdown-body pre code {
+  color: inherit;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+  font-size: 13px;
+  white-space: pre;
+}
+
+/* -----------------------------
+   8) Quotes / callouts
+   ----------------------------- */
+.markdown-body blockquote {
+  margin: 24px 0;
+  padding: 16px 16px 16px 18px;
+
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.62)),
+              var(--ds-surface-2);
+
+  border: 1px solid var(--ds-border);
+  border-left: 4px solid var(--ds-brand-gold); /* Gold = governance/attention (not error) */
+  border-radius: var(--ds-radius-lg);
+  box-shadow: none;
+
+  color: var(--ds-text-secondary);
+}
+
+.markdown-body blockquote > :first-child { margin-top: 0; }
+.markdown-body blockquote > :last-child { margin-bottom: 0; }
+
+/* -----------------------------
+   9) Tables (audit-friendly)
+   ----------------------------- */
+.markdown-body table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0 0 24px 0;
+
+  background: rgba(255, 255, 255, 0.70);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  overflow: hidden;
+}
+
+.markdown-body thead th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--ds-text-primary);
+  background: linear-gradient(180deg, rgba(238, 242, 247, 0.95), rgba(238, 242, 247, 0.78));
+  border-bottom: 1px solid var(--ds-border);
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.markdown-body tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(11, 18, 32, 0.08);
+  color: var(--ds-text-secondary);
+  vertical-align: top;
+}
+
+.markdown-body tbody tr:nth-child(even) td {
+  background: var(--md-table-stripe);
+}
+
+.markdown-body tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Numeric density: make tables/KPIs scanable if author uses <code> or numbers */
+.markdown-body td code,
+.markdown-body th code {
+  font-size: 0.92em;
+}
+
+/* -----------------------------
+   10) Media, kbd, mark
+   ----------------------------- */
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--ds-radius-lg);
+  border: 1px solid var(--ds-border);
+  background: var(--ds-surface-1);
+}
+
+.markdown-body kbd {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ds-text-primary);
+
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(11, 18, 32, 0.18);
+  border-bottom-color: rgba(11, 18, 32, 0.28);
+  border-radius: 10px;
+
+  padding: 2px 8px;
+  box-shadow: 0 1px 0 rgba(11, 18, 32, 0.08);
+}
+
+.markdown-body mark {
+  background: rgba(201, 162, 39, 0.22); /* audit gold, soft */
+  color: var(--ds-text-primary);
+  padding: 0 3px;
+  border-radius: 6px;
+}
+
+/* -----------------------------
+   11) GitHub-ish conveniences (without cloning GitHub)
+   ----------------------------- */
+.markdown-body .task-list-item {
+  list-style: none;
+}
+
+.markdown-body .task-list-item input[type="checkbox"] {
+  transform: translateY(1px);
+  accent-color: var(--ds-accent);
+}
+
+/* Make anchor icons / autolinks not ugly if present */
+.markdown-body a.anchor {
+  border-bottom: 0;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* -----------------------------
+   12) Print: keep it “audit export” ready
+   ----------------------------- */
+@media print {
+  .markdown-body {
+    background: #ffffff;
+    box-shadow: none;
+    border: 0;
+    margin: 0;
+    max-width: none;
+    padding: 0;
+  }
+
+  .markdown-body a {
+    color: var(--ds-text-primary);
+    border-bottom-color: rgba(11, 18, 32, 0.22);
+  }
+
+  .markdown-body pre {
+    box-shadow: none;
+  }
+}
