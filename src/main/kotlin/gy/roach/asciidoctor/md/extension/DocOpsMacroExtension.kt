@@ -6,6 +6,7 @@ import com.vladsch.flexmark.html.renderer.NodeRenderer
 import com.vladsch.flexmark.html.renderer.NodeRendererContext
 import com.vladsch.flexmark.html.renderer.NodeRendererFactory
 import com.vladsch.flexmark.html.renderer.NodeRenderingHandler
+import com.vladsch.flexmark.parser.InlineParser
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.parser.block.*
 import com.vladsch.flexmark.util.ast.Block
@@ -175,7 +176,7 @@ class DocOpsMacroExtension private constructor() :
             } else {
                 // Continue capturing content
                 if (content.isNotEmpty()) content.append("\n")
-                content.append(line)
+                content.append(line.toString())
                 BlockContinue.atIndex(line.length)
             }
         }
@@ -184,8 +185,23 @@ class DocOpsMacroExtension private constructor() :
             // Lines are handled in tryContinue
         }
 
+        override fun isContainer(): Boolean = false
+
+        override fun canContain(state: ParserState, blockParser: BlockParser, block: Block): Boolean = false
+
+
         override fun closeBlock(state: ParserState) {
             block.body = content.toString().trim()
+            block.setCharsFromContent()
+        }
+
+        override fun isPropagatingLastBlankLine(lastMatchedBlockParser: BlockParser): Boolean = false
+
+
+
+        override fun parseInlines(inlineParser: InlineParser) {
+            // DO NOT parse inline elements - keep content as raw text
+            // This prevents WikiLink and other inline extensions from processing the content
         }
     }
 

@@ -15,6 +15,7 @@ import com.vladsch.flexmark.ext.wikilink.WikiLinkExtension
 import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
+import com.vladsch.flexmark.util.misc.Extension
 import gy.roach.asciidoctor.config.ConverterSettings
 import gy.roach.asciidoctor.md.extension.DocOpsMacroExtension
 import gy.roach.asciidoctor.md.extension.GitHubAdmonitionExtension
@@ -83,25 +84,35 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
 
 object MermaidFlexmark {
     private fun convertMarkdownWithMermaid(markdown: String, converterSettings: ConverterSettings, useDark: Boolean): String {
+        // Check if document contains docops macros with potential WikiLink conflicts
+        val hasDocOpsMacros = markdown.contains("[docops:")
+
+        val extensions = mutableListOf<Extension>(
+            DocOpsMacroExtension.create(),
+            GitHubAdmonitionExtension.create(),
+            TocExtension.create(),
+            AsideExtension.create(),
+            DefinitionExtension.create(),
+            EmojiExtension.create(),
+            FootnoteExtension.create(),
+            StrikethroughSubscriptExtension.create(),
+            InsExtension.create(),
+            SuperscriptExtension.create(),
+            TablesExtension.create(),
+            SimTocExtension.create(),
+            AdmonitionExtension.create()
+        )
+
+        // Only add WikiLinkExtension if no docops macros present
+        if (!hasDocOpsMacros) {
+            extensions.add(WikiLinkExtension.create())
+        }
+
         val options = MutableDataSet().apply {
-            set(Parser.EXTENSIONS, listOf(DocOpsMacroExtension.create(),
-                GitHubAdmonitionExtension.create(),
-                TocExtension.create(),
-                AsideExtension.create(),
-                DefinitionExtension.create(),
-                EmojiExtension.create(),
-                FootnoteExtension.create(),
-                StrikethroughSubscriptExtension.create(),
-                InsExtension.create(),
-                SuperscriptExtension.create(),
-                TablesExtension.create(),
-                SimTocExtension.create(),
-                AdmonitionExtension.create(),
-                WikiLinkExtension.create()))
+            set(Parser.EXTENSIONS, extensions)
             set(DocOpsMacroExtension.WEBSERVER, converterSettings.panelServer)
             set(DocOpsMacroExtension.DEFAULT_SCALE, "1.0")
             set(DocOpsMacroExtension.DEFAULT_USE_DARK, useDark)
-
         }
 
         val parser = Parser.builder(options).build()
