@@ -30,6 +30,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
     
     private val logger = LoggerFactory.getLogger(MarkdownConverter::class.java)
 
+
     private val options = MutableDataSet().apply {
         set(Parser.EXTENSIONS, listOf(DocOpsMacroExtension.create(),
             GitHubAdmonitionExtension.create(),
@@ -44,7 +45,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
             TablesExtension.create(),
             SimTocExtension.create(),
             AdmonitionExtension.create(),
-            WikiLinkExtension.create()))
+            ))
         set(DocOpsMacroExtension.WEBSERVER, converterSettings.panelWebserver)
         set(DocOpsMacroExtension.DEFAULT_SCALE, "1.0")
         set(DocOpsMacroExtension.DEFAULT_USE_DARK, false)
