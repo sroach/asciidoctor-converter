@@ -231,7 +231,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
   end
 
   def generate_id(attrs)
-    attrs['id'] || "svgviewer-#{SecureRandom.hex(8)}"
+    attrs['id'] || "sv-#{SecureRandom.hex(8)}"
   end
 
 
@@ -240,9 +240,6 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
                                allow_copy, allow_zoom, allow_expand, theme, role = 'center', allow_csv = true)
     # Get alignment styling based on role
     alignment_style = get_alignment_style(role)
-
-    # Create a sanitized ID for JS variable names
-    js_id = id.gsub('-', '_')
 
     html = []
 
@@ -408,88 +405,19 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
           </style>
         CSS
 
-    # Add JavaScript objects for managing both modals
+    # Add escape key handler for modals
     html << <<~SCRIPT
           <script>
-            // View Modal Control
-            window.svgModal#{js_id} = {
-                open: function() {
-                    const modal = document.getElementById('modal-#{id}');
-                    const sourceContainer = document.getElementById('#{id}');
-                    
-                    if (!modal || !sourceContainer) return;
-                    
-                    if (modal.parentNode !== document.body) {
-                        document.body.appendChild(modal);
-                    }
-                    
-                    const sourceSvg = sourceContainer.querySelector('svg');
-                    const targetContainer = document.getElementById('modal-body-#{id}');
-                    
-                    if (sourceSvg && targetContainer) {
-                        targetContainer.innerHTML = '';
-                        const clone = sourceSvg.cloneNode(true);
-                        
-                        clone.removeAttribute('width');
-                        clone.removeAttribute('height');
-                        clone.style.width = '100%';
-                        clone.style.height = '100%';
-                        
-                        targetContainer.appendChild(clone);
-                        modal.classList.add('active');
-                        document.body.style.overflow = 'hidden';
-                    }
-                },
-                close: function() {
-                    const modal = document.getElementById('modal-#{id}');
-                    if (modal) {
-                        modal.classList.remove('active');
-                        document.body.style.overflow = '';
-                    }
-                }
-            };
-
-            // Data Modal Control
-            window.csvModal#{js_id} = {
-                open: function() {
-                    const modal = document.getElementById('csv-modal-#{id}');
-                    if (!modal) return;
-                    
-                    if (modal.parentNode !== document.body) {
-                        document.body.appendChild(modal);
-                    }
-                    
-                    modal.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                    
-                    if (window.svgViewer && window.svgViewer.loadCsvData) {
-                        window.svgViewer.loadCsvData('#{id}');
-                    }
-                },
-                close: function() {
-                    const modal = document.getElementById('csv-modal-#{id}');
-                    if (modal) {
-                        modal.classList.remove('active');
-                        document.body.style.overflow = '';
-                    }
-                }
-            };
-            
-            // Register escape key handler for both
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
-                    const viewModal = document.getElementById('modal-#{id}');
-                    if (viewModal && viewModal.classList.contains('active')) {
-                        window.svgModal#{js_id}.close();
-                    }
-                    const csvModal = document.getElementById('csv-modal-#{id}');
-                    if (csvModal && csvModal.classList.contains('active')) {
-                        window.csvModal#{js_id}.close();
+                    if (window.svgViewer) {
+                        window.svgViewer.closeModal('#{id}');
+                        window.svgViewer.closeCsvModal('#{id}');
                     }
                 }
             });
           </script>
-        SCRIPT
+    SCRIPT
 
     html << "<div class=\"svg-viewer-container\" style=\"#{alignment_style}\">"
     html << "<div class=\"svg-with-controls docops-media-card\" id=\"#{id}\" data-theme=\"#{theme}\">"
@@ -499,10 +427,10 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
       html << "<div class=\"svg-bottom-controls\">"
 
       # View Button
-      html << "<button class=\"svg-control-btn\" onclick=\"svgModal#{js_id}.open()\">VIEW</button>" if allow_expand
+      html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.openModal('#{id}')\">VIEW</button>" if allow_expand
 
       # Data Button - now opens popup
-      html << "<button class=\"svg-control-btn\" onclick=\"csvModal#{js_id}.open()\">DATA</button>" if allow_csv
+      html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.openCsvModal('#{id}')\">DATA</button>" if allow_csv
 
       # SOURCE Button
       html << "<button class=\"svg-control-btn\" onclick=\"docopsSource.toggle(this)\">SOURCE</button>"
@@ -510,14 +438,15 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
       html << "<button class=\"svg-control-btn\" onclick=\"docopsCopy.url(this)\">LINK</button>" if allow_copy
       html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.copyAsSvg('#{id}')\">SVG</button>" if allow_copy
       html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.copyAsPng('#{id}')\">PNG</button>" if allow_copy
+      html << "<button class=\"svg-control-btn\" onclick=\"svgViewer.printSvg('#{id}')\">PRINT</button>" if allow_copy
 
       html << "</div>"
 
       # View Modal HTML (Hidden initially)
       html << <<~MODAL
-            <div id="modal-#{id}" class="svg-modal-#{id}" onclick="if(event.target === this) svgModal#{js_id}.close()">
+            <div id="modal-#{id}" class="svg-modal-#{id}" onclick="if(event.target === this) svgViewer.closeModal('#{id}')">
                 <div class="svg-modal-content-#{id}">
-                    <button class="svg-modal-close-#{id}" onclick="svgModal#{js_id}.close()">×</button>
+                    <button class="svg-modal-close-#{id}" onclick="svgViewer.closeModal('#{id}')">×</button>
                     <div id="modal-body-#{id}" class="svg-modal-body-#{id}"></div>
                 </div>
             </div>
@@ -525,9 +454,9 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
 
       # Data Modal HTML (Hidden initially)
       html << <<~MODAL
-            <div id="csv-modal-#{id}" class="svg-modal-#{id}" onclick="if(event.target === this) csvModal#{js_id}.close()">
+            <div id="csv-modal-#{id}" class="svg-modal-#{id}" onclick="if(event.target === this) svgViewer.closeCsvModal('#{id}')">
                 <div class="svg-modal-content-#{id}">
-                    <button class="svg-modal-close-#{id}" onclick="csvModal#{js_id}.close()">×</button>
+                    <button class="svg-modal-close-#{id}" onclick="svgViewer.closeCsvModal('#{id}')">×</button>
                     <div class="svg-modal-header-#{id}" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
                         <h3 style="margin:0; color:white; font-family:'JetBrains Mono', monospace;">Data Source</h3>
                     </div>
@@ -597,6 +526,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     <<~HTML
       <button class="svg-control-btn" onclick="svgViewer.copyAsSvg('#{id}')" title="Copy as SVG">📋 SVG</button>
       <button class="svg-control-btn" onclick="svgViewer.copyAsPng('#{id}')" title="Copy as PNG">📋 PNG</button>
+      <button class="svg-control-btn" onclick="svgViewer.printSvg('#{id}')" title="Print SVG">PRINT</button>
       <button class="svg-control-btn" onclick="docopsSource.toggle(this)">SOURCE</button>
     HTML
   end
