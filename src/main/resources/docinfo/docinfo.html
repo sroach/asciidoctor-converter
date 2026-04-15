@@ -1127,7 +1127,59 @@
     });
 </script>
 <script>
-    window.svgViewer = window.svgViewer || {
+    window.svgViewer = window.svgViewer || {};
+    Object.assign(window.svgViewer, {
+        openModal(id) {
+            const modal = document.getElementById('modal-' + id);
+            const sourceContainer = document.getElementById(id);
+            if (!modal || !sourceContainer) return;
+            if (modal.parentNode !== document.body) {
+                document.body.appendChild(modal);
+            }
+            const sourceSvg = sourceContainer.querySelector('svg');
+            const targetContainer = document.getElementById('modal-body-' + id);
+            if (sourceSvg && targetContainer) {
+                targetContainer.innerHTML = '';
+                const clone = sourceSvg.cloneNode(true);
+                clone.removeAttribute('width');
+                clone.removeAttribute('height');
+                clone.style.width = '100%';
+                clone.style.height = '100%';
+                targetContainer.appendChild(clone);
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        },
+
+        closeModal(id) {
+            const modal = document.getElementById('modal-' + id);
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        },
+
+        openCsvModal(id) {
+            const modal = document.getElementById('csv-modal-' + id);
+            if (!modal) return;
+            if (modal.parentNode !== document.body) {
+                document.body.appendChild(modal);
+            }
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            if (window.svgViewer && window.svgViewer.loadCsvData) {
+                window.svgViewer.loadCsvData(id);
+            }
+        },
+
+        closeCsvModal(id) {
+            const modal = document.getElementById('csv-modal-' + id);
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        },
+
         toggleControls(id) {
             const panel = document.getElementById(`controls-panel-${id}`);
             const isVisible = panel.classList.contains('show');
@@ -1227,6 +1279,33 @@
             }
         },
 
+        printSvg(id) {
+            const container = document.getElementById(id);
+            const svg = container.querySelector('svg');
+
+            if (!svg) {
+                this.showMessage(container, 'No SVG found', 'error');
+                return;
+            }
+
+            const svgClone = svg.cloneNode(true);
+            this.inlineStyles(svgClone);
+            this.suppressAnimations(svgClone);
+            const svgData = new XMLSerializer().serializeToString(svgClone);
+
+            const printWindow = window.open('', '_blank');
+            var doc = printWindow.document;
+            doc.open();
+            var head = '<html><head><title>Print SVG</title>';
+            head += '<style>body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; } svg { max-width: 100%; max-height: 100%; }</style>';
+            head += '</head><bo' + 'dy>';
+            doc.write(head);
+            doc.write(svgData);
+            doc.write('</bo' + 'dy></ht' + 'ml>');
+            doc.close();
+            printWindow.onload = function() { printWindow.print(); printWindow.close(); };
+        },
+
         convertSvgToPng(svgElement) {
             return new Promise((resolve, reject) => {
                 // Clone the SVG to avoid modifying the original
@@ -1257,6 +1336,7 @@
 
                 // Handle external stylesheets and fonts
                 this.inlineStyles(svgClone);
+                this.suppressAnimations(svgClone);
 
                 const svgData = new XMLSerializer().serializeToString(svgClone);
                 const canvas = document.createElement('canvas');
@@ -1301,6 +1381,22 @@
             });
         },
 
+        suppressAnimations(svgElement) {
+            // Force all elements to be fully visible (override CSS animations that start with opacity: 0)
+            const allElements = svgElement.querySelectorAll('*');
+            allElements.forEach(el => {
+                el.style.opacity = '1';
+                el.style.animation = 'none';
+                el.style.transition = 'none';
+                el.style.visibility = 'visible';
+            });
+            svgElement.style.opacity = '1';
+            svgElement.style.animation = 'none';
+            svgElement.style.transition = 'none';
+            // Also remove any <animate> or <animateTransform> SVG elements
+            svgElement.querySelectorAll('animate, animateTransform, animateMotion, set').forEach(el => el.remove());
+        },
+
         inlineStyles(svgElement) {
             // Get all stylesheets from the document
             const stylesheets = Array.from(document.styleSheets);
@@ -1338,7 +1434,7 @@
             if (existing) existing.remove();
 
             const messageEl = document.createElement('div');
-            messageEl.className = `copy-message '${type === 'error' ? 'error' : ''}`;
+            messageEl.className = `copy-message ${type === 'error' ? 'error' : ''}`;
 
             // Different background colors for different message types
             if (type === 'info') {
@@ -1536,7 +1632,7 @@
                 document.body.removeChild(textArea);
             });
         }
-    };
+    });
 
     // Close controls when clicking outside
     document.addEventListener('click', function(e) {
@@ -2003,7 +2099,8 @@
             closeModal();
         }
     });
-    const docopsCopy = {
+    window.docopsCopy = window.docopsCopy || {};
+    Object.assign(window.docopsCopy, {
         url: (btn) => {
             const url = btn.closest('.docops-media-card').getAttribute('data-url');
             navigator.clipboard.writeText(url).then(() => {
@@ -2040,8 +2137,30 @@
                 });
             };
             img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+        },
+        print: (btn) => {
+            const card = btn.closest('.docops-media-card');
+            const svgElement = card.querySelector('svg');
+            if (!svgElement) return;
+
+            const svgClone = svgElement.cloneNode(true);
+            if (window.svgViewer) {
+                if (window.svgViewer.inlineStyles) {
+                    window.svgViewer.inlineStyles(svgClone);
+                }
+                if (window.svgViewer.suppressAnimations) {
+                    window.svgViewer.suppressAnimations(svgClone);
+                }
+            }
+
+            const svgData = new XMLSerializer().serializeToString(svgClone);
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write('<html><head><title>Print SVG</title><style>body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; } svg { max-width: 100%; max-height: 100%; }</style></head><body>');
+            printWindow.document.write(svgData);
+            printWindow.document.write('<script>window.onload = () => { window.print(); window.close(); }; <' + '/script></body></html>');
+            printWindow.document.close();
         }
-    };
+    });
 
 </script>
 <script>
