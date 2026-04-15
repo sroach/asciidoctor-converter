@@ -1,0 +1,480 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Jost:wght@400;500;600&family=Jost:ital@1&display=swap');
+
+/* Guyana Food Blog — "Golden Arrowhead" Markdown Theme
+   Palette: rainforest green · Demerara gold · pepper pot red · cassava cream
+   Scoped to .markdown-body — mirrors docops_md_styles.css architecture. */
+
+.markdown-body {
+  /* -------------------------------------------------------
+     1) Core brand tokens — Golden Arrowhead palette
+     ------------------------------------------------------- */
+  --gy-jungle:      #1b4332;   /* deep Essequibo rainforest */
+  --gy-canopy:      #2d6a4f;   /* mid-canopy green          */
+  --gy-demerara:    #b8730a;   /* raw Demerara cane sugar   */
+  --gy-gold:        #e9a11a;   /* flag gold / ripe mango    */
+  --gy-pepper:      #8c1a1e;   /* pepper pot / flag red     */
+  --gy-charcoal:    #1a110a;   /* burnt wood, dark base     */
+  --gy-cream:       #faf3e2;   /* coconut milk canvas       */
+  --gy-parchment:   #f0e4c8;   /* old recipe card surface   */
+  --gy-tamarind:    #6b5437;   /* muted tamarind brown      */
+  --gy-border:      rgba(27, 67, 50, 0.14);
+
+  /* Semantic roles (keep consistent with docops pattern) */
+  --gy-surface-1:   #ffffff;
+  --gy-surface-2:   #f5ece0;
+
+  --gy-text-primary:   var(--gy-charcoal);
+  --gy-text-secondary: #3a2710;
+  --gy-text-tertiary:  var(--gy-tamarind);
+
+  --gy-accent:      var(--gy-gold);
+
+  /* -------------------------------------------------------
+     2) Markdown-specific roles
+     ------------------------------------------------------- */
+  --md-max-width:   900px;
+  --md-pad-x:       48px;
+  --md-pad-y:       48px;
+
+  --md-prose:       var(--gy-text-secondary);
+  --md-heading:     var(--gy-jungle);
+  --md-muted:       var(--gy-text-tertiary);
+
+  --md-link:              var(--gy-canopy);
+  --md-link-underline:    rgba(45, 106, 79, 0.30);
+  --md-link-hover-bg:     rgba(45, 106, 79, 0.09);
+
+  --md-inline-code-bg:     rgba(184, 115, 10, 0.10);
+  --md-inline-code-border: rgba(184, 115, 10, 0.22);
+
+  --md-code-bg:    var(--gy-charcoal);
+  --md-code-fg:    #f5ecd8;
+  --md-code-border: rgba(27, 67, 50, 0.22);
+
+  --md-table-stripe: rgba(27, 67, 50, 0.04);
+
+  /* Radii */
+  --gy-radius-sm:  6px;
+  --gy-radius-md:  12px;
+  --gy-radius-lg:  18px;
+  --gy-radius-pill: 999px;
+
+  /* Shadows */
+  --gy-shadow-sm: 0 4px 18px rgba(27, 67, 50, 0.10);
+  --gy-shadow-md: 0 12px 36px rgba(26, 17, 10, 0.16);
+
+  /* Motion */
+  --gy-dur-fast:    120ms;
+  --gy-dur-base:    220ms;
+  --gy-dur-slow:    420ms;
+  --gy-ease:        cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Focus */
+  --gy-focus-glow: 0 0 0 4px rgba(233, 161, 26, 0.28);
+
+  /* -------------------------------------------------------
+     Atmosphere — warm cassava-cream with chevron depth
+     Echoes the diagonal arrow of the Golden Arrowhead flag.
+     ------------------------------------------------------- */
+  background:
+          radial-gradient(820px 340px at 8% 0%,   rgba(27,  67,  50, 0.07), transparent 58%),
+          radial-gradient(680px 300px at 94% 14%,  rgba(233,161, 26, 0.09), transparent 60%),
+          repeating-linear-gradient(
+                  135deg,
+                  rgba(184, 115, 10, 0.025) 0px,  rgba(184, 115, 10, 0.025) 1px,
+                  transparent 1px, transparent 18px
+          ),
+          linear-gradient(180deg, rgba(255,255,255,0.70), rgba(255,255,255,0.55)),
+          var(--gy-cream);
+
+  color: var(--md-prose);
+  font-family: "Jost", ui-sans-serif, system-ui, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 26px;
+
+  max-width: var(--md-max-width);
+  margin: 40px auto;
+  padding: var(--md-pad-y) var(--md-pad-x);
+
+  border-radius: 22px;
+  border: 1px solid var(--gy-border);
+  box-shadow: var(--gy-shadow-sm);
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-wrap: anywhere;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .markdown-body {
+    --md-pad-x: 20px;
+    --md-pad-y: 28px;
+    margin: 16px;
+    border-radius: 16px;
+  }
+}
+
+/* -------------------------------------------------------
+   3) Page-load reveal
+   ------------------------------------------------------- */
+@keyframes gy-reveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.markdown-body {
+  animation: gy-reveal var(--gy-dur-slow) var(--gy-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .markdown-body { animation: none; }
+  .markdown-body * { scroll-behavior: auto; transition: none !important; }
+}
+
+/* -------------------------------------------------------
+   4) Typography
+   ------------------------------------------------------- */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  color: var(--md-heading);
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+  margin-top: 32px;
+  margin-bottom: 12px;
+  scroll-margin-top: 96px;
+}
+
+.markdown-body h1 {
+  font-size: 42px;
+  line-height: 50px;
+  letter-spacing: -0.8px;
+  margin-top: 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--gy-demerara);  /* Demerara gold rule */
+}
+
+.markdown-body h2 {
+  font-size: 30px;
+  line-height: 36px;
+  letter-spacing: -0.4px;
+  padding-top: 8px;
+  /* Subtle left tick — echoes the arrow motif */
+  padding-left: 14px;
+  border-left: 4px solid var(--gy-gold);
+}
+
+.markdown-body h3 {
+  font-size: 22px;
+  line-height: 28px;
+  letter-spacing: -0.2px;
+  font-style: italic;
+  color: var(--gy-canopy);
+}
+
+.markdown-body h4 {
+  font-size: 16px;
+  line-height: 24px;
+  font-family: "Jost", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gy-tamarind);
+}
+
+.markdown-body p {
+  margin: 0 0 16px 0;
+}
+
+.markdown-body strong {
+  color: var(--gy-text-primary);
+  font-weight: 600;
+}
+
+.markdown-body em {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-style: italic;
+  color: var(--gy-jungle);
+}
+
+.markdown-body small {
+  color: var(--md-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Drop-cap on first paragraph — editorial touch */
+.markdown-body > p:first-of-type::first-letter {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 3.6em;
+  font-weight: 700;
+  float: left;
+  line-height: 0.82;
+  margin: 0.05em 0.09em 0 0;
+  color: var(--gy-pepper);
+}
+
+/* -------------------------------------------------------
+   5) Links + focus
+   ------------------------------------------------------- */
+.markdown-body a {
+  color: var(--md-link);
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 2px solid var(--md-link-underline);
+  transition:
+          background-color var(--gy-dur-fast) var(--gy-ease),
+          border-color     var(--gy-dur-fast) var(--gy-ease),
+          color            var(--gy-dur-fast) var(--gy-ease);
+  padding: 0 2px;
+  border-radius: 4px;
+}
+
+.markdown-body a:hover {
+  background: var(--md-link-hover-bg);
+  border-bottom-color: var(--gy-canopy);
+}
+
+.markdown-body a:focus-visible {
+  outline: 2px solid var(--gy-gold);
+  box-shadow: var(--gy-focus-glow);
+  border-bottom-color: transparent;
+}
+
+.markdown-body ::selection {
+  background: rgba(233, 161, 26, 0.22);
+}
+
+/* -------------------------------------------------------
+   6) Lists, rules, spacing
+   ------------------------------------------------------- */
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0 0 16px 0;
+  padding-left: 24px;
+}
+
+.markdown-body li {
+  margin: 6px 0;
+}
+
+/* Custom bullet — small diamond, Demerara gold */
+.markdown-body ul li::marker {
+  color: var(--gy-demerara);
+}
+
+.markdown-body ol li::marker {
+  color: var(--gy-pepper);
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 700;
+}
+
+.markdown-body hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gy-demerara) 30%, var(--gy-gold) 50%, var(--gy-demerara) 70%, transparent);
+  margin: 32px 0;
+}
+
+/* -------------------------------------------------------
+   7) Inline code + code blocks
+   ------------------------------------------------------- */
+.markdown-body code {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.93em;
+}
+
+.markdown-body :not(pre) > code {
+  background: var(--md-inline-code-bg);
+  border: 1px solid var(--md-inline-code-border);
+  color: var(--gy-pepper);
+  padding: 2px 8px;
+  border-radius: 8px;
+  white-space: break-spaces;
+}
+
+.markdown-body pre {
+  background: var(--md-code-bg);
+  color: var(--md-code-fg);
+  border: 1px solid var(--md-code-border);
+  box-shadow: var(--gy-shadow-sm);
+  padding: 18px 20px;
+  border-radius: var(--gy-radius-lg);
+  overflow: auto;
+  margin: 0 0 24px 0;
+  line-height: 1.6;
+  /* Savannah-flag stripe on top of code blocks */
+  border-top: 4px solid var(--gy-demerara);
+}
+
+.markdown-body pre code {
+  color: inherit;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+  font-size: 13px;
+  white-space: pre;
+}
+
+/* -------------------------------------------------------
+   8) Blockquote / pull quote
+   ------------------------------------------------------- */
+.markdown-body blockquote {
+  margin: 28px 0;
+  padding: 18px 20px 18px 22px;
+
+  background:
+          linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0.52)),
+          var(--gy-surface-2);
+
+  border: 1px solid var(--gy-border);
+  border-left: 5px solid var(--gy-pepper);   /* pepper pot red = attention */
+  border-radius: var(--gy-radius-lg);
+
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.15em;
+  font-style: italic;
+  color: var(--gy-jungle);
+}
+
+.markdown-body blockquote > :first-child { margin-top: 0; }
+.markdown-body blockquote > :last-child  { margin-bottom: 0; }
+
+/* -------------------------------------------------------
+   9) Tables
+   ------------------------------------------------------- */
+.markdown-body table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0 0 24px 0;
+
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--gy-border);
+  border-radius: var(--gy-radius-lg);
+  overflow: hidden;
+}
+
+.markdown-body thead th {
+  text-align: left;
+  font-family: "Jost", sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gy-surface-1);
+  background: linear-gradient(180deg, var(--gy-jungle), var(--gy-canopy));
+  border-bottom: 2px solid var(--gy-demerara);
+  padding: 12px 16px;
+  line-height: 20px;
+}
+
+.markdown-body tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--gy-border);
+  color: var(--md-prose);
+  vertical-align: top;
+}
+
+.markdown-body tbody tr:nth-child(even) td {
+  background: var(--md-table-stripe);
+}
+
+.markdown-body tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.markdown-body td code,
+.markdown-body th code {
+  font-size: 0.90em;
+}
+
+/* -------------------------------------------------------
+   10) Media, kbd, mark
+   ------------------------------------------------------- */
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--gy-radius-lg);
+  border: 1px solid var(--gy-border);
+  background: var(--gy-surface-1);
+  box-shadow: var(--gy-shadow-sm);
+}
+
+.markdown-body kbd {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--gy-text-primary);
+
+  background: rgba(255, 255, 255, 0.80);
+  border: 1px solid rgba(27, 67, 50, 0.22);
+  border-bottom-color: rgba(27, 67, 50, 0.36);
+  border-radius: 8px;
+
+  padding: 2px 8px;
+  box-shadow: 0 1px 0 rgba(27, 67, 50, 0.12);
+}
+
+/* Gold highlight — like marking a key ingredient */
+.markdown-body mark {
+  background: rgba(233, 161, 26, 0.25);
+  color: var(--gy-text-primary);
+  padding: 0 3px;
+  border-radius: 4px;
+}
+
+/* -------------------------------------------------------
+   11) Task lists + anchor links
+   ------------------------------------------------------- */
+.markdown-body .task-list-item {
+  list-style: none;
+}
+
+.markdown-body .task-list-item input[type="checkbox"] {
+  transform: translateY(1px);
+  accent-color: var(--gy-canopy);
+}
+
+.markdown-body a.anchor {
+  border-bottom: 0;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* -------------------------------------------------------
+   12) Print
+   ------------------------------------------------------- */
+@media print {
+  .markdown-body {
+    background: #ffffff;
+    box-shadow: none;
+    border: 0;
+    margin: 0;
+    max-width: none;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .markdown-body h2 {
+    border-left-color: #000;
+    padding-left: 10px;
+  }
+
+  .markdown-body a {
+    color: var(--gy-text-primary);
+    border-bottom-color: rgba(27, 67, 50, 0.28);
+  }
+
+  .markdown-body pre {
+    box-shadow: none;
+    border-top-color: #000;
+  }
+}

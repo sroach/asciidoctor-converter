@@ -30,7 +30,56 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
     
     private val logger = LoggerFactory.getLogger(MarkdownConverter::class.java)
 
+    private data class FrontMatterParseResult(
+        val title: String?,
+        val contentWithoutFrontMatter: String
+    )
+    private fun parseFrontMatter(markdownContent: String): FrontMatterParseResult {
+        val lines = markdownContent.lines()
+        if (lines.isEmpty() || lines.first().trim() != "---") {
+            return FrontMatterParseResult(title = null, contentWithoutFrontMatter = markdownContent)
+        }
 
+        var endIndex = -1
+        for (i in 1 until lines.size) {
+            if (lines[i].trim() == "---") {
+                endIndex = i
+                break
+            }
+        }
+
+        if (endIndex == -1) {
+            return FrontMatterParseResult(title = null, contentWithoutFrontMatter = markdownContent)
+        }
+
+        val frontMatterLines = lines.subList(1, endIndex)
+        val title = frontMatterLines
+            .map { it.trim() }
+            .firstOrNull { it.startsWith("title:", ignoreCase = true) }
+            ?.substringAfter(":", "")
+            ?.trim()
+            ?.trim('"', '\'')
+
+        val contentWithoutFrontMatter = lines.drop(endIndex + 1).joinToString("\n")
+        return FrontMatterParseResult(title = title, contentWithoutFrontMatter = contentWithoutFrontMatter)
+    }
+
+    private fun resolveDocumentTitle(markdownContent: String, sourceFile: File): Pair<String, String> {
+        val frontMatter = parseFrontMatter(markdownContent)
+
+        val h1Title = frontMatter.contentWithoutFrontMatter
+            .lineSequence()
+            .map { it.trim() }
+            .firstOrNull { it.startsWith("# ") }
+            ?.removePrefix("#")
+            ?.trim()
+
+        val resolvedTitle = frontMatter.title?.takeIf { it.isNotBlank() }
+            ?: h1Title?.takeIf { it.isNotBlank() }
+            ?: sourceFile.nameWithoutExtension
+
+        return resolvedTitle to frontMatter.contentWithoutFrontMatter
+    }
     private val options = MutableDataSet().apply {
         set(Parser.EXTENSIONS, listOf(DocOpsMacroExtension.create(),
             GitHubAdmonitionExtension.create(),
@@ -51,6 +100,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
         set(DocOpsMacroExtension.DEFAULT_USE_DARK, false)
 
     }
+
     fun convertMarkdownToHtml(sourceFile: File, outputDir: String, cssTheme: String = "github-markdown-css.css"): Boolean {
         return try {
             val useDark = cssTheme.contains("dark") || cssTheme.contains("brutalist")
@@ -58,14 +108,16 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
             val parser = Parser.builder(options).build()
             val renderer = HtmlRenderer.builder(options).nodeRendererFactory(MermaidNodeRendererFactory()).build()
             val markdownContent = sourceFile.readText()
-            val document = parser.parse(markdownContent)
+            val (documentTitle, markdownToRender) = resolveDocumentTitle(markdownContent, sourceFile)
+
+            val document = parser.parse(markdownToRender)
             val htmlBody = renderer.render(document)
-            
+
             // Wrap in full HTML document with styling
             val fullHtml = MermaidFlexmark.createFullHtmlWithMermaid(
                 markdownContent = htmlBody,
                 converterSettings = converterSettings,
-                title= sourceFile.nameWithoutExtension,
+                title= documentTitle,
                 cssTheme = cssTheme)
 
             // Write output file
@@ -590,7 +642,7 @@ object MermaidFlexmark {
                                 }
                             };
                         
-                        const docopsCopy = {
+                        window.docopsCopy = {
                             url: (btn) => {
                                     const url = btn.closest('.docops-media-card').getAttribute('data-url');
                                     navigator.clipboard.writeText(url).then(() => {
@@ -627,6 +679,33 @@ object MermaidFlexmark {
                                     });
                                 };
                                 img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                            },
+                            print: (btn) => {
+                                const card = btn.closest('.docops-media-card');
+                                const svgElement = card.querySelector('svg');
+                                if (!svgElement) return;
+
+                                const svgClone = svgElement.cloneNode(true);
+                                // Force all elements to be fully visible (override CSS animations that start with opacity: 0)
+                                const allElements = svgClone.querySelectorAll('*');
+                                allElements.forEach(el => {
+                                    el.style.opacity = '1';
+                                    el.style.animation = 'none';
+                                    el.style.transition = 'none';
+                                    el.style.visibility = 'visible';
+                                });
+                                svgClone.style.opacity = '1';
+                                svgClone.style.animation = 'none';
+                                svgClone.style.transition = 'none';
+                                // Remove SVG animation elements
+                                svgClone.querySelectorAll('animate, animateTransform, animateMotion, set').forEach(el => el.remove());
+
+                                const svgData = new XMLSerializer().serializeToString(svgClone);
+                                const printWindow = window.open('', '_blank');
+                                printWindow.document.write('<html><head><title>Print SVG</title><style>body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; } svg { max-width: 100%; max-height: 100%; }</style></head><body>');
+                                printWindow.document.write(svgData);
+                                printWindow.document.write('<script>window.onload = () => { window.print(); window.close(); }; <' + '/script></body></html>');
+                                printWindow.document.close();
                             }
                         };
                     

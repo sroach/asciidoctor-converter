@@ -258,12 +258,13 @@ class DocOpsMacroExtension private constructor() :
             val excludeControlsFilter = listOf("badge", "wordcloud", "buttons")
             val controls = if(excludeControlsFilter.contains(kind)) {""} else {"""
                     <div class="svg-bottom-controls">
-                     <button class="svg-control-btn" onclick="openModal(this.closest('.docops-media-card').querySelector('.svg-container'))">VIEW</button>
-                     <button class="svg-control-btn" onclick="docopsData.toggle(this)">DATA</button>
-                     <button class="svg-control-btn" onclick="docopsSource.toggle(this)">SOURCE</button>
-                     <button class="svg-control-btn" onclick="docopsCopy.url(this)">LINK</button>
-                     <button class="svg-control-btn" onclick="docopsCopy.svg(this)">SVG</button>
-                     <button class="svg-control-btn" onclick="docopsCopy.png(this)">PNG</button>
+                     <button class="svg-control-btn" onclick="if (typeof openModal === 'function') openModal(document.getElementById('$cardId').querySelector('.svg-container'))">VIEW</button>
+                     <button class="svg-control-btn" onclick="if (window.docopsData) window.docopsData.toggle(this)">DATA</button>
+                     <button class="svg-control-btn" onclick="if (window.docopsSource) window.docopsSource.toggle(this)">SOURCE</button>
+                     <button class="svg-control-btn" onclick="if (window.docopsCopy) window.docopsCopy.url(this)">LINK</button>
+                     <button class="svg-control-btn" onclick="if (window.docopsCopy) window.docopsCopy.svg(this)">SVG</button>
+                     <button class="svg-control-btn" onclick="if (window.docopsCopy) window.docopsCopy.png(this)">PNG</button>
+                     <button class="svg-control-btn" onclick="if (window.docopsCopy) window.docopsCopy.print(this)">PRINT</button>
                    </div>
                 """.trimIndent()}
 
