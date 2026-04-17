@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Guyanese food blog favicon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#faf3e2"/>
+      <stop offset="100%" stop-color="#f0e4c8"/>
+    </linearGradient>
+    <linearGradient id="goldArrow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#b8730a"/>
+      <stop offset="100%" stop-color="#e9a11a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded cassava-cream tile -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)" stroke="rgba(27,67,50,0.20)" />
+
+  <!-- Guyana-inspired forward arrow motif -->
+  <polygon points="10,8 42,32 10,56" fill="#1b4332"/>
+  <polygon points="18,14 45,32 18,50" fill="url(#goldArrow)"/>
+
+  <!-- Pepperpot red accent -->
+  <polygon points="24,19 37,32 24,45" fill="#8c1a1e"/>
+
+  <!-- Subtle food cue: spoon stroke -->
+  <circle cx="46.5" cy="18.5" r="4.2" fill="none" stroke="#2d6a4f" stroke-width="2.6"/>
+  <path d="M44.3 21.9 L36 30.2" stroke="#2d6a4f" stroke-width="2.6" stroke-linecap="round"/>
+
+  <!-- Tiny highlight -->
+  <circle cx="47.7" cy="17.2" r="1.1" fill="#ffffff" opacity="0.85"/>
+</svg>
