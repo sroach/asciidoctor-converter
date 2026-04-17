@@ -24,6 +24,7 @@ import gy.roach.asciidoctor.md.extension.MermaidNodeRendererFactory
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.File
+import java.util.Base64
 
 @Service
 class MarkdownConverter(private val converterSettings: ConverterSettings) {
@@ -206,6 +207,12 @@ object MermaidFlexmark {
         val admonitionJs = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/admonition.js")?.readAllBytes()?.decodeToString()
         val svgData = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/svgdata.js")?.readAllBytes()?.decodeToString()
 
+        val faviconSvg = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/favicon.svg")?.readAllBytes()
+        val faviconBase64 = if (faviconSvg != null) Base64.getEncoder().encodeToString(faviconSvg) else null
+        val faviconLink = if (cssTheme == "food_blog_styles.css" && faviconBase64 != null) {
+            """<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,$faviconBase64">"""
+        } else ""
+
         //language=html
         return """
             <!DOCTYPE html>
@@ -214,6 +221,7 @@ object MermaidFlexmark {
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>$title</title>
+                $faviconLink
                 $styleRef
                 <style>
                 $baseMdStyleSheet
