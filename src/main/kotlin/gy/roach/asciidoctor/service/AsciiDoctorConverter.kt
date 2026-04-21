@@ -41,7 +41,8 @@ data class ConversionStats(
 class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                            private val readingTimeDocinfoProcessor: ReadingTimeDocinfoProcessor,
                            private val copyToClipboardDocinfoProcessor: CopyToClipboardDocinfoProcessor,
-                           private val markdownConverter: MarkdownConverter ) {
+                           private val markdownConverter: MarkdownConverter,
+                            private val asciiDoctorToWiki: AsciiDoctorToWiki) {
     val asciidoctor: Asciidoctor = Asciidoctor.Factory.create()
     private val logger = LoggerFactory.getLogger(AsciiDoctorConverter::class.java)
 
@@ -457,8 +458,8 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                 val relativePath = sourceDir.toPath().relativize(file.toPath())
 
                 val targetFile = targetDir.toPath().resolve(relativePath).toFile()
-                val targetHtmlFile = targetDir.toPath().resolve(
-                    relativePath.resolveSibling(relativePath.fileName.toString().replace(".adoc", ".html"))
+                val targetWikiFile = targetDir.toPath().resolve(
+                    relativePath.resolveSibling(relativePath.fileName.toString().replace(".adoc", ".wiki"))
                 ).toFile()
 
                 try {
@@ -481,6 +482,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     synchronized(stats) {
                         stats.filesConverted++
                     }
+                    asciiDoctorToWiki.convertToWiki(file, targetFile.parentFile.absolutePath, targetWikiFile)
                     logger.info("Successfully converted file: $relativePath")
                 } catch (e: Exception) {
                     synchronized(stats) {
