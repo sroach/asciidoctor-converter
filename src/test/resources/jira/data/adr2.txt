@@ -1,0 +1,19 @@
+title= Adopt Microservices Architecture
+status= Accepted
+date= 2024-06-01
+context=
+- Our monolithic application is becoming difficult to maintain and scale
+- Development teams need to work independently on different parts of the system
+- We need to improve deployment frequency and reduce time-to-market
+- Different components have different scaling requirements
+decision=
+- We will gradually migrate from monolith to microservices architecture
+- We will use [[https://martinfowler.com/bliki/DomainDrivenDesign.html domain-driven design]] to identify service boundaries
+- We will implement an [[https://aws.amazon.com/api-gateway API gateway]] for client communication
+- We will use containerization ([[https://www.docker.com/ Docker]]) and orchestration ([[https://kubernetes.io/ Kubernetes]])
+consequences=
+- Improved scalability and resilience
+- Faster development cycles and independent deployments
+- Increased operational complexity
+- Need for robust service discovery and monitoring
+participants= Michael Chen (Chief Architect), Sarah Johnson (DevOps Lead), David Wilson (Development Manager)

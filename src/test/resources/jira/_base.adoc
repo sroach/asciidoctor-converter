@@ -1,0 +1,29 @@
+:doctype: book
+:toc: middle
+:toclevels: 3
+:icons: font
+:icon-set: fa
+:imagesdir: images
+:source-highlighter: highlightjs
+:data-uri:
+:sectids:
+:sectnums:
+:stylesdir: styles
+:stylesheet: global_styles.min.css
+:favicon: ../images/favicon.svg?v=2025.05
+
+
+
+// Page navigation (conditional)
+ifdef::enable-navigation[]
+:page-navigation: true
+endif::[]
+
+
+ifdef::env-idea[]
+[mermaid]
+----
+gitGraph:
+    commit "Steve"
+----
+endif::[]

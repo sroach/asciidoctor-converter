@@ -1,0 +1,20 @@
+title= Use Server-Side Rendering for Web Application
+status= Deprecated
+date= 2022-09-10
+context=
+- We need to optimize initial page load performance
+- SEO is important for our content-heavy application
+- We need to support users with slower internet connections
+- We want to reduce client-side JavaScript processing
+decision=
+- We will use Next.js for server-side rendering
+- We will implement incremental static regeneration for content pages
+- We will use client-side hydration for interactive components
+- We will implement code splitting for performance optimization
+consequences=
+- Improved initial page load times
+- Better SEO performance
+- Reduced client-side processing requirements
+- Increased server resource usage
+- More complex deployment architecture
+participants= Sophia Williams (Frontend Architect), Daniel Kim (Performance Engineer), Ethan Taylor (UX Designer)

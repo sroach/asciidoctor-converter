@@ -1,0 +1,273 @@
+include::_base.adoc[]
+:enable-navigation:
+:page-navigation: true
+:next-page-title: Architecture
+:next-page-url: arch.html
+= image:icons/ADRIcon.svg[width=36,height=36] DocOps ADR
+
+
+[[top]]
+
+== Showcase
+
+link:adrshowcase.html[Showcase,target=_blank]
+
+== Introduction
+
+_Document architectural choices with context, decisions, and consequences_
+
+*Key features:*
+
+* Structured format (Context, Decision, Consequences, Participants)
+* Status tracking (Proposed, Accepted, Superseded, Deprecated, Rejected)
+* Participant visualization with roles
+* Wiki-style links for references
+* Dark mode for presentations
+
+== Default Example
+
+Basic architectural decision for search functionality:
+
+[source,asciidoc]
+....
+[docops,adr,role=center]
+----
+include::data/adr1.txt[]
+----
+....
+
+[docops,adr,role=center,controls="true"]
+----
+theme=brand
+include::data/adr1.txt[]
+----
+
+[.back-to-top]
+<<top, 🔝>>
+
+== Focused Examples
+
+
+=== Microservices Migration (Dark Mode)
+
+[source,asciidoc]
+....
+[docops,adr,useDark=true,role=center]
+----
+theme=aurora
+---
+include::data/adr2.txt[]
+----
+....
+
+[docops,adr,useDark=true,role=center,controls="true"]
+----
+template:brutalist
+theme=aurora
+---
+include::data/adr2.txt[]
+----
+
+[.back-to-top]
+<<top, 🔝>>
+
+=== GraphQL Adoption with References
+
+[source,asciidoc]
+....
+[docops,adr,role=center]
+----
+title= Adopt GraphQL for API Layer
+status= Accepted
+date= 2024-07-15
+context=
+- Our REST APIs have become complex with many endpoints
+- Mobile clients need to fetch data from multiple endpoints
+- Different clients need different data shapes
+- We need to reduce over-fetching and under-fetching of data
+decision=
+- We will adopt GraphQL for our API layer
+- We will maintain existing REST endpoints for backward compatibility
+- We will implement a gradual migration strategy
+- We will use Apollo Server for the GraphQL implementation
+consequences=
+- More efficient data fetching for clients
+- Improved developer experience with self-documenting API
+- Potential learning curve for the team
+- Need for new tooling and monitoring
+participants=
+Alex Rivera | API Architect | alex.rivera@example.com | #4F46E5
+Jasmine Wong | Frontend Lead | jasmine.wong@example.com | #059669
+David Kim | Backend Developer | david.kim@example.com | #D97706
+references=
+[[https://graphql.org/ GraphQL Official Documentation]]
+[[https://www.apollographql.com/docs/ Apollo GraphQL Documentation]]
+[[https://engineering.example.com/graphql-best-practices GraphQL Best Practices]]
+----
+....
+
+[docops,adr,role=center]
+----
+theme: reo
+---
+include::data/adr9.txt[]
+----
+
+[.back-to-top]
+<<top, 🔝>>
+
+== Common Use Cases
+
+* *Architecture decisions* - Database selection, framework choices, deployment strategies
+* *Technology evaluations* - Compare alternatives with documented rationale
+* *Migration planning* - Record phased approach and rollback strategies
+* *Security policies* - Authentication methods, encryption standards
+* *Team onboarding* - Historical context for current architecture
+
+[.back-to-top]
+<<top, 🔝>>
+
+== Format Options
+
+=== Basic Structure
+[source,asciidoc]
+....
+[docops,adr]
+----
+title: Decision Title
+status: Accepted
+date: 2024-01-15
+context:
+- Context point 1
+- Context point 2
+decision:
+- Decision point 1
+- Decision point 2
+consequences:
+- Consequence 1
+- Consequence 2
+participants: Name (Role), Name (Role)
+----
+....
+
+=== With Structured Participants
+[source,asciidoc]
+....
+participants:
+Name | Title | email@example.com | #color | emoji
+----
+....
+
+=== With References
+[source,asciidoc]
+....
+references:
+[[https://example.com/doc Documentation Title]]
+[[https://example.com/standard Coding Standards]]
+----
+....
+
+[cols="1,2"]
+|===
+|Option |Purpose
+
+|title
+|Decision heading
+
+|status
+|Proposed, Accepted, Superseded, Deprecated, Rejected
+
+|date
+|Decision date (YYYY-MM-DD)
+
+|context
+|Factors influencing the decision (list)
+
+|decision
+|Actual decisions made (list)
+
+|consequences
+|Results and implications (list)
+
+|participants
+|People involved (comma-separated or structured)
+
+|references
+|Wiki-style links to related docs
+
+|useDark=true
+|Dark theme
+|===
+
+[.back-to-top]
+<<top, 🔝>>
+
+== Status Types
+
+[cols="1,1,3"]
+|===
+|Status |Color |Meaning
+
+|Proposed
+|Blue (#6366F1)
+|Decision being considered
+
+|Accepted
+|Green (#10B981)
+|Decision approved and active
+
+|Superseded
+|Amber (#F59E0B)
+|Replaced by newer decision
+
+|Deprecated
+|Red (#EF4444)
+|No longer relevant
+
+|Rejected
+|Dark Red (#DC2626)
+|Decision not approved
+|===
+
+[.back-to-top]
+<<top, 🔝>>
+
+== Participant Formats
+
+=== Simple Format
+[source]
+----
+participants: Jane Smith (Architect), John Doe (Developer)
+----
+
+=== Structured Format
+[source]
+----
+participants:
+Name | Title | email | #color | emoji
+Jane Smith | Architect | jane@example.com | #6366F1 | 👩‍💻
+----
+
+* Structured format enables email links (Teams integration)
+* Custom colors and emojis for visual distinction
+* Multiline support for better readability
+
+[.back-to-top]
+<<top, 🔝>>
+
+== Best Practices
+
+* *Keep context concise* - 3-5 bullet points explaining "why now"
+* *Make decisions actionable* - "We will use X" not "We could use X"
+* *List trade-offs in consequences* - Both positive and negative outcomes
+* *Link to supporting docs* - Use references for detailed analysis
+* *Update status, don't edit* - Create new ADR to supersede old ones
+* *Include key participants* - Decision-makers and implementers
+
+[TIP]
+====
+*For architecture decisions:* Use status=Proposed during review, then update to Accepted after team consensus. If circumstances change, create a new ADR with status=Superseded pointing to the original. This maintains decision history and traceability.
+====
+
+[.back-to-top]
+<<top, 🔝>>

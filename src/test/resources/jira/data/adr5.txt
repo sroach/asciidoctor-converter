@@ -1,0 +1,19 @@
+title= Use JWT for Authentication
+status= Superseded
+date= 2023-11-15
+context=
+- We need a stateless authentication mechanism
+- We want to reduce database lookups for auth verification
+- We need to support authentication across [[https=//microservices.io/ multiple services]]
+- We need to include authorization claims in the token
+decision=
+- We will use [[https=//jwt.io/ JWT (JSON Web Tokens)]] for authentication
+- We will implement token refresh mechanism
+- We will store tokens in HTTP-only cookies
+- We will include basic user permissions in the token
+consequences=
+- Stateless authentication reducing server load
+- Simplified authentication for microservices
+- Potential security risks if tokens are compromised
+- Limited token size due to being included in every request
+participants= Alex Johnson (Security Lead), Maria Garcia (Backend Developer), Kevin Brown (API Designer)

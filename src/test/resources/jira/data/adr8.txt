@@ -1,0 +1,24 @@
+title= Adopt Cloud-Native CI/CD Pipeline
+status= Accepted
+date= 2024-07-01
+context=
+- Our current CI/CD process is manual and error-prone
+- We need to improve deployment frequency and reliability
+- We want to standardize our deployment process across teams
+- We need better visibility into the deployment pipeline
+decision=
+- We will implement a cloud-native CI/CD pipeline
+- We will use GitOps principles for infrastructure and application deployments
+- We will implement automated testing at all stages
+- We will use containerization for consistent environments
+consequences=
+- Faster and more reliable deployments
+- Improved developer productivity
+- Better traceability of changes
+- Initial learning curve for teams
+participants=
+Jason Lee | DevOps Engineer | jason.lee@example.com | #3B82F6 | 🚀
+Emma Wilson | Cloud Architect | emma.wilson@example.com | #10B981 | ☁️
+Michael Brown | Development Lead | michael.brown@example.com | #F59E0B | 👨‍💻
+Sophia Chen | QA Manager | sophia.chen@example.com | #8B5CF6 | 🧪
+Sinclair Washington | Ops Lead | sinclair.washington@example.com | #511D43 | 👩‍

@@ -1,0 +1,22 @@
+title= Migrate Database to NoSQL Solution
+status= Rejected
+date= 2024-05-20
+context=
+- We're experiencing performance issues with our relational database
+- Some of our data doesn't fit well into a relational model
+- We anticipate significant growth in data volume
+- We want to improve horizontal scalability
+decision=
+- We will not migrate from [[https=//www.postgresql.org/ PostgreSQL]] to [[https=//www.mongodb.com/ MongoDB]]
+- We will instead optimize our existing PostgreSQL setup
+- We will implement caching strategies for performance-critical queries
+- We will consider a hybrid approach for specific use cases
+consequences=
+- Avoid disruption of existing systems and processes
+- Leverage team's existing SQL expertise
+- Miss potential benefits of NoSQL for certain data patterns
+- Need to invest in [[https=//www.postgresql.org/docs/current/performance-tips.html PostgreSQL optimization]] and tuning
+participants=
+Jennifer Lee (Database Administrator),
+Carlos Rodriguez (System Architect),
+Thomas Wright (Performance Engineer)

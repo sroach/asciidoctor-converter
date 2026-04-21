@@ -1,0 +1,24 @@
+title= Implement Data Lake Architecture
+status= Accepted
+date= 2024-06-20
+context=
+- We need a centralized repository for all our data assets
+- Current data silos are preventing cross-functional analytics
+- We need to support both structured and unstructured data
+- Future machine learning initiatives require access to historical data
+decision=
+- We will implement a data lake architecture using cloud storage
+- We will use a layered approach (raw, cleansed, and curated zones)
+- We will implement data cataloging and metadata management
+- We will establish data governance policies for the lake
+consequences=
+- Improved data accessibility across the organization
+- Reduced data duplication and inconsistencies
+- Increased storage costs initially
+- Need for new skills in data engineering and governance
+participants=
+Rebecca Chen ||(rebecca.chen@example.com)|
+Mark Johnson ||(mark.johnson@example.com)|
+Priya Patel || (priya.patel@example.com)|
+Thomas Garcia ||(thomas.garcia@example.com)|
+Sarah Kim ||(sarah.kim@example.com)|
