@@ -13,6 +13,7 @@ import com.vladsch.flexmark.ext.toc.SimTocExtension
 import com.vladsch.flexmark.ext.toc.TocExtension
 import com.vladsch.flexmark.ext.wikilink.WikiLinkExtension
 import com.vladsch.flexmark.html.HtmlRenderer
+import com.vladsch.flexmark.jira.converter.JiraConverterExtension
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
 import com.vladsch.flexmark.util.misc.Extension
@@ -24,10 +25,10 @@ import gy.roach.asciidoctor.md.extension.MermaidNodeRendererFactory
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.File
-import java.util.Base64
+import java.util.*
 
 @Service
-class MarkdownConverter(private val converterSettings: ConverterSettings) {
+class MarkdownConverter(private val converterSettings: ConverterSettings, private val confluenceRenderer: JiraConverter) {
     
     private val logger = LoggerFactory.getLogger(MarkdownConverter::class.java)
 
@@ -84,6 +85,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
     private val options = MutableDataSet().apply {
         set(Parser.EXTENSIONS, listOf(DocOpsMacroExtension.create(),
             GitHubAdmonitionExtension.create(),
+ //           JiraConverterExtension.create(),
             TocExtension.create(),
             AsideExtension.create(),
             DefinitionExtension.create(),
@@ -125,7 +127,18 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
             val outputFile = File(outputDir, "${sourceFile.nameWithoutExtension}.html")
             outputFile.parentFile?.mkdirs()
             outputFile.writeText(fullHtml)
-            
+            //println(confluenceRenderer.markdownToJira(markdownContent).take(40).map { "\\u%04X".format(it.code) }.joinToString(" "))
+            val xhtml = confluenceRenderer.markdownToJira(markdownContent)
+            val wikiOutput = File(outputDir, "${sourceFile.nameWithoutExtension}.wiki")
+            wikiOutput.writeText(xhtml)
+            /*val xdocument = Jsoup.parse(xhtml)
+            xdocument.outputSettings().syntax(Document.OutputSettings.Syntax.xml)
+            println(xdocument.html())
+            val errors = XhtmlValidator.validateXhtml(xdocument.html())
+            errors.let {
+                logger.info("Errors $errors")
+
+            }*/
             logger.info("Converted Markdown file: ${sourceFile.name} -> ${outputFile.name}")
             true
         } catch (e: Exception) {
@@ -136,6 +149,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings) {
     
 }
 
+
 object MermaidFlexmark {
     private fun convertMarkdownWithMermaid(markdown: String, converterSettings: ConverterSettings, useDark: Boolean): String {
         // Check if document contains docops macros with potential WikiLink conflicts
@@ -144,6 +158,7 @@ object MermaidFlexmark {
         val extensions = mutableListOf<Extension>(
             DocOpsMacroExtension.create(),
             GitHubAdmonitionExtension.create(),
+           // JiraConverterExtension.create(),
             TocExtension.create(),
             AsideExtension.create(),
             DefinitionExtension.create(),
@@ -167,6 +182,7 @@ object MermaidFlexmark {
             set(DocOpsMacroExtension.WEBSERVER, converterSettings.panelServer)
             set(DocOpsMacroExtension.DEFAULT_SCALE, "1.0")
             set(DocOpsMacroExtension.DEFAULT_USE_DARK, useDark)
+
         }
 
         val parser = Parser.builder(options).build()
