@@ -1,5 +1,9 @@
 package gy.roach.asciidoctor.service
 
+import org.openpdf.text.Document
+import org.openpdf.text.DocumentException
+import org.openpdf.text.html.simpleparser.HTMLWorker
+import org.openpdf.text.pdf.PdfWriter
 import com.vladsch.flexmark.ext.admonition.AdmonitionExtension
 import com.vladsch.flexmark.ext.aside.AsideExtension
 import com.vladsch.flexmark.ext.definition.DefinitionExtension
@@ -21,10 +25,20 @@ import gy.roach.asciidoctor.config.ConverterSettings
 import gy.roach.asciidoctor.md.extension.DocOpsMacroExtension
 import gy.roach.asciidoctor.md.extension.GitHubAdmonitionExtension
 import gy.roach.asciidoctor.md.extension.MermaidNodeRendererFactory
+import net.sourceforge.plantuml.pdf.PdfConverter
+import org.openpdf.pdf.ITextRenderer
+import org.openpdf.resource.HtmlParserConfig
+import org.openpdf.resource.HtmlResource
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.OutputStream
+import java.io.StringReader
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.*
 
 @Service
@@ -131,6 +145,8 @@ class MarkdownConverter(private val converterSettings: ConverterSettings, privat
             val xhtml = confluenceRenderer.markdownToJira(markdownContent)
             val wikiOutput = File(outputDir, "${sourceFile.nameWithoutExtension}.wiki")
             wikiOutput.writeText(xhtml)
+            val pdfFile =File(outputDir, "${sourceFile.nameWithoutExtension}.pdf")
+           //htmlToPdf(fullHtml, pdfFile.absolutePath)
             /*val xdocument = Jsoup.parse(xhtml)
             xdocument.outputSettings().syntax(Document.OutputSettings.Syntax.xml)
             println(xdocument.html())
@@ -146,7 +162,15 @@ class MarkdownConverter(private val converterSettings: ConverterSettings, privat
             false
         }
     }
-    
+    @Throws(IOException::class, DocumentException::class)
+    fun htmlToPdf(html: String, outputPdfPath: String) {
+        val iTextRenderer = ITextRenderer()
+        iTextRenderer.setDocumentFromString(html)
+        iTextRenderer.layout()
+        iTextRenderer.createPDF(FileOutputStream(outputPdfPath))
+
+    }
+
 }
 
 
