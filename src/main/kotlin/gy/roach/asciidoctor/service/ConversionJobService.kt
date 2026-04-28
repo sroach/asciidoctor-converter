@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service
 import java.io.File
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
 
 data class ConversionJob(
     val id: String,
@@ -22,6 +23,7 @@ enum class ConversionStatus {
 class ConversionJobService(private val asciiDoctorConverter: AsciiDoctorConverter) {
     private val logger = LoggerFactory.getLogger(ConversionJobService::class.java)
     private val jobs = ConcurrentHashMap<String, ConversionJob>()
+    private val jobOrder = ConcurrentLinkedDeque<String>()
 
     /**
      * Starts a PDF conversion job asynchronously
@@ -32,8 +34,12 @@ class ConversionJobService(private val asciiDoctorConverter: AsciiDoctorConverte
      */
     fun startPdfConversion(files: List<File>, toDir: String): String {
         val jobId = UUID.randomUUID().toString()
+        while (jobs.size >= 10) {
+            val oldest = jobOrder.pollFirst()
+            oldest?.let { jobs.remove(it) }
+        }
         jobs[jobId] = ConversionJob(jobId, ConversionStatus.QUEUED, 0)
-
+        jobOrder.addLast(jobId)
         // Update job status
         jobs[jobId]?.status = ConversionStatus.IN_PROGRESS
 
@@ -105,7 +111,12 @@ class ConversionJobService(private val asciiDoctorConverter: AsciiDoctorConverte
 
     fun startEpubConversion(files: List<File>, toDir: String): String {
         val jobId = UUID.randomUUID().toString()
+        while (jobs.size >= 10) {
+            val oldest = jobOrder.pollFirst()
+            oldest?.let { jobs.remove(it) }
+        }
         jobs[jobId] = ConversionJob(jobId, ConversionStatus.QUEUED, 0)
+        jobOrder.addLast(jobId)
 
         jobs[jobId]?.status = ConversionStatus.IN_PROGRESS
 
@@ -141,7 +152,12 @@ class ConversionJobService(private val asciiDoctorConverter: AsciiDoctorConverte
      */
     fun startSingleFileEpubConversion(sourceFile: File, toDir: String): String {
         val jobId = UUID.randomUUID().toString()
+        while (jobs.size >= 10) {
+            val oldest = jobOrder.pollFirst()
+            oldest?.let { jobs.remove(it) }
+        }
         jobs[jobId] = ConversionJob(jobId, ConversionStatus.QUEUED, 0)
+        jobOrder.addLast(jobId)
 
         jobs[jobId]?.status = ConversionStatus.IN_PROGRESS
 
