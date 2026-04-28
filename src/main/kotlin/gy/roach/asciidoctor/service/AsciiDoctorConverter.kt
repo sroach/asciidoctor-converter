@@ -24,6 +24,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Pattern
+import kotlin.io.nameWithoutExtension
 
 data class ConversionStats(
     var filesNeedingConversion: Int = 0,
@@ -45,6 +46,8 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                             private val asciiDoctorToWiki: AsciiDoctorToWiki) {
     val asciidoctor: Asciidoctor = Asciidoctor.Factory.create()
     private val logger = LoggerFactory.getLogger(AsciiDoctorConverter::class.java)
+
+    private val MAX_INCLUDE_DEPTH = 50
 
     // Pattern to match include directives in Asciidoctor files
     private val includePattern = Pattern.compile("include::([^\\[\\]]+)(?:\\[.*?\\])?")
@@ -294,6 +297,25 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         return future
     }
 
+    fun convertSingleFileToPdf(sourceAdoc: File) {
+
+        val pdfFileName = sourceAdoc.nameWithoutExtension + ".pdf"
+        val targetFile = File(sourceAdoc.parentFile, pdfFileName)
+
+
+        val attrs = buildAttributes()
+        val options = buildPdfOptions(attrs)
+
+        // Set the output directory to the parent directory of the target file
+        options.setToDir(targetFile.parentFile.absolutePath)
+        val localAsciidoctor = Asciidoctor.Factory.create()
+        localAsciidoctor.requireLibrary("asciidoctor-diagram")
+
+        localAsciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
+
+        localAsciidoctor.convertFile(sourceAdoc, options)
+
+    }
     /**
      * Gets all .adoc files from a directory recursively.
      *
@@ -1013,9 +1035,17 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
      * Parses an Asciidoctor file and extracts all include directives.
      * Returns a set of File objects representing the included files.
      */
-    private fun extractIncludes(file: File): Set<File> {
+    private fun extractIncludes(file: File, visited: MutableSet<File>? = null, depth: Int = 0, maxDepth: Int = MAX_INCLUDE_DEPTH): Set<File> {
+        val myVisited = visited ?: mutableSetOf<File>()
+        if (myVisited.contains(file) || depth > maxDepth) {
+            if (depth > maxDepth) {
+                logger.warn("Maximum include depth exceeded ($maxDepth) for file: ${file.name}")
+            }
+            return emptySet()
+        }
+        myVisited.add(file)
         if (!file.exists() || !file.isFile) return emptySet()
-
+        
         val content = file.readText()
         val includes = mutableSetOf<File>()
         val matcher = includePattern.matcher(content)
@@ -1033,7 +1063,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             if (includedFile.exists() && includedFile.isFile) {
                 includes.add(includedFile)
                 if (includedFile.extension == "adoc") {
-                    includes.addAll(extractIncludes(includedFile))
+                    includes.addAll(extractIncludes(includedFile, myVisited, depth + 1, maxDepth))
                 }
             } else {
                 logger.warn(

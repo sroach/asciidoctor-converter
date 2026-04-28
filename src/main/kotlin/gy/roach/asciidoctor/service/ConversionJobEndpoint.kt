@@ -3,10 +3,6 @@ package gy.roach.asciidoctor.actuator
 import gy.roach.asciidoctor.service.ConversionContext
 import gy.roach.asciidoctor.service.ConversionJob
 import gy.roach.asciidoctor.service.ConversionJobService
-import gy.roach.asciidoctor.web.ActiveConversion
-import gy.roach.asciidoctor.web.ExecutionRecord
-import gy.roach.asciidoctor.web.ExecutionSummary
-import gy.roach.asciidoctor.web.MainController
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation
 import org.springframework.boot.actuate.endpoint.annotation.Selector
