@@ -82,7 +82,7 @@
             <artifactId>asciidoctorj-diagram</artifactId>
             <version>3.2.0</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>net.sourceforge.plantuml</groupId>
             <artifactId>plantuml</artifactId>
             <version>1.2026.2</version>
@@ -96,7 +96,7 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
+        </dependency>-->
         <!-- https://mvnrepository.com/artifact/org.asciidoctor/asciidoctorj-diagram-ditaamini -->
         <dependency>
             <groupId>org.asciidoctor</groupId>
