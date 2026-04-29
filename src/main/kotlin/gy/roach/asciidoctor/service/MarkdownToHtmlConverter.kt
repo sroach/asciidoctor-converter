@@ -1,9 +1,5 @@
 package gy.roach.asciidoctor.service
 
-import org.openpdf.text.Document
-import org.openpdf.text.DocumentException
-import org.openpdf.text.html.simpleparser.HTMLWorker
-import org.openpdf.text.pdf.PdfWriter
 import com.vladsch.flexmark.ext.admonition.AdmonitionExtension
 import com.vladsch.flexmark.ext.aside.AsideExtension
 import com.vladsch.flexmark.ext.definition.DefinitionExtension
@@ -17,7 +13,6 @@ import com.vladsch.flexmark.ext.toc.SimTocExtension
 import com.vladsch.flexmark.ext.toc.TocExtension
 import com.vladsch.flexmark.ext.wikilink.WikiLinkExtension
 import com.vladsch.flexmark.html.HtmlRenderer
-import com.vladsch.flexmark.jira.converter.JiraConverterExtension
 import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.util.data.MutableDataSet
 import com.vladsch.flexmark.util.misc.Extension
@@ -25,20 +20,13 @@ import gy.roach.asciidoctor.config.ConverterSettings
 import gy.roach.asciidoctor.md.extension.DocOpsMacroExtension
 import gy.roach.asciidoctor.md.extension.GitHubAdmonitionExtension
 import gy.roach.asciidoctor.md.extension.MermaidNodeRendererFactory
-import net.sourceforge.plantuml.pdf.PdfConverter
 import org.openpdf.pdf.ITextRenderer
-import org.openpdf.resource.HtmlParserConfig
-import org.openpdf.resource.HtmlResource
-
+import org.openpdf.text.DocumentException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.OutputStream
-import java.io.StringReader
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.util.*
 
 @Service
