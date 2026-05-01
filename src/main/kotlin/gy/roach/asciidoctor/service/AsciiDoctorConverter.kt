@@ -48,7 +48,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
     val asciidoctor: Asciidoctor = Asciidoctor.Factory.create()
     private val logger = LoggerFactory.getLogger(AsciiDoctorConverter::class.java)
 
-    private val MAX_INCLUDE_DEPTH = 50
+    private val MAX_INCLUDE_DEPTH = 10
 
     // Pattern to match include directives in Asciidoctor files
     private val includePattern = Pattern.compile("include::([^\\[\\]]+)(?:\\[.*?\\])?")
