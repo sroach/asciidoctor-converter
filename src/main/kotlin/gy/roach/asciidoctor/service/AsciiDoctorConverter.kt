@@ -304,18 +304,26 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         val pdfFileName = sourceAdoc.nameWithoutExtension + ".pdf"
         val targetFile = File(sourceAdoc.parentFile, pdfFileName)
 
+        val tempDir = Files.createTempDirectory("docops-pdf-").toFile()
 
-        val attrs = buildAttributes()
-        val options = buildPdfOptions(attrs)
+        try {
+            val attrs = buildAttributes()
+            attrs.setAttribute("docops-temp-dir", tempDir.absolutePath)
+            val options = buildPdfOptions(attrs)
 
-        // Set the output directory to the parent directory of the target file
-        options.setToDir(targetFile.parentFile.absolutePath)
-        val localAsciidoctor = Asciidoctor.Factory.create()
-        localAsciidoctor.requireLibrary("asciidoctor-diagram")
+            // Set the output directory to the parent directory of the target file
+            options.setToDir(targetFile.parentFile.absolutePath)
+            val localAsciidoctor = Asciidoctor.Factory.create()
+            localAsciidoctor.requireLibrary("asciidoctor-diagram")
 
-        localAsciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
+            localAsciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
 
-        localAsciidoctor.convertFile(sourceAdoc, options)
+            localAsciidoctor.convertFile(sourceAdoc, options)
+        } finally {
+            // recursive delete
+            tempDir.walkBottomUp().forEach { it.delete() }
+        }
+
 
     }
     /**

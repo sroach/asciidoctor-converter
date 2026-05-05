@@ -1,5 +1,6 @@
 package gy.roach.asciidoctor.web
 
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder
 import gy.roach.asciidoctor.service.AsciiDoctorConverter
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
@@ -13,6 +14,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.nio.file.Files
@@ -79,13 +81,44 @@ class PdfController(
             .body(ByteArrayResource(bytes))
     }
 
+    @GetMapping("/render-from-html",produces = [MediaType.APPLICATION_PDF_VALUE])
+    fun toPdf( @RequestParam("outputDir") outputDirectory: String, @RequestParam("htmlRelPath") htmlRelPath: String): ResponseEntity<Resource> {
+        val source = File(outputDirectory, htmlRelPath)
+        val pdfPath = when {
+            source.name.endsWith("html") -> {
+                val html = source.readText()
+                val out = source.resolveSibling("${source.name.toString().removeSuffix(".md")}.pdf")
+                htmlToPdf(html, out.toPath())
+                out
+            }
+            source.name.endsWith("adoc") -> {
+                asciiDoctorConverter.convertSingleFileToPdf(source)
+                source.resolveSibling("${source.name.toString().removeSuffix(".adoc")}.pdf")
+            }
+            else -> error("No matching .adoc or .md source next to html")
+        }
+        val dispositionType = "inline"
+        val bytes = pdfPath.readBytes()
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_PDF)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "$dispositionType; filename=\"${pdfPath.name}\"")
+            .body(ByteArrayResource(bytes))
+    }
     @Throws(IOException::class, DocumentException::class)
     fun htmlToPdf(html: String, outputPdfPath: Path) {
         val iTextRenderer = ITextRenderer()
         iTextRenderer.setDocumentFromString(html)
+        iTextRenderer.sharedContext.media = "pdf"
+        iTextRenderer.sharedContext.isInteractive = false
+        iTextRenderer.sharedContext.textRenderer.setSmoothingThreshold(0.0f)
         iTextRenderer.layout()
         iTextRenderer.createPDF(FileOutputStream(outputPdfPath.toFile()))
 
+        /*val pdfBuilder = PdfRendererBuilder()
+        pdfBuilder.useFastMode()
+        pdfBuilder.withHtmlContent(html, null)
+        pdfBuilder.toStream(FileOutputStream(outputPdfPath.toFile()))
+        pdfBuilder.run()*/
     }
 }
 

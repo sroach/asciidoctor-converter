@@ -6,6 +6,7 @@ require 'zlib'
 require 'base64'
 require 'cgi'
 require 'securerandom'
+require 'tempfile'
 
 
 
@@ -155,10 +156,16 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
       link = "#{webserver}/api/docops/svg?kind=#{kind}&payload=#{payload}&scale=#{scale}&title=#{CGI.escape(title)}&type=SVG&useDark=#{use_dark}&useGlass=#{use_glass}&backend=#{backend}&docname=#{filename}&filename=docops.svg"
       #img = "image::#{link}[#{opts},link=#{link},window=_blank,opts=nofollow]"
 
+      # IMPORTANT: for PDF, fetch remote SVG and write it to a local temp file
+      # so asciidoctor-pdf embeds a real file path (avoids URL/query parsing issues)
+      temp_svg_path = fetch_svg_to_temp_file(link, parent)
+      unless temp_svg_path
+        return create_block(parent, :paragraph, "DocOps Error: Could not fetch SVG for PDF embedding 😵", {})
+      end
       #puts img if local_debug
 
       attrs = {
-        'target' => link,
+        'target' => temp_svg_path,
         'alt'    => title,
         'format' => 'svg',
         'align'  => role
@@ -652,6 +659,54 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     rescue => e
       #puts "Failed to get content from server: #{e.message}" if local_debug
       ''
+    end
+  end
+
+  # Basic SVG sanitizer for PDF embedding:
+  # - removes scripts
+  # - removes inline event handlers (onclick, onload, etc.)
+  # - removes empty href/xlink:href
+  # - fixes empty url() that can break SVG loaders
+  def sanitize_svg_for_pdf(svg)
+    return '' if svg.nil?
+
+    out = svg.dup
+
+    # Remove script blocks
+    out.gsub!(/<script\b[^>]*>.*?<\/script>/mi, '')
+
+    # Remove inline JS event handlers: onclick="", onload='', ...
+    out.gsub!(/\s+on[a-zA-Z]+\s*=\s*(".*?"|'.*?'|[^\s>]+)/m, '')
+
+    # Remove empty href / xlink:href attributes
+    out.gsub!(/\s+(?:xlink:)?href\s*=\s*""/i, '')
+    out.gsub!(/\s+(?:xlink:)?href\s*=\s*''/i, '')
+
+    # Replace invalid empty url() references with none
+    out.gsub!(/url\(\s*\)/i, 'none')
+
+    out
+  end
+
+  # For PDF backend: write fetched SVG to a real temp file and return the file path
+  # Use a stable filename (not Tempfile) so it remains readable for asciidoctor-pdf
+  def fetch_svg_to_temp_file(url, parent)
+    svg_content = get_content_from_server(url, parent)
+    return nil if svg_content.nil? || svg_content.strip.empty?
+
+    begin
+      cleaned_svg = sanitize_svg_for_pdf(svg_content)
+
+      preferred_dir = parent.document.attr('docops-temp-dir')
+      base_dir = (preferred_dir && !preferred_dir.empty?) ? preferred_dir : Dir.tmpdir
+      Dir.mkdir(base_dir) unless Dir.exist?(base_dir)
+
+      tmp_path = File.join(base_dir, "docops-#{SecureRandom.hex(8)}.svg")
+      File.binwrite(tmp_path, cleaned_svg)
+      File.chmod(0o644, tmp_path) rescue nil
+      File.readable?(tmp_path) ? tmp_path : nil
+    rescue => e
+      nil
     end
   end
 
