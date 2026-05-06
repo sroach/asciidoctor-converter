@@ -80,9 +80,9 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         asciidoctor.javaExtensionRegistry().docinfoProcessor(DocOpsMermaidDocinfoProcessor::class.java)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(MermaidIncludeDocinfoProcessor::class.java)
 
-        asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
-        asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/reactions_block_processor.rb"))
-        asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/page_navigation_postprocessor.rb"))
+        loadRubyExtension(asciidoctor, "/lib/docops-extension.rb")
+        loadRubyExtension(asciidoctor, "/lib/reactions_block_processor.rb")
+        loadRubyExtension(asciidoctor, "/lib/page_navigation_postprocessor.rb")
     }
 
 
@@ -216,6 +216,26 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
 
 
+    private inline fun <T> withLocalAsciidoctor(block: (Asciidoctor) -> T): T {
+        val local = Asciidoctor.Factory.create()
+        return try {
+            block(local)
+        } finally {
+            try {
+                local.shutdown()
+            } catch (shutdownEx: Exception) {
+                logger.warn("Failed to shutdown local Asciidoctor instance cleanly", shutdownEx)
+            }
+        }
+    }
+
+    private fun loadRubyExtension(asciidoctorInstance: Asciidoctor, resourcePath: String) {
+        val stream = requireNotNull(AsciiDoctorConverter::class.java.getResourceAsStream(resourcePath)) {
+            "Ruby extension resource not found: $resourcePath"
+        }
+        stream.use { asciidoctorInstance.rubyExtensionRegistry().loadClass(it) }
+    }
+
     /**
      * Asynchronously converts a list of files to PDF format.
      * 
@@ -255,12 +275,11 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                         options.setToDir(targetFile.parentFile.absolutePath)
 
                         // Convert the file with a timeout
-                        val localAsciidoctor = Asciidoctor.Factory.create()
-                        localAsciidoctor.requireLibrary("asciidoctor-diagram")
-
-                        localAsciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
-
-                        localAsciidoctor.convertFile(file, options)
+                        withLocalAsciidoctor { localAsciidoctor ->
+                            localAsciidoctor.requireLibrary("asciidoctor-diagram")
+                            loadRubyExtension(localAsciidoctor, "/lib/docops-extension.rb")
+                            localAsciidoctor.convertFile(file, options)
+                        }
 
                         synchronized(stats) {
                             stats.filesConverted++
@@ -313,12 +332,11 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
             // Set the output directory to the parent directory of the target file
             options.setToDir(targetFile.parentFile.absolutePath)
-            val localAsciidoctor = Asciidoctor.Factory.create()
-            localAsciidoctor.requireLibrary("asciidoctor-diagram")
-
-            localAsciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
-
-            localAsciidoctor.convertFile(sourceAdoc, options)
+            withLocalAsciidoctor { localAsciidoctor ->
+                localAsciidoctor.requireLibrary("asciidoctor-diagram")
+                loadRubyExtension(localAsciidoctor, "/lib/docops-extension.rb")
+                localAsciidoctor.convertFile(sourceAdoc, options)
+            }
         } finally {
             // recursive delete
             tempDir.walkBottomUp().forEach { it.delete() }
@@ -851,8 +869,9 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                         options.setToDir(targetFile.parentFile.absolutePath)
 
                         // Convert the file with EPUB3 backend
-                        val asciidoctor = Asciidoctor.Factory.create()
-                        asciidoctor.convertFile(file, options)
+                        withLocalAsciidoctor { localAsciidoctor ->
+                            localAsciidoctor.convertFile(file, options)
+                        }
 
                         synchronized(stats) {
                             stats.filesConverted++
@@ -925,19 +944,20 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             options.setToDir(targetFile.parentFile.absolutePath)
 
             // Convert the file
-            val asciidoctor = Asciidoctor.Factory.create()
-            asciidoctor.requireLibrary("asciidoctor-diagram")
-            asciidoctor.javaExtensionRegistry().docinfoProcessor(BlockSwitchDocinfoProcessor::class.java)
-            asciidoctor.javaExtensionRegistry().docinfoProcessor(readingTimeDocinfoProcessor)
-            asciidoctor.javaExtensionRegistry().docinfoProcessor(copyToClipboardDocinfoProcessor)
-            asciidoctor.javaExtensionRegistry().docinfoProcessor(DocOpsMermaidDocinfoProcessor::class.java)
-            asciidoctor.javaExtensionRegistry().docinfoProcessor(MermaidIncludeDocinfoProcessor::class.java)
+            withLocalAsciidoctor { localAsciidoctor ->
+                localAsciidoctor.requireLibrary("asciidoctor-diagram")
+                localAsciidoctor.javaExtensionRegistry().docinfoProcessor(BlockSwitchDocinfoProcessor::class.java)
+                localAsciidoctor.javaExtensionRegistry().docinfoProcessor(readingTimeDocinfoProcessor)
+                localAsciidoctor.javaExtensionRegistry().docinfoProcessor(copyToClipboardDocinfoProcessor)
+                localAsciidoctor.javaExtensionRegistry().docinfoProcessor(DocOpsMermaidDocinfoProcessor::class.java)
+                localAsciidoctor.javaExtensionRegistry().docinfoProcessor(MermaidIncludeDocinfoProcessor::class.java)
 
-            asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
-            asciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/reactions_block_processor.rb"))
+                loadRubyExtension(localAsciidoctor, "/lib/docops-extension.rb")
+                loadRubyExtension(localAsciidoctor, "/lib/reactions_block_processor.rb")
 
-            asciidoctor.requireLibrary("asciidoctor-epub3")
-            asciidoctor.convertFile(sourceFile, options)
+                localAsciidoctor.requireLibrary("asciidoctor-epub3")
+                localAsciidoctor.convertFile(sourceFile, options)
+            }
 
             stats.filesConverted++
             logger.info("Successfully converted single file to EPUB: ${sourceFile.name} -> ${epubFileName}")
