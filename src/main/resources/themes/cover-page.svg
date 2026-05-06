@@ -1,51 +1,93 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="2480" height="3508" viewBox="0 0 2480 3508" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background gradient -->
   <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#2c3e50;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#34495e;stop-opacity:1" />
+    <!-- Deep ink background -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1020"/>
+      <stop offset="55%" stop-color="#111A33"/>
+      <stop offset="100%" stop-color="#0A1228"/>
     </linearGradient>
-    
-    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#3498db;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#2ecc71;stop-opacity:1" />
+
+    <!-- Accent spectrum: electric cyan -> azure -->
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00D1FF"/>
+      <stop offset="100%" stop-color="#4F7CFF"/>
     </linearGradient>
+
+    <!-- Soft glow for hero panel -->
+    <radialGradient id="heroGlow" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#58A6FF" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#58A6FF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Subtle paper-noise -->
+    <filter id="noise" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="9" result="noise"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.04"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- Shadow for floating card -->
+    <filter id="cardShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="30" stdDeviation="28" flood-color="#020611" flood-opacity="0.55"/>
+    </filter>
   </defs>
-  
-  <!-- Background -->
-  <rect width="2480" height="3508" fill="url(#bgGradient)"/>
-  
-  <!-- Decorative top accent bar -->
-  <rect x="0" y="0" width="2480" height="20" fill="url(#accentGradient)"/>
-  
-  <!-- Geometric decoration -->
-  <circle cx="200" cy="200" r="80" fill="none" stroke="#3498db" stroke-width="3" opacity="0.3"/>
-  <circle cx="2280" cy="3300" r="100" fill="none" stroke="#2ecc71" stroke-width="3" opacity="0.3"/>
-  
-  <!-- Hexagon pattern (subtle) -->
-  <polygon points="2100,500 2150,475 2200,500 2200,550 2150,575 2100,550" 
-           fill="none" stroke="#ffffff" stroke-width="2" opacity="0.1"/>
-  <polygon points="380,2900 430,2875 480,2900 480,2950 430,2975 380,2950" 
-           fill="none" stroke="#ffffff" stroke-width="2" opacity="0.1"/>
-  
-  <!-- Decorative line elements -->
-  <line x1="300" y1="1400" x2="600" y2="1400" stroke="url(#accentGradient)" stroke-width="4"/>
-  <line x1="1880" y1="2100" x2="2180" y2="2100" stroke="url(#accentGradient)" stroke-width="4"/>
-  
-  <!-- Logo placeholder (company icon) -->
-  <g transform="translate(1240, 600)">
-    <circle cx="0" cy="0" r="100" fill="#fcfcfc" opacity="0.9"/>
-    <image href="docops.svg" x="-100" y="-100" width="200" height="200" preserveAspectRatio="xMidYMid meet"/>
+
+  <!-- Base -->
+  <rect width="2480" height="3508" fill="url(#bg)"/>
+
+  <!-- Noise texture -->
+  <rect width="2480" height="3508" filter="url(#noise)" opacity="0.5"/>
+
+  <!-- Structural grid lines -->
+  <g opacity="0.13" stroke="#8AA4FF" stroke-width="2">
+    <line x1="180" y1="0" x2="180" y2="3508"/>
+    <line x1="2300" y1="0" x2="2300" y2="3508"/>
+    <line x1="0" y1="300" x2="2480" y2="300"/>
+    <line x1="0" y1="3208" x2="2480" y2="3208"/>
   </g>
-  
-  <!-- Bottom accent bar -->
-  <rect x="0" y="3488" width="2480" height="20" fill="url(#accentGradient)"/>
-  
-  <!-- Subtle corner decorations -->
-  <rect x="100" y="100" width="150" height="4" fill="#3498db" opacity="0.4"/>
-  <rect x="100" y="100" width="4" height="150" fill="#3498db" opacity="0.4"/>
-  
-  <rect x="2230" y="3304" width="150" height="4" fill="#2ecc71" opacity="0.4"/>
-  <rect x="2376" y="3154" width="4" height="150" fill="#2ecc71" opacity="0.4"/>
+
+  <!-- Bold asymmetric blocks -->
+  <rect x="0" y="0" width="2480" height="26" fill="url(#accent)"/>
+  <rect x="0" y="3482" width="2480" height="26" fill="url(#accent)"/>
+
+  <rect x="180" y="420" width="2120" height="6" fill="#1F2B4D" opacity="0.95"/>
+  <rect x="180" y="3082" width="2120" height="6" fill="#1F2B4D" opacity="0.95"/>
+
+  <!-- Hero focal zone -->
+  <g transform="translate(1240, 1600)">
+    <circle cx="0" cy="0" r="640" fill="url(#heroGlow)"/>
+
+    <!-- Floating frame -->
+    <rect x="-440" y="-440" width="880" height="880" rx="36"
+          fill="#0E1730" fill-opacity="0.88"
+          stroke="#5B7FFF" stroke-opacity="0.45" stroke-width="3"
+          filter="url(#cardShadow)"/>
+
+    <!-- Inner ring -->
+    <circle cx="0" cy="0" r="310" fill="none" stroke="#00D1FF" stroke-opacity="0.35" stroke-width="3"/>
+    <circle cx="0" cy="0" r="350" fill="none" stroke="#A9BCFF" stroke-opacity="0.18" stroke-width="2"/>
+
+    <!-- Brand mark -->
+    <rect x="-170" y="-170" width="340" height="340" rx="24" fill="#F7FAFF" fill-opacity="0.97"/>
+    <image href="docops.svg" x="-150" y="-150" width="300" height="300" preserveAspectRatio="xMidYMid meet"/>
+  </g>
+
+  <!-- Corner marks -->
+  <g stroke="url(#accent)" stroke-width="6" opacity="0.8" fill="none">
+    <path d="M120 120 H290 M120 120 V290"/>
+    <path d="M2360 120 H2190 M2360 120 V290"/>
+    <path d="M120 3388 H290 M120 3388 V3218"/>
+    <path d="M2360 3388 H2190 M2360 3388 V3218"/>
+  </g>
+
+  <!-- Thin data ticks -->
+  <g stroke="#90A7FF" stroke-width="2" opacity="0.35">
+    <line x1="180" y1="880" x2="280" y2="880"/>
+    <line x1="180" y1="940" x2="340" y2="940"/>
+    <line x1="2200" y1="2480" x2="2300" y2="2480"/>
+    <line x1="2140" y1="2540" x2="2300" y2="2540"/>
+  </g>
 </svg>

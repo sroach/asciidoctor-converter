@@ -31,8 +31,8 @@ class PageNavigationPostprocessor < Asciidoctor::Extensions::Postprocessor
         output += navigation_html
       end
     else
-      puts "❌ page-navigation attribute not found or not set to true"
-      puts "    Available attributes containing 'page': #{document.attributes.keys.select { |k| k.to_s.include?('page') }}"
+      #puts "❌ page-navigation attribute not found or not set to true"
+      #puts "    Available attributes containing 'page': #{document.attributes.keys.select { |k| k.to_s.include?('page') }}"
     end
 
     output

@@ -22,10 +22,12 @@ import java.nio.file.StandardCopyOption
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Pattern
 import kotlin.io.nameWithoutExtension
+import kotlin.math.min
 
 data class ConversionStats(
     var filesNeedingConversion: Int = 0,
@@ -49,6 +51,10 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
     private val logger = LoggerFactory.getLogger(AsciiDoctorConverter::class.java)
 
     private val MAX_INCLUDE_DEPTH = 10
+
+    private val maxHeavyConversions = min(4, Runtime.getRuntime().availableProcessors().coerceAtLeast(1))
+    private val heavyConversionSemaphore = Semaphore(maxHeavyConversions, true)
+
 
     // Pattern to match include directives in Asciidoctor files
     private val includePattern = Pattern.compile("include::([^\\[\\]]+)(?:\\[.*?\\])?")
@@ -236,6 +242,15 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         stream.use { asciidoctorInstance.rubyExtensionRegistry().loadClass(it) }
     }
 
+
+    private inline fun <T> withHeavyConversionPermit(block: () -> T): T {
+        heavyConversionSemaphore.acquire()
+        return try {
+            block()
+        } finally {
+            heavyConversionSemaphore.release()
+        }
+    }
     /**
      * Asynchronously converts a list of files to PDF format.
      * 
@@ -275,10 +290,12 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                         options.setToDir(targetFile.parentFile.absolutePath)
 
                         // Convert the file with a timeout
-                        withLocalAsciidoctor { localAsciidoctor ->
-                            localAsciidoctor.requireLibrary("asciidoctor-diagram")
-                            loadRubyExtension(localAsciidoctor, "/lib/docops-extension.rb")
-                            localAsciidoctor.convertFile(file, options)
+                        withHeavyConversionPermit {
+                            withLocalAsciidoctor { localAsciidoctor ->
+                                localAsciidoctor.requireLibrary("asciidoctor-diagram")
+                                loadRubyExtension(localAsciidoctor, "/lib/docops-extension.rb")
+                                localAsciidoctor.convertFile(file, options)
+                            }
                         }
 
                         synchronized(stats) {
@@ -332,10 +349,12 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
             // Set the output directory to the parent directory of the target file
             options.setToDir(targetFile.parentFile.absolutePath)
-            withLocalAsciidoctor { localAsciidoctor ->
-                localAsciidoctor.requireLibrary("asciidoctor-diagram")
-                loadRubyExtension(localAsciidoctor, "/lib/docops-extension.rb")
-                localAsciidoctor.convertFile(sourceAdoc, options)
+            withHeavyConversionPermit {
+                withLocalAsciidoctor { localAsciidoctor ->
+                    localAsciidoctor.requireLibrary("asciidoctor-diagram")
+                    loadRubyExtension(localAsciidoctor, "/lib/docops-extension.rb")
+                    localAsciidoctor.convertFile(sourceAdoc, options)
+                }
             }
         } finally {
             // recursive delete
@@ -524,15 +543,16 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     // to preserve the directory structure
                     options.setToDir(targetFile.parentFile.absolutePath)
 
-                    asciidoctor.convertFile(file, options)
-
+                    withHeavyConversionPermit {
+                        asciidoctor.convertFile(file, options)
+                        asciiDoctorToWiki.convertToWiki(file, targetFile.parentFile.absolutePath, targetWikiFile)
+                    }
                     // Copy the source .adoc file to the target directory
                     Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
 
                     synchronized(stats) {
                         stats.filesConverted++
                     }
-                    asciiDoctorToWiki.convertToWiki(file, targetFile.parentFile.absolutePath, targetWikiFile)
                     logger.info("Successfully converted file: $relativePath")
                 } catch (e: Exception) {
                     synchronized(stats) {
@@ -869,8 +889,10 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                         options.setToDir(targetFile.parentFile.absolutePath)
 
                         // Convert the file with EPUB3 backend
-                        withLocalAsciidoctor { localAsciidoctor ->
-                            localAsciidoctor.convertFile(file, options)
+                        withHeavyConversionPermit {
+                            withLocalAsciidoctor { localAsciidoctor ->
+                                localAsciidoctor.convertFile(file, options)
+                            }
                         }
 
                         synchronized(stats) {
@@ -944,19 +966,21 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             options.setToDir(targetFile.parentFile.absolutePath)
 
             // Convert the file
-            withLocalAsciidoctor { localAsciidoctor ->
-                localAsciidoctor.requireLibrary("asciidoctor-diagram")
-                localAsciidoctor.javaExtensionRegistry().docinfoProcessor(BlockSwitchDocinfoProcessor::class.java)
-                localAsciidoctor.javaExtensionRegistry().docinfoProcessor(readingTimeDocinfoProcessor)
-                localAsciidoctor.javaExtensionRegistry().docinfoProcessor(copyToClipboardDocinfoProcessor)
-                localAsciidoctor.javaExtensionRegistry().docinfoProcessor(DocOpsMermaidDocinfoProcessor::class.java)
-                localAsciidoctor.javaExtensionRegistry().docinfoProcessor(MermaidIncludeDocinfoProcessor::class.java)
+            withHeavyConversionPermit {
+                withLocalAsciidoctor { localAsciidoctor ->
+                    localAsciidoctor.requireLibrary("asciidoctor-diagram")
+                    localAsciidoctor.javaExtensionRegistry().docinfoProcessor(BlockSwitchDocinfoProcessor::class.java)
+                    localAsciidoctor.javaExtensionRegistry().docinfoProcessor(readingTimeDocinfoProcessor)
+                    localAsciidoctor.javaExtensionRegistry().docinfoProcessor(copyToClipboardDocinfoProcessor)
+                    localAsciidoctor.javaExtensionRegistry().docinfoProcessor(DocOpsMermaidDocinfoProcessor::class.java)
+                    localAsciidoctor.javaExtensionRegistry().docinfoProcessor(MermaidIncludeDocinfoProcessor::class.java)
 
-                loadRubyExtension(localAsciidoctor, "/lib/docops-extension.rb")
-                loadRubyExtension(localAsciidoctor, "/lib/reactions_block_processor.rb")
+                    loadRubyExtension(localAsciidoctor, "/lib/docops-extension.rb")
+                    loadRubyExtension(localAsciidoctor, "/lib/reactions_block_processor.rb")
 
-                localAsciidoctor.requireLibrary("asciidoctor-epub3")
-                localAsciidoctor.convertFile(sourceFile, options)
+                    localAsciidoctor.requireLibrary("asciidoctor-epub3")
+                    localAsciidoctor.convertFile(sourceFile, options)
+                }
             }
 
             stats.filesConverted++
