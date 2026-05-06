@@ -623,7 +623,7 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
   def get_content_from_server(url, parent)
     local_debug = get_debug_setting(parent)
     #parent.logger.info "Getting content from server: #{url}"
-    logger.info "getting image from url #{url}"
+    logger.debug "getting image from url #{url}"
 
     uri = URI(url)
 
