@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Pattern
 import kotlin.io.nameWithoutExtension
 import kotlin.math.min
+import kotlin.system.measureTimeMillis
 
 data class ConversionStats(
     var filesNeedingConversion: Int = 0,
@@ -564,11 +565,13 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     // Set the output directory to the parent directory of the target file
                     // to preserve the directory structure
                     options.setToDir(targetFile.parentFile.absolutePath)
-
-                    withAdocLogContext(file) {
-                        withHeavyConversionPermit {
-                            asciidoctor.convertFile(file, options)
-                            asciiDoctorToWiki.convertToWiki(file, targetFile.parentFile.absolutePath, targetWikiFile)
+                    logger.info("Converting File ${file.name}")
+                    val totalTime = measureTimeMillis {
+                        withAdocLogContext(file) {
+                            withHeavyConversionPermit {
+                                asciidoctor.convertFile(file, options)
+                                asciiDoctorToWiki.convertToWiki(file, targetFile.parentFile.absolutePath, targetWikiFile)
+                            }
                         }
                     }
                     // Copy the source .adoc file to the target directory
@@ -577,7 +580,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     synchronized(stats) {
                         stats.filesConverted++
                     }
-                    logger.info("Successfully converted file: $relativePath")
+                    logger.info("Successfully converted file: $relativePath in ${totalTime}ms")
                 } catch (e: Exception) {
                     synchronized(stats) {
                         stats.filesFailed++
