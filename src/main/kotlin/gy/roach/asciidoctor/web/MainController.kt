@@ -3,11 +3,7 @@ package gy.roach.asciidoctor.web
 import gy.roach.asciidoctor.config.AllowedPathsConfig
 import gy.roach.asciidoctor.config.ConverterSettings
 import gy.roach.asciidoctor.config.ExecutionHistoryConfig
-import gy.roach.asciidoctor.service.AsciiDoctorConverter
-import gy.roach.asciidoctor.service.ConversionContext
-import gy.roach.asciidoctor.service.ConversionJobService
-import gy.roach.asciidoctor.service.ConversionStats
-import gy.roach.asciidoctor.service.SitemapService
+import gy.roach.asciidoctor.service.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
@@ -17,8 +13,6 @@ import org.springframework.web.bind.annotation.*
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedDeque
 
 @Controller
 @RequestMapping("/api")
@@ -127,14 +121,20 @@ class MainController(private val convert: AsciiDoctorConverter,
             // Pre-generate sitemap.adoc in the source directory BEFORE conversion
 
             try {
-                val sitemapPath = sitemapService.generateSitemapAdocInSourceDirectory(localDirectory.absolutePath, defaultDirectoryDepth, validatedOutputDir.toString())
-                if (sitemapPath != null) {
-                    // Copy sitemap icon to target directory so it's available during conversion
-                    sitemapService.copySitemapIconToTarget(validatedOutputDir.toString())
+                if(converterSettings.generateSitemap) {
+                    val sitemapPath = sitemapService.generateSitemapAdocInSourceDirectory(
+                        localDirectory.absolutePath,
+                        defaultDirectoryDepth,
+                        validatedOutputDir.toString()
+                    )
+                    if (sitemapPath != null) {
+                        // Copy sitemap icon to target directory so it's available during conversion
+                        sitemapService.copySitemapIconToTarget(validatedOutputDir.toString())
 
-                    logger.info("Pre-generated sitemap.adoc for conversion: $sitemapPath")
-                } else {
-                    logger.warn("Failed to pre-generate sitemap.adoc in source directory: $validatedSourceDir")
+                        logger.info("Pre-generated sitemap.adoc for conversion: $sitemapPath")
+                    } else {
+                        logger.warn("Failed to pre-generate sitemap.adoc in source directory: $validatedSourceDir")
+                    }
                 }
             } catch (e: Exception) {
                 logger.error("Error pre-generating sitemap.adoc in source directory: $validatedSourceDir", e)

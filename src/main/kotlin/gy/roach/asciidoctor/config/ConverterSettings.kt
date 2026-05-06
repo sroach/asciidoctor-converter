@@ -11,6 +11,8 @@ class ConverterSettings {
     var localDebug: Boolean = false
     var defaultFormats: List<String> = listOf("html")
     var epubSettings: EpubSettings? = EpubSettings()
+    var convertToWiki: Boolean = false
+    var generateSitemap: Boolean = false
 }
 
 data class EpubSettings(

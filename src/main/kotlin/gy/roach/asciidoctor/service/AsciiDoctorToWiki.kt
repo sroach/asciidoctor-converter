@@ -17,29 +17,32 @@ class AsciiDoctorToWiki(private val converter : JiraConverter, private val conve
 
 
     fun convertToWiki(file: File, targetPath: String, targetWikiFile: File) {
-        val localAsciidoctor = Asciidoctor.Factory.create()
-        localAsciidoctor.requireLibrary("asciidoctor-diagram")
+        if(converterSettings.convertToWiki) {
+            val localAsciidoctor = Asciidoctor.Factory.create()
+            localAsciidoctor.requireLibrary("asciidoctor-diagram")
 
-        localAsciidoctor.rubyExtensionRegistry().loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
+            localAsciidoctor.rubyExtensionRegistry()
+                .loadClass(AsciiDoctorConverter::class.java.getResourceAsStream("/lib/docops-extension.rb"))
 
-        val options = Options.builder()
-            .backend("xhtml")
-            .safe(SafeMode.UNSAFE)
-           .option("header_footer", true)
-            .toFile(false)
-            .attributes(buildAttrs())
-            .build()
-        options.setToDir(targetPath)
-        val html = localAsciidoctor.convertFile(file, options).toString()
-        val (htmlWithTokens, tokenMap) = replaceDocOpsBlocksWithTokens(html)
-        var markdown = FlexmarkHtmlConverter.builder().build().convert(htmlWithTokens)
+            val options = Options.builder()
+                .backend("xhtml")
+                .safe(SafeMode.UNSAFE)
+                .option("header_footer", true)
+                .toFile(false)
+                .attributes(buildAttrs())
+                .build()
+            options.setToDir(targetPath)
+            val html = localAsciidoctor.convertFile(file, options).toString()
+            val (htmlWithTokens, tokenMap) = replaceDocOpsBlocksWithTokens(html)
+            var markdown = FlexmarkHtmlConverter.builder().build().convert(htmlWithTokens)
 
-        // Replace tokens with Jira wiki image syntax
-        tokenMap.forEach { (token, jiraImageMarkup) ->
-            markdown = markdown.replace(token, jiraImageMarkup)
+            // Replace tokens with Jira wiki image syntax
+            tokenMap.forEach { (token, jiraImageMarkup) ->
+                markdown = markdown.replace(token, jiraImageMarkup)
+            }
+            val wiki = converter.markdownToJira(markdown)
+            targetWikiFile.writeText(wiki)
         }
-        val wiki = converter.markdownToJira(markdown)
-        targetWikiFile.writeText(wiki)
     }
 
 

@@ -22,6 +22,8 @@ converter:
   panel-server: http://localhost:8010/extension
   panel-webserver: http://localhost:8010/extension
   local-debug: false
+  convertToWiki: false
+  generateSitemap: false
   default-formats:
     - html
   epub-settings:
