@@ -6,11 +6,13 @@ class PageNavigationPostprocessor < Asciidoctor::Extensions::Postprocessor
     backend = document.attr('backend') || ''
     return output unless backend.downcase == 'html5' || backend.downcase == 'html'
 
+=begin
     document.attributes.each do |key, value|
       if key.include?('page') || key.include?('prev') || key.include?('next') || key.include?('navigation')
         puts "    #{key} = #{value}"
       end
     end
+=end
 
     if document.attr?('page-navigation') && document.attr('page-navigation').to_s.downcase == 'true'
 

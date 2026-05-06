@@ -67,7 +67,7 @@ logging:
     root: INFO
   pattern:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger - [%X{adocFile}] %msg%n"
   logback:
     rollingpolicy:
       # Rotate when file reaches this size

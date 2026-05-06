@@ -13,6 +13,7 @@ import org.asciidoctor.Options
 import org.asciidoctor.SafeMode
 import org.asciidoctor.ast.Document
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import java.io.File
@@ -40,6 +41,10 @@ data class ConversionStats(
     val copiedFiles: MutableList<String> = mutableListOf()
 )
 
+private data class SourceFileBuckets(
+    val adocFiles: List<File>,
+    val nonAdocFiles: List<File>
+)
 
 @Service
 class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
@@ -251,6 +256,15 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             heavyConversionSemaphore.release()
         }
     }
+
+    private inline fun <T> withAdocLogContext(file: File, block: () -> T): T {
+        MDC.put("adocFile", file.absolutePath)
+        return try {
+            block()
+        } finally {
+            MDC.remove("adocFile")
+        }
+    }
     /**
      * Asynchronously converts a list of files to PDF format.
      * 
@@ -335,6 +349,27 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         return future
     }
 
+    private fun collectSourceFiles(directory: File): SourceFileBuckets {
+        if (!directory.exists() || !directory.isDirectory) {
+            logger.warn("Source directory does not exist: ${directory.absolutePath}")
+            return SourceFileBuckets(emptyList(), emptyList())
+        }
+
+        val adocFiles = mutableListOf<File>()
+        val nonAdocFiles = mutableListOf<File>()
+
+        directory.walkTopDown().forEach { file ->
+            if (!file.isFile || shouldExcludeFile(file)) return@forEach
+
+            if (file.extension == "adoc") {
+                adocFiles.add(file)
+            } else {
+                nonAdocFiles.add(file)
+            }
+        }
+
+        return SourceFileBuckets(adocFiles, nonAdocFiles)
+    }
     fun convertSingleFileToPdf(sourceAdoc: File) {
 
         val pdfFileName = sourceAdoc.nameWithoutExtension + ".pdf"
@@ -363,6 +398,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
 
     }
+
     /**
      * Gets all .adoc files from a directory recursively.
      *
@@ -370,15 +406,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
      * @return List of .adoc files found in the directory
      */
     private fun getAdocFiles(directory: File): List<File> {
-        if (!directory.exists() || !directory.isDirectory) {
-            logger.warn("Source directory does not exist: ${directory.absolutePath}")
-            return emptyList()
-        }
-
-        return directory.walkTopDown()
-            .filter { it.isFile && it.extension == "adoc" }
-            .filter { !shouldExcludeFile(it) }
-            .toList()
+        return collectSourceFiles(directory).adocFiles
     }
 
     /**
@@ -388,15 +416,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
      * @return List of non-AsciiDoc files found in the directory
      */
     private fun getNonAdocFiles(directory: File): List<File> {
-        if (!directory.exists() || !directory.isDirectory) {
-            logger.warn("Source directory does not exist: ${directory.absolutePath}")
-            return emptyList()
-        }
-
-        return directory.walkTopDown()
-            .filter { it.isFile && (it.extension != "adoc" || it.extension == "md")}
-            .filter { !shouldExcludeFile(it) }
-            .toList()
+        return collectSourceFiles(directory).nonAdocFiles
     }
 
     /**
@@ -448,13 +468,15 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             return stats
         }
 
-        // Get all files from the source directory
-        val adocFiles = getAdocFiles(sourceDir)
-        val nonAdocFiles = getNonAdocFiles(sourceDir)
+        // Get all files from the source directory (single traversal)
+        val sourceBuckets = collectSourceFiles(sourceDir)
+        val adocFiles = sourceBuckets.adocFiles
+        val nonAdocFiles = sourceBuckets.nonAdocFiles
         val allSourceFiles = adocFiles + nonAdocFiles
 
         // Clean up deleted files first
         cleanupDeletedFiles(allSourceFiles, targetDir, stats)
+
 
         // Build comprehensive dependency map including non-AsciiDoc files
         val (fileDependencies, reverseDependencies) = buildDependencyMap(adocFiles, allSourceFiles)
@@ -543,9 +565,11 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     // to preserve the directory structure
                     options.setToDir(targetFile.parentFile.absolutePath)
 
-                    withHeavyConversionPermit {
-                        asciidoctor.convertFile(file, options)
-                        asciiDoctorToWiki.convertToWiki(file, targetFile.parentFile.absolutePath, targetWikiFile)
+                    withAdocLogContext(file) {
+                        withHeavyConversionPermit {
+                            asciidoctor.convertFile(file, options)
+                            asciiDoctorToWiki.convertToWiki(file, targetFile.parentFile.absolutePath, targetWikiFile)
+                        }
                     }
                     // Copy the source .adoc file to the target directory
                     Files.copy(file.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
@@ -719,9 +743,8 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             currentDir
         } ?: return
 
-        // Get all source files (including non-AsciiDoc files)
-        val nonAdocFiles = getNonAdocFiles(sourceDir)
-        val allSourceFiles = sourceFiles + nonAdocFiles
+        // Use provided source files directly to avoid rescanning source directory
+        val allSourceFiles = sourceFiles
 
         // Create a set of relative paths for efficient lookup
         val sourceRelativePaths = allSourceFiles.map { file ->
@@ -748,13 +771,21 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         }
 
         // Filter files that need to be deleted
-        val filesToDelete = targetFiles.filter { targetFile ->
+        val filesToDelete = mutableListOf<File>()
+        val targetDirectories = mutableListOf<File>()
+
+        if (targetDir.exists()) {
+            targetDir.walkTopDown().forEach { path ->
+                when {
+                    path.isFile -> filesToDelete.add(path)
+                    path.isDirectory && path != targetDir -> targetDirectories.add(path)
+                }
+            }
+        }
+
+        val filteredFilesToDelete = filesToDelete.filter { targetFile ->
             val relativePath = targetDir.toPath().relativize(targetFile.toPath()).toString()
 
-            // Don't delete if:
-            // 1. The file exists in source
-            // 2. It's an HTML file with a corresponding .adoc file in source
-            // 3. It's a sitemap file (sitemap-icon.svg or sitemap.html)
             val hasSourceFile = sourceRelativePaths.contains(relativePath)
             val isHtmlWithAdocSource = targetFile.extension == "html" &&
                     sourceRelativePaths.contains(relativePath.replace(".html", ".adoc"))
@@ -764,9 +795,10 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         }
 
         // Use virtual threads for parallel file deletion
-        if (filesToDelete.isNotEmpty()) {
+        // Use virtual threads for parallel file deletion
+        if (filteredFilesToDelete.isNotEmpty()) {
             val executor = Executors.newVirtualThreadPerTaskExecutor()
-            val tasks = filesToDelete.map { targetFile ->
+            val tasks = filteredFilesToDelete.map { targetFile ->
                 executor.submit {
                     try {
                         val relativePath = targetDir.toPath().relativize(targetFile.toPath()).toString()
@@ -794,14 +826,6 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             }
         }
 
-        // Get all directories in the target directory
-        val targetDirectories = if (targetDir.exists()) {
-            targetDir.walkTopDown()
-                .filter { it.isDirectory && it != targetDir }
-                .toList()
-        } else {
-            emptyList()
-        }
 
         // Filter directories that need to be deleted (those that don't have corresponding source directories)
         val directoriesToDelete = targetDirectories.filter { targetDirectory ->
