@@ -42,6 +42,14 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     str.to_s.force_encoding('UTF-8').encode('UTF-8', invalid: :replace, undef: :replace)
   end
 
+  def include_assets_once(doc)
+    return '' if doc.nil?
+    return '' if doc.attr('docops-controls-assets-loaded') == 'true'
+
+    doc.set_attr('docops-controls-assets-loaded', 'true')
+    ensure_utf8(get_minimal_controls_assets)
+  end
+
 
   def initialize(*args)
     super(*args)
@@ -214,6 +222,9 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
                  caption_html +
                  "</div>"
              end
+      assets_prefix = include_assets_once(doc)
+      html = assets_prefix + html unless assets_prefix.empty?
+
       return create_block(parent, :pass, ensure_utf8(html), {})
     end
 
@@ -250,182 +261,6 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
 
     html = []
 
-    # Add CSS for bottom controls AND the new modals
-    html << <<~CSS
-          <style>
-            .svg-with-controls {
-              position: relative;
-              display: inline-block;
-              border: 1px solid rgba(255,255,255,0.1);
-              border-radius: 8px;
-              overflow: hidden;
-            }
-            .svg-bottom-controls {
-              position: absolute;
-              bottom: 12px;
-              left: 50%;
-              transform: translateX(-50%) translateY(150%);
-              display: flex;
-              gap: 6px;
-              background: rgba(15, 20, 30, 0.85);
-              padding: 6px 8px;
-              border-radius: 6px;
-              border: 1px solid rgba(255,255,255,0.1);
-              opacity: 0;
-              transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-              z-index: 100;
-              backdrop-filter: blur(8px);
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            }
-            .svg-with-controls:hover .svg-bottom-controls {
-              opacity: 1;
-              transform: translateX(-50%) translateY(0);
-            }
-            .svg-control-btn {
-              background: transparent;
-              border: 1px solid rgba(255,255,255,0.15);
-              color: #94a3b8;
-              font-family: 'JetBrains Mono', monospace;
-              font-size: 10px;
-              font-weight: 600;
-              padding: 4px 10px;
-              border-radius: 4px;
-              cursor: pointer;
-              transition: all 0.2s;
-              text-transform: uppercase;
-              letter-spacing: 0.05em;
-            }
-            .svg-control-btn:hover {
-              background: rgba(255,255,255,0.1);
-              color: #fff;
-              border-color: rgba(255,255,255,0.3);
-              transform: translateY(-1px);
-            }
-            
-            /* Shared Modal Styles */
-            .svg-modal-#{id} {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background: rgba(15, 20, 25, 0.95);
-                backdrop-filter: blur(8px);
-                z-index: 2147483647; /* Highest possible z-index */
-                align-items: center;
-                justify-content: center;
-                padding: 40px;
-                box-sizing: border-box;
-            }
-            .svg-modal-#{id}.active {
-                display: flex;
-            }
-            .svg-modal-content-#{id} {
-                width: 95vw;
-                max-width: 1400px;
-                height: 90vh;
-                background: var(--docops-card-bg, #1e293b);
-                border-radius: 20px;
-                padding: 48px 24px 24px 24px;
-                position: relative;
-                border: 1px solid rgba(255,255,255,0.1);
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-                animation: scaleInModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            }
-            .svg-modal-close-#{id} {
-                position: absolute;
-                top: 12px;
-                right: 12px;
-                background: rgba(255,255,255,0.1);
-                color: #fff;
-                border: none;
-                width: 36px;
-                height: 36px;
-                border-radius: 50%;
-                font-size: 24px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-                z-index: 10;
-            }
-            .svg-modal-close-#{id}:hover {
-                background: rgba(255,255,255,0.2);
-                transform: rotate(90deg);
-            }
-            .svg-modal-body-#{id} {
-                flex: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 100%;
-                height: 100%;
-                overflow: auto;
-                padding: 10px;
-            }
-            .svg-modal-body-#{id} svg {
-                max-width: 100%;
-                max-height: 100%;
-                width: auto;
-                height: auto;
-                object-fit: contain;
-            }
-            
-            /* CSV Modal Specific Overrides */
-            #csv-modal-#{id} .csv-content {
-                background: transparent !important;
-            }
-            #csv-modal-#{id} .csv-table {
-               width: 100%;
-                border-collapse: collapse;
-                color: #e2e8f0 !important;
-                font-family: 'JetBrains Mono', monospace;
-                font-size: 13px;
-                background: transparent !important; 
-            }
-            #csv-modal-#{id} .csv-table th {
-                text-align: left;
-                padding: 12px;
-                border-bottom: 1px solid rgba(255,255,255,0.1);
-                background: rgba(255,255,255,0.1) !important;
-                color: #fff !important;
-                position: sticky;
-                top: 0;
-            }
-            #csv-modal-#{id} .csv-table td {
-                padding: 12px;
-                border-bottom: 1px solid rgba(255,255,255,0.05);
-                color: #cbd5e1 !important;
-            }
-            #csv-modal-#{id} .csv-table tr {
-                background: transparent !important;
-            }
-            #csv-modal-#{id} .csv-table tr:hover {
-                background: rgba(255,255,255,0.05) !important;
-            }
-            
-          </style>
-        CSS
-
-    # Add escape key handler for modals
-    html << <<~SCRIPT
-          <script>
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    if (window.svgViewer) {
-                        window.svgViewer.closeModal('#{id}');
-                        window.svgViewer.closeCsvModal('#{id}');
-                    }
-                }
-            });
-          </script>
-    SCRIPT
-
     html << "<div class=\"svg-viewer-container\" style=\"#{alignment_style}\">"
     html << "<div class=\"svg-with-controls docops-media-card\" id=\"#{id}\" data-theme=\"#{theme}\">"
     html << ensure_utf8(svg_content)
@@ -451,23 +286,23 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
 
       # View Modal HTML (Hidden initially)
       html << <<~MODAL
-            <div id="modal-#{id}" class="svg-modal-#{id}" onclick="if(event.target === this) svgViewer.closeModal('#{id}')">
-                <div class="svg-modal-content-#{id}">
-                    <button class="svg-modal-close-#{id}" onclick="svgViewer.closeModal('#{id}')">×</button>
-                    <div id="modal-body-#{id}" class="svg-modal-body-#{id}"></div>
+            <div id="modal-#{id}" class="svg-modal docops-svg-modal" onclick="if(event.target === this) svgViewer.closeModal('#{id}')">
+                <div class="svg-modal-content docops-svg-modal-content">
+                    <button class="svg-modal-close docops-svg-modal-close" onclick="svgViewer.closeModal('#{id}')">×</button>
+                    <div id="modal-body-#{id}" class="svg-modal-body docops-svg-modal-body"></div>
                 </div>
             </div>
           MODAL
 
       # Data Modal HTML (Hidden initially)
       html << <<~MODAL
-            <div id="csv-modal-#{id}" class="svg-modal-#{id}" onclick="if(event.target === this) svgViewer.closeCsvModal('#{id}')">
-                <div class="svg-modal-content-#{id}">
-                    <button class="svg-modal-close-#{id}" onclick="svgViewer.closeCsvModal('#{id}')">×</button>
-                    <div class="svg-modal-header-#{id}" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+            <div id="csv-modal-#{id}" class="svg-modal docops-svg-modal" onclick="if(event.target === this) svgViewer.closeCsvModal('#{id}')">
+                <div class="svg-modal-content docops-svg-modal-content">
+                    <button class="svg-modal-close docops-svg-modal-close" onclick="svgViewer.closeCsvModal('#{id}')">×</button>
+                    <div class="svg-modal-header" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
                         <h3 style="margin:0; color:white; font-family:'JetBrains Mono', monospace;">Data Source</h3>
                     </div>
-                    <div id="csv-content-#{id}" class="svg-modal-body-#{id}" style="display: block; overflow: auto;">
+                    <div id="csv-content-#{id}" class="svg-modal-body docops-svg-modal-body" style="display: block; overflow: auto;">
                         <div class="csv-loading" style="color: rgba(255,255,255,0.7);">Loading CSV data...</div>
                     </div>
                 </div>
@@ -476,13 +311,13 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
 
       # SOURCE Modal HTML (matches VIEW/DATA modal structure for consistency)
       html << <<~MODAL
-          <div id="source-modal-#{id}" class="svg-modal-#{id}" onclick="if(event.target === this) docopsSource.close('#{id}')">
-              <div class="svg-modal-content-#{id}">
-                  <button class="svg-modal-close-#{id}" onclick="docopsSource.close('#{id}')">×</button>
-                  <div class="svg-modal-header-#{id}" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+          <div id="source-modal-#{id}" class="svg-modal docops-svg-modal" onclick="if(event.target === this) docopsSource.close('#{id}')">
+              <div class="svg-modal-content docops-svg-modal-content">
+                  <button class="svg-modal-close docops-svg-modal-close" onclick="docopsSource.close('#{id}')">×</button>
+                  <div class="svg-modal-header" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
                       <h3 style="margin:0; color:white; font-family:'JetBrains Mono', monospace;">Original Source</h3>
                   </div>
-                  <div id="source-content-#{id}" class="svg-modal-body-#{id}" style="display: block; overflow: auto;">
+                  <div id="source-content-#{id}" class="svg-modal-body docops-svg-modal-body" style="display: block; overflow: auto;">
                       <div class="source-modal-body"></div>
                   </div>
               </div>
@@ -492,7 +327,8 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
 
     html << "</div>" # Close svg-with-controls
     html << "</div>" # Close svg-viewer-container
-    html << ensure_utf8(get_minimal_controls_assets)
+
+    # Shared assets are injected once per document from process()
 
     # FIX: Ensure all strings are UTF-8 encoded before joining
     html.map! { |item|
@@ -500,7 +336,6 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
     }
     html.join("\n")
   end
-
 
   def get_alignment_style(role)
     case role.downcase
@@ -545,19 +380,164 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
   end
 
   def get_minimal_controls_assets
-    # Returns the same CSS and JavaScript as in the Kotlin version
-    # (truncated for brevity - would include the full CSS and JS from the original)
     <<~ASSETS
       <style>
-      imageblock .title {
+      .imageblock .title {
         text-align: center;
         font-style: italic;
-        margin-top: 0.5em;  /* Changed from margin-bottom */
+        margin-top: 0.5em;
         margin-bottom: 1em;
         color: #666;
         font-size: 0.9em;
       }
+
+      .svg-with-controls {
+        position: relative;
+        display: inline-block;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .svg-bottom-controls {
+        position: absolute;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%) translateY(150%);
+        display: flex;
+        gap: 6px;
+        background: rgba(15, 20, 30, 0.85);
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.1);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 100;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .svg-with-controls:hover .svg-bottom-controls {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      .svg-control-btn {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.15);
+        color: #94a3b8;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .svg-control-btn:hover {
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+        border-color: rgba(255,255,255,0.3);
+        transform: translateY(-1px);
+      }
+
+      .svg-modal.docops-svg-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 20, 25, 0.95);
+        backdrop-filter: blur(8px);
+        z-index: 2147483647;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        box-sizing: border-box;
+      }
+
+      .svg-modal.docops-svg-modal.active {
+        display: flex;
+      }
+
+      .svg-modal-content.docops-svg-modal-content {
+        width: 95vw;
+        max-width: 1400px;
+        height: 90vh;
+        background: var(--docops-card-bg, #1e293b);
+        border-radius: 20px;
+        padding: 48px 24px 24px 24px;
+        position: relative;
+        border: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        animation: scaleInModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .svg-modal-close.docops-svg-modal-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        z-index: 10;
+      }
+
+      .svg-modal-close.docops-svg-modal-close:hover {
+        background: rgba(255,255,255,0.2);
+        transform: rotate(90deg);
+      }
+
+      .svg-modal-body.docops-svg-modal-body {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        padding: 10px;
+      }
+
+      .svg-modal-body.docops-svg-modal-body svg {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+      }
       </style>
+
+      <script>
+      (function() {
+        if (window.__docopsEscapeHandlerInstalled) return;
+        window.__docopsEscapeHandlerInstalled = true;
+
+        document.addEventListener('keydown', function(e) {
+          if (e.key !== 'Escape') return;
+          document.querySelectorAll('.svg-modal.active').forEach(function(modal) {
+            modal.classList.remove('active');
+          });
+          document.body.style.overflow = '';
+        });
+      })();
+      </script>
     ASSETS
   end
 
@@ -742,11 +722,6 @@ class DocOpsBlockProcessor < Extensions::BlockProcessor
   end
 
 
-end
-
-# Register the extension
-Extensions.register do
-  block DocOpsBlockProcessor
 end
 
 
