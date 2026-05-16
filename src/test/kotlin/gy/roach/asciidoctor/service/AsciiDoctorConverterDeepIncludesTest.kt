@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import kotlin.reflect.full.memberFunctions
 import kotlin.reflect.jvm.javaMethod
 
@@ -120,4 +121,31 @@ class AsciiDoctorConverterDeepIncludesTest {
         assertTrue(includes.contains(aFile))
         // In mutual cycle, both files are collected (direct + transitive)
     }
+    @Test
+    fun `convert handles plantuml use case from uml adoc`() {
+        val sourceDir = Files.createDirectories(tempDir.resolve("source")).toFile()
+        val targetDir = Files.createDirectories(tempDir.resolve("target")).toFile()
+
+        val umlResource = requireNotNull(this::class.java.getResource("/jira/uml.adoc")) {
+            "Missing test resource: /jira/uml.adoc"
+        }
+        val umlAdoc = File(sourceDir, "uml.adoc")
+        umlAdoc.writeText(File(umlResource.toURI()).readText())
+
+        val stats = converter.convert(sourceDir, targetDir.absolutePath)
+
+        val htmlOutput = File(targetDir, "uml.html")
+        assertTrue(htmlOutput.exists(), "Expected uml.html to be generated")
+        assertTrue(stats.filesConverted >= 1, "Expected at least one converted file")
+
+        val html = htmlOutput.readText()
+        assertTrue(html.contains("Test uml"), "Expected converted HTML to contain document title")
+        assertFalse(html.contains("@startuml"), "Expected PlantUML block to be rendered, not left as raw source")
+
+        val resourcesPreview = File("src/test/resources/jira/uml.generated.html")
+        resourcesPreview.parentFile.mkdirs()
+        Files.copy(htmlOutput.toPath(), resourcesPreview.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        assertTrue(resourcesPreview.exists(), "Expected preview html to be copied into test resources")
+    }
+
 }
