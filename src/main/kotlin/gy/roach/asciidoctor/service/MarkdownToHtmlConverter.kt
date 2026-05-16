@@ -20,6 +20,7 @@ import gy.roach.asciidoctor.config.ConverterSettings
 import gy.roach.asciidoctor.md.extension.DocOpsMacroExtension
 import gy.roach.asciidoctor.md.extension.GitHubAdmonitionExtension
 import gy.roach.asciidoctor.md.extension.MermaidNodeRendererFactory
+import gy.roach.asciidoctor.md.extension.PlantumlNodeRendererFactory
 import org.openpdf.pdf.ITextRenderer
 import org.openpdf.text.DocumentException
 import org.slf4j.LoggerFactory
@@ -111,7 +112,10 @@ class MarkdownConverter(private val converterSettings: ConverterSettings, privat
             val useDark = cssTheme.contains("dark") || cssTheme.contains("brutalist")
             options.set(DocOpsMacroExtension.DEFAULT_USE_DARK, useDark)
             val parser = Parser.builder(options).build()
-            val renderer = HtmlRenderer.builder(options).nodeRendererFactory(MermaidNodeRendererFactory()).build()
+            val renderer = HtmlRenderer.builder(options)
+                .nodeRendererFactory(MermaidNodeRendererFactory())
+                .nodeRendererFactory(PlantumlNodeRendererFactory())
+                .build()
             val markdownContent = sourceFile.readText()
             val (documentTitle, markdownToRender) = resolveDocumentTitle(markdownContent, sourceFile)
 
@@ -200,6 +204,7 @@ object MermaidFlexmark {
         val parser = Parser.builder(options).build()
         val renderer = HtmlRenderer.builder(options)
             .nodeRendererFactory(MermaidNodeRendererFactory())
+            .nodeRendererFactory(PlantumlNodeRendererFactory())
             .build()
 
         val document = parser.parse(markdown)

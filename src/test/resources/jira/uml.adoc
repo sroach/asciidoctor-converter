@@ -1,0 +1,35 @@
+= Test uml
+
+
+== Swim
+
+[plantuml,test1,svg]
+----
+@startuml
+|Customer|
+start
+:Request Quote;
+|Portal|
+:Display Form;
+|Customer|
+:Enter Data;
+|Portal|
+:Submit to Backend;
+|Backend|
+:Validate Data;
+if (Valid?) then (yes)
+ |Rating Engine|
+ :Calculate Premium;
+else (no)
+ :Request Corrections;
+ stop
+endif
+|Portal|
+:Present Quote;
+|Customer|
+:Accept/Buy;
+|Backend|
+:Bind Policy;
+stop
+@enduml
+----
