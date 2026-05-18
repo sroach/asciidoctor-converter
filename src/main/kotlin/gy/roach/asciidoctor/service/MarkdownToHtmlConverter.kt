@@ -443,7 +443,7 @@ object MermaidFlexmark {
                               transform: translateY(-1px);
                           }
                     </style>
-                <script src="https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.min.js"></script>
                 
             </head>
             <body>
@@ -757,6 +757,13 @@ object MermaidFlexmark {
                     </script>
                     <script>
                         mermaid.initialize({ startOnLoad: true });
+                        mermaid.registerIconPacks([
+                          {
+                            name: 'logos',
+                            loader: () =>
+                              fetch('https://unpkg.com/@iconify-json/logos@1/icons.json').then((res) => res.json()),
+                          },
+                        ]);
                     </script>
                     <script>
                     $admonitionJs

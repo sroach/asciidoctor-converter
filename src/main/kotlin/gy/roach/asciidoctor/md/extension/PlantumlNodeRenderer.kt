@@ -19,31 +19,66 @@ class PlantumlNodeRenderer : NodeRenderer {
         )
     }
 
+    private fun sanitizePlantUml(raw: String): String {
+        val cleaned = raw
+            .replace("\uFEFF", "")
+            .replace("\u200B", "")
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+            .lines()
+            .dropWhile { it.isBlank() }
+            .dropLastWhile { it.isBlank() }
+            .joinToString("\n")
+
+        val lines = cleaned.lines().toMutableList()
+        if (lines.firstOrNull { it.isNotBlank() }?.trim() != "@startuml") {
+            lines.add(0, "@startuml")
+        }
+        if (lines.lastOrNull { it.isNotBlank() }?.trim() != "@enduml") {
+            lines.add("@enduml")
+        }
+        return lines.joinToString("\n")
+    }
+    private fun escapeHtmlAttr(value: String): String =
+        value
+            .replace("&", "&amp;")
+            .replace("\"", "&quot;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("'", "&#39;")
     private fun render(
         node: FencedCodeBlock,
         context: NodeRendererContext,
         html: HtmlWriter
     ) {
-        val language = node.info.toString().lowercase()
+        val language = node.info.toString().trim().lowercase()
 
         if (language == "plantuml" || language == "puml") {
-            val plantumlContent = node.contentChars.toString().trim()
+            val normalizedPlantuml = sanitizePlantUml(node.contentChars.toString())
 
-            // Render PlantUML to SVG
             val svgContent = try {
-                val reader = SourceStringReader(plantumlContent)
+                val reader = SourceStringReader(normalizedPlantuml)
                 val output = ByteArrayOutputStream()
-                reader.generateImage(output, FileFormatOption(FileFormat.SVG))
+                reader.outputImage(output, FileFormatOption(FileFormat.SVG))
+                //reader.generateImage(output, FileFormatOption(FileFormat.SVG))
                 output.toString(Charsets.UTF_8)
             } catch (e: Exception) {
-                "<div style='color:red'>PlantUML Error: ${e.message}</div>"
+                "<div style='color:red'>PlantUML Error: ${escapeHtmlAttr(e.message ?: "unknown error")}</div>"
             }
 
-            // Wrap in docops-media-card similar to Mermaid for consistent UI (modal, copy, source)
+            val embeddedSvg = svgContent
+                .replace(Regex("""<\?xml[^>]*\?>\s*"""), "")
+                .replace(Regex("""<\?plantuml[^>]*\?>\s*"""), "")
+
+            val safeOriginal = escapeHtmlAttr(normalizedPlantuml)
+
             val fullContent = buildString {
-                appendLine("<div class=\"docops-media-card\" data-original-content=\"${plantumlContent.replace("\"", "&quot;")}\">")
-                appendLine("  <div class='plantuml svg-container' onclick='openModal(this);'>")
-                appendLine(svgContent)
+                appendLine("<div class=\"docops-media-card\">")
+                appendLine("  <script type=\"text/plain\" class=\"docops-source-raw\">")
+                appendLine(escapeHtmlAttr(normalizedPlantuml))
+                appendLine("  </script>")
+                appendLine("  <div class=\"plantuml svg-container\" onclick=\"openModal(this);\">")
+                appendLine(embeddedSvg)
                 appendLine("  </div>")
                 appendLine("  <div class=\"docops-control-bar\">")
                 appendLine("    <button class=\"docops-btn\" onclick=\"openModal(this.closest('.docops-media-card').querySelector('.svg-container'))\" title=\"View Large\">VIEW</button>")
@@ -62,12 +97,13 @@ class PlantumlNodeRenderer : NodeRenderer {
             }
 
             html.line()
-            html.rawPre(fullContent.trimEnd())
+            html.raw(fullContent.trimEnd())
             html.line()
         } else {
             context.delegateRender()
         }
     }
+
 }
 
 class PlantumlNodeRendererFactory : NodeRendererFactory {
