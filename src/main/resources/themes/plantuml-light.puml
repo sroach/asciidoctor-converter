@@ -8,7 +8,7 @@ skinparam backgroundColor #F3F6FB
 skinparam shadowing true
 skinparam roundcorner 20
 skinparam dpi 160
-skinparam defaultFontName "SF Pro Text"
+skinparam defaultFontName Helvetica
 
 skinparam ArrowColor $ACCENT
 skinparam ArrowThickness 1.5
@@ -18,12 +18,12 @@ skinparam note {
   BackgroundColor #FFF7E8
   BorderColor $WARNING
   FontColor #3B2F00
-  FontName "SF Pro Text"
+  FontName Helvetica
   RoundCorner 14
 }
 
 skinparam activity {
-  FontName "SF Pro Text"
+  FontName Helvetica
   FontColor #0F172A
   FontSize 15
   StartColor $SUCCESS
