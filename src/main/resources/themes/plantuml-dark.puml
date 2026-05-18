@@ -1,0 +1,90 @@
+' iOS PlantUML Theme — Dark (mirrored semantics)
+!$ACCENT  = "#4DA3FF"
+!$SUCCESS = "#30D158"
+!$WARNING = "#FFD60A"
+!$DANGER  = "#FF453A"
+
+skinparam backgroundColor #0A0E27
+skinparam shadowing true
+skinparam roundcorner 20
+skinparam dpi 160
+skinparam defaultFontName "SF Pro Text"
+
+skinparam ArrowColor $ACCENT
+skinparam ArrowThickness 1.5
+skinparam HyperlinkColor $ACCENT
+
+skinparam note {
+  BackgroundColor #2A2415
+  BorderColor $WARNING
+  FontColor #FFE9A8
+  FontName "SF Pro Text"
+  RoundCorner 14
+}
+
+skinparam activity {
+  FontName "SF Pro Text"
+  FontColor #EAF2FF
+  FontSize 15
+  StartColor $SUCCESS
+  EndColor $DANGER
+  BackgroundColor #121A33
+  BorderColor #2D3A5A
+  ArrowColor $ACCENT
+  DiamondBackgroundColor #182448
+  DiamondBorderColor #5A84D6
+  DiamondFontColor #EAF2FF
+}
+
+skinparam sequence {
+  ParticipantBackgroundColor #121A33
+  ParticipantBorderColor #2D3A5A
+  ParticipantFontColor #EAF2FF
+  LifeLineBackgroundColor #0F1730
+  LifeLineBorderColor #34456E
+  ArrowColor $ACCENT
+  ArrowFontColor #DCE9FF
+  GroupBackgroundColor #121A33
+  GroupBorderColor #2D3A5A
+  GroupHeaderFontColor #EAF2FF
+}
+
+skinparam class {
+  BackgroundColor #121A33
+  BorderColor #2D3A5A
+  FontColor #EAF2FF
+  HeaderBackgroundColor #1A2A52
+  HeaderFontColor #F2F7FF
+  AttributeFontColor #C8D7F2
+  MethodFontColor #C8D7F2
+  ArrowColor $ACCENT
+}
+
+skinparam component {
+  BackgroundColor #121A33
+  BorderColor #2D3A5A
+  FontColor #EAF2FF
+  ArrowColor $ACCENT
+}
+
+skinparam usecase {
+  BackgroundColor #121A33
+  BorderColor #2D3A5A
+  FontColor #EAF2FF
+  ArrowColor $ACCENT
+}
+
+skinparam state {
+  BackgroundColor #121A33
+  BorderColor #2D3A5A
+  FontColor #EAF2FF
+  StartColor $SUCCESS
+  EndColor $DANGER
+  ArrowColor $ACCENT
+}
+
+skinparam package {
+  BackgroundColor #101935
+  BorderColor #34456E
+  FontColor #EAF2FF
+}

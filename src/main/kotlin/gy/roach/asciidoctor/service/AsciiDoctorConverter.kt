@@ -5,6 +5,7 @@ import gy.roach.asciidoctor.extension.CopyToClipboardDocinfoProcessor
 import gy.roach.asciidoctor.extension.DocOpsMermaidDocinfoProcessor
 import gy.roach.asciidoctor.extension.MermaidIncludeDocinfoProcessor
 import gy.roach.asciidoctor.extension.PlantumlIncludeDocinfoProcessor
+import gy.roach.asciidoctor.extension.PlantumlThemePreprocessor
 import gy.roach.asciidoctor.extension.ReadingTimeDocinfoProcessor
 import gy.roach.asciidoctor.tabs.BlockSwitchDocinfoProcessor
 import org.asciidoctor.Asciidoctor
@@ -89,6 +90,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         asciidoctor.javaExtensionRegistry().docinfoProcessor(readingTimeDocinfoProcessor)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(copyToClipboardDocinfoProcessor)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(PlantumlIncludeDocinfoProcessor::class.java)
+        asciidoctor.javaExtensionRegistry().preprocessor(PlantumlThemePreprocessor::class.java)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(DocOpsMermaidDocinfoProcessor::class.java)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(MermaidIncludeDocinfoProcessor::class.java)
 
@@ -184,10 +186,13 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
 
 
-    private fun buildAttributes(): Attributes {
+    private fun buildAttributes(cssTheme: String = "github-markdown-css.css"): Attributes {
         // Get the docinfo directory from resources
         val docinfoDir = this::class.java.classLoader.getResource("docinfo")?.path
             ?: "src/main/resources/docinfo"
+
+        val useDark = cssTheme.contains("dark") || cssTheme.contains("brutalist")
+        val plantumlTheme = if (useDark) "dark" else "light"
 
         return Attributes.builder()
             .sourceHighlighter("highlightjs")
@@ -207,8 +212,8 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .attribute("encoding", "utf-8")
             .attribute("pdf-theme", "uri:classloader:/themes/basic-theme.yml")
             .attribute("pdf-fontsdir", "uri:classloader:/fonts;GEM_FONTS_DIR")
+            .attribute("docops-plantuml-theme", plantumlTheme)
             .build()
-
     }
     private fun buildOptions(attrs: Attributes): Options {
         return  Options.builder()
@@ -558,7 +563,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     // Create parent directories if they don't exist
                     targetFile.parentFile?.mkdirs()
 
-                    val options = buildOptions(buildAttributes())
+                    val options = buildOptions(buildAttributes(cssTheme))
                     options.setMkDirs(true)
                     options.setBaseDir(file.parentFile.absolutePath)
 

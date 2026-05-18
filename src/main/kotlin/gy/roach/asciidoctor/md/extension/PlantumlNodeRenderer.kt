@@ -12,11 +12,16 @@ import net.sourceforge.plantuml.FileFormatOption
 import net.sourceforge.plantuml.SourceStringReader
 import java.io.ByteArrayOutputStream
 
-class PlantumlNodeRenderer : NodeRenderer {
+class PlantumlNodeRenderer(private val useDark: Boolean = false) : NodeRenderer {
     override fun getNodeRenderingHandlers(): Set<NodeRenderingHandler<*>> {
         return setOf(
             NodeRenderingHandler(FencedCodeBlock::class.java, ::render)
         )
+    }
+
+    private fun loadTheme(): String {
+        val themePath = if (useDark) "/themes/plantuml-dark.puml" else "/themes/plantuml-light.puml"
+        return javaClass.getResourceAsStream(themePath)?.bufferedReader()?.use { it.readText() } ?: ""
     }
 
     private fun sanitizePlantUml(raw: String): String {
@@ -36,6 +41,14 @@ class PlantumlNodeRenderer : NodeRenderer {
         }
         if (lines.lastOrNull { it.isNotBlank() }?.trim() != "@enduml") {
             lines.add("@enduml")
+        }
+        // Insert theme after @startuml for custom iOS look-and-feel
+        val theme = loadTheme()
+        if (theme.isNotBlank()) {
+            val startIdx = lines.indexOfFirst { it.trim() == "@startuml" }
+            if (startIdx >= 0) {
+                lines.add(startIdx + 1, theme)
+            }
         }
         return lines.joinToString("\n")
     }
@@ -106,8 +119,8 @@ class PlantumlNodeRenderer : NodeRenderer {
 
 }
 
-class PlantumlNodeRendererFactory : NodeRendererFactory {
+class PlantumlNodeRendererFactory(private val useDark: Boolean = false) : NodeRendererFactory {
     override fun apply(options: DataHolder): NodeRenderer {
-        return PlantumlNodeRenderer()
+        return PlantumlNodeRenderer(useDark)
     }
 }

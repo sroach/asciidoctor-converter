@@ -1,0 +1,90 @@
+' iOS PlantUML Theme — Light
+!$ACCENT  = "#007AFF"
+!$SUCCESS = "#34C759"
+!$WARNING = "#FF9F0A"
+!$DANGER  = "#FF3B30"
+
+skinparam backgroundColor #F3F6FB
+skinparam shadowing true
+skinparam roundcorner 20
+skinparam dpi 160
+skinparam defaultFontName "SF Pro Text"
+
+skinparam ArrowColor $ACCENT
+skinparam ArrowThickness 1.5
+skinparam HyperlinkColor $ACCENT
+
+skinparam note {
+  BackgroundColor #FFF7E8
+  BorderColor $WARNING
+  FontColor #3B2F00
+  FontName "SF Pro Text"
+  RoundCorner 14
+}
+
+skinparam activity {
+  FontName "SF Pro Text"
+  FontColor #0F172A
+  FontSize 15
+  StartColor $SUCCESS
+  EndColor $DANGER
+  BackgroundColor #FFFFFF
+  BorderColor #D7DFEA
+  ArrowColor $ACCENT
+  DiamondBackgroundColor #EEF4FF
+  DiamondBorderColor #A8C7FF
+  DiamondFontColor #0F172A
+}
+
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #D7DFEA
+  ParticipantFontColor #0F172A
+  LifeLineBackgroundColor #F8FAFF
+  LifeLineBorderColor #C9D6EA
+  ArrowColor $ACCENT
+  ArrowFontColor #0F172A
+  GroupBackgroundColor #FFFFFF
+  GroupBorderColor #D7DFEA
+  GroupHeaderFontColor #0F172A
+}
+
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #D7DFEA
+  FontColor #0F172A
+  HeaderBackgroundColor #EEF4FF
+  HeaderFontColor #0F172A
+  AttributeFontColor #1E293B
+  MethodFontColor #1E293B
+  ArrowColor $ACCENT
+}
+
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #D7DFEA
+  FontColor #0F172A
+  ArrowColor $ACCENT
+}
+
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #D7DFEA
+  FontColor #0F172A
+  ArrowColor $ACCENT
+}
+
+skinparam state {
+  BackgroundColor #FFFFFF
+  BorderColor #D7DFEA
+  FontColor #0F172A
+  StartColor $SUCCESS
+  EndColor $DANGER
+  ArrowColor $ACCENT
+}
+
+skinparam package {
+  BackgroundColor #F8FAFF
+  BorderColor #C9D6EA
+  FontColor #0F172A
+}

@@ -114,7 +114,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings, privat
             val parser = Parser.builder(options).build()
             val renderer = HtmlRenderer.builder(options)
                 .nodeRendererFactory(MermaidNodeRendererFactory())
-                .nodeRendererFactory(PlantumlNodeRendererFactory())
+                .nodeRendererFactory(PlantumlNodeRendererFactory(useDark))
                 .build()
             val markdownContent = sourceFile.readText()
             val (documentTitle, markdownToRender) = resolveDocumentTitle(markdownContent, sourceFile)
@@ -204,7 +204,7 @@ object MermaidFlexmark {
         val parser = Parser.builder(options).build()
         val renderer = HtmlRenderer.builder(options)
             .nodeRendererFactory(MermaidNodeRendererFactory())
-            .nodeRendererFactory(PlantumlNodeRendererFactory())
+            .nodeRendererFactory(PlantumlNodeRendererFactory(useDark))
             .build()
 
         val document = parser.parse(markdown)
