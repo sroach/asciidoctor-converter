@@ -34,43 +34,66 @@ class PlantumlThemePreprocessor : Preprocessor() {
         val processed = mutableListOf<String>()
         var insidePlantumlBlock = false
         var themeInjected = false
+        var activeDelimiter: String? = null
 
         for (line in lines) {
             val trimmed = line.trim()
 
-            // Detect start of plantuml block
-            if (!insidePlantumlBlock && (trimmed.startsWith("[plantuml") || trimmed == "plantuml::")) {
-                insidePlantumlBlock = true
-                themeInjected = false
+            // 1. Detect start of plantuml block context
+            if (!insidePlantumlBlock) {
+                if (trimmed.startsWith("[plantuml") || trimmed.startsWith("plantuml::")) {
+                    // Check if it's a one-liner macro with target (e.g., plantuml::diag.puml[])
+                    if (trimmed.startsWith("plantuml::") && trimmed.contains("[") && !trimmed.startsWith("plantuml::[")) {
+                        processed.add(line)
+                        continue
+                    }
+                    insidePlantumlBlock = true
+                    themeInjected = false
+                    activeDelimiter = null
+                    processed.add(line)
+                    continue
+                }
             }
 
-            // Detect delimiter start for literal block following [plantuml]
-            if (!insidePlantumlBlock && trimmed == "----" && processed.lastOrNull()?.trim()?.startsWith("[plantuml") == true) {
-                insidePlantumlBlock = true
-                themeInjected = false
-            }
+            // 2. Handle block content and transitions if inside
+            if (insidePlantumlBlock) {
+                // Handle opening/closing delimiters (---- or ....)
+                if (activeDelimiter == null && !themeInjected && (trimmed == "----" || trimmed == "....")) {
+                    activeDelimiter = trimmed
+                    processed.add(line)
+                    continue
+                }
 
-            if (insidePlantumlBlock && trimmed == "@startuml" && !themeInjected) {
-                processed.add(line)
-                // Inject our custom skinparam theme immediately after @startuml
-                // Skip any existing !theme lines that may have been added by asciidoctor-diagram
-                themeContent.lines().forEach { themeLine ->
-                    if (themeLine.isNotBlank()) {
+                if (activeDelimiter != null && trimmed == activeDelimiter) {
+                    insidePlantumlBlock = false
+                    activeDelimiter = null
+                    processed.add(line)
+                    continue
+                }
+
+                // Handle theme injection at @startuml
+                if (trimmed == "@startuml" && !themeInjected) {
+                    processed.add(line)
+                    themeContent.lines().filter { it.isNotBlank() }.forEach { themeLine ->
                         processed.add(themeLine)
                     }
+                    themeInjected = true
+                    continue
                 }
-                themeInjected = true
-                continue
-            }
 
-            // Skip pre-existing !theme directives inside plantuml blocks to avoid "Cannot load theme" errors
-            if (insidePlantumlBlock && trimmed.startsWith("!theme ")) {
-                continue
-            }
+                // Handle end of un-delimited block
+                if (trimmed == "@enduml") {
+                    if (activeDelimiter == null) {
+                        insidePlantumlBlock = false
+                    }
+                    processed.add(line)
+                    continue
+                }
 
-            // End of plantuml block
-            if (insidePlantumlBlock && (trimmed == "@enduml" || trimmed == "----")) {
-                insidePlantumlBlock = false
+                // Skip pre-existing !theme directives
+                if (trimmed.startsWith("!theme ")) {
+                    continue
+                }
             }
 
             processed.add(line)
