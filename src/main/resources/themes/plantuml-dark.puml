@@ -9,6 +9,7 @@ skinparam shadowing true
 skinparam roundcorner 20
 skinparam dpi 160
 skinparam defaultFontName Helvetica
+skinparam titleFontColor #fcfcfc
 
 skinparam ArrowColor $ACCENT
 skinparam ArrowThickness 1.5
