@@ -9,7 +9,7 @@ import com.vladsch.flexmark.html.renderer.NodeRenderingHandler
 import com.vladsch.flexmark.util.data.DataHolder
 
 
-class MermaidNodeRenderer : NodeRenderer {
+class MermaidNodeRenderer(private val useDark: Boolean = false) : NodeRenderer {
     override fun getNodeRenderingHandlers(): Set<NodeRenderingHandler<*>> {
         return setOf(
             NodeRenderingHandler(FencedCodeBlock::class.java, ::render)
@@ -61,8 +61,8 @@ class MermaidNodeRenderer : NodeRenderer {
     }
 }
 
-class MermaidNodeRendererFactory : NodeRendererFactory {
+class MermaidNodeRendererFactory(private val useDark: Boolean = false) : NodeRendererFactory {
     override fun apply(options: DataHolder): NodeRenderer {
-        return MermaidNodeRenderer()
+        return MermaidNodeRenderer(useDark)
     }
 }

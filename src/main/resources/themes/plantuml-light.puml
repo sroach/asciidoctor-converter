@@ -9,6 +9,8 @@ skinparam shadowing true
 skinparam roundcorner 20
 skinparam dpi 160
 skinparam defaultFontName Helvetica
+skinparam titleFontColor #1e1e1e
+skinparam actorStyle awesome
 
 skinparam ArrowColor $ACCENT
 skinparam ArrowThickness 1.5
@@ -87,4 +89,11 @@ skinparam package {
   BackgroundColor #F8FAFF
   BorderColor #C9D6EA
   FontColor #0F172A
+}
+
+skinparam actor {
+    BackgroundColor  #FFFFFF
+    BorderColor      #007AFF
+    FontColor        #000000
+    FontSize         13
 }

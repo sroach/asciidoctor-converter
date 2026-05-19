@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import gy.roach.asciidoctor.md.extension.PlantumlNodeRendererFactory
+import gy.roach.asciidoctor.md.extension.MermaidNodeRendererFactory
 import java.io.File
 
 class MarkdownConverterTest {
@@ -104,5 +105,33 @@ class MarkdownConverterTest {
         assertTrue(html.contains("plantuml") || html.contains("<svg"), "PlantUML diagram should be rendered")
         val f = File("logs/umltest.html")
         f.writeText(html)
+    }
+
+    @Test
+    fun `should set iOS dark theme variables for mermaid when dark css is used`() {
+        val converterSettings = ConverterSettings()
+        val markdownContent = "```mermaid\ngraph TD; A-->B;\n```"
+        val title = "Mermaid Dark Test"
+        val cssTheme = "github-markdown-dark.css"
+
+        val html = MermaidFlexmark.createFullHtmlWithMermaid(markdownContent, converterSettings, title, cssTheme)
+
+        assertTrue(html.contains("theme: 'base'"), "Mermaid theme should be set to base")
+        assertTrue(html.contains("'lineColor': '#4DA3FF'"), "Mermaid should use iOS dark accent color")
+        assertTrue(html.contains("'mainBkg': '#0A0E27'"), "Mermaid should use iOS dark background")
+    }
+
+    @Test
+    fun `should set iOS light theme variables for mermaid when light css is used`() {
+        val converterSettings = ConverterSettings()
+        val markdownContent = "```mermaid\ngraph TD; A-->B;\n```"
+        val title = "Mermaid Light Test"
+        val cssTheme = "github-markdown-css.css"
+
+        val html = MermaidFlexmark.createFullHtmlWithMermaid(markdownContent, converterSettings, title, cssTheme)
+
+        assertTrue(html.contains("theme: 'base'"), "Mermaid theme should be set to base")
+        assertTrue(html.contains("'lineColor': '#007AFF'"), "Mermaid should use iOS light accent color")
+        assertTrue(html.contains("'mainBkg': '#F3F6FB'"), "Mermaid should use iOS light background")
     }
 }

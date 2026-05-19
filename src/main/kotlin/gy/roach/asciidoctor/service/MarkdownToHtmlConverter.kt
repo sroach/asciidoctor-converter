@@ -113,7 +113,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings, privat
             options.set(DocOpsMacroExtension.DEFAULT_USE_DARK, useDark)
             val parser = Parser.builder(options).build()
             val renderer = HtmlRenderer.builder(options)
-                .nodeRendererFactory(MermaidNodeRendererFactory())
+                .nodeRendererFactory(MermaidNodeRendererFactory(useDark))
                 .nodeRendererFactory(PlantumlNodeRendererFactory(useDark))
                 .build()
             val markdownContent = sourceFile.readText()
@@ -203,13 +203,53 @@ object MermaidFlexmark {
 
         val parser = Parser.builder(options).build()
         val renderer = HtmlRenderer.builder(options)
-            .nodeRendererFactory(MermaidNodeRendererFactory())
+            .nodeRendererFactory(MermaidNodeRendererFactory(useDark))
             .nodeRendererFactory(PlantumlNodeRendererFactory(useDark))
             .build()
 
         val document = parser.parse(markdown)
         return renderer.render(document)
     }
+
+    private val mermaidIosLightVars = """
+        {
+            'primaryColor': '#FFFFFF',
+            'primaryTextColor': '#0F172A',
+            'primaryBorderColor': '#D7DFEA',
+            'lineColor': '#007AFF',
+            'secondaryColor': '#EEF4FF',
+            'tertiaryColor': '#F3F6FB',
+            'mainBkg': '#F3F6FB',
+            'fontFamily': 'Helvetica, sans-serif',
+            'fontSize': '15px',
+            'clusterBkg': '#F8FAFF',
+            'clusterBorder': '#C9D6EA',
+            'nodeBorder': '#D7DFEA',
+            'edgeLabelBackground': '#F3F6FB',
+            'rectRadius': '20',
+            'clusterRadius': '20'
+        }
+    """.trimIndent()
+
+    private val mermaidIosDarkVars = """
+        {
+            'primaryColor': '#121A33',
+            'primaryTextColor': '#EAF2FF',
+            'primaryBorderColor': '#2D3A5A',
+            'lineColor': '#4DA3FF',
+            'secondaryColor': '#1A2A52',
+            'tertiaryColor': '#0A0E27',
+            'mainBkg': '#0A0E27',
+            'fontFamily': 'Helvetica, sans-serif',
+            'fontSize': '15px',
+            'clusterBkg': '#101935',
+            'clusterBorder': '#34456E',
+            'nodeBorder': '#2D3A5A',
+            'edgeLabelBackground': '#0A0E27',
+            'rectRadius': '20',
+            'clusterRadius': '20'
+        }
+    """.trimIndent()
 
     fun createFullHtmlWithMermaid(markdownContent: String, converterSettings: ConverterSettings, title: String, cssTheme: String): String {
         val useDark = cssTheme.contains("dark") || cssTheme.contains("brutalist")
@@ -756,7 +796,11 @@ object MermaidFlexmark {
                     
                     </script>
                     <script>
-                        mermaid.initialize({ startOnLoad: true });
+                        mermaid.initialize({ 
+                            startOnLoad: true,
+                            theme: 'base',
+                            themeVariables: ${if (useDark) mermaidIosDarkVars else mermaidIosLightVars}
+                        });
                         mermaid.registerIconPacks([
                           {
                             name: 'logos',
