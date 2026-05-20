@@ -4,9 +4,9 @@ import gy.roach.asciidoctor.config.ConverterSettings
 import gy.roach.asciidoctor.extension.CopyToClipboardDocinfoProcessor
 import gy.roach.asciidoctor.extension.DocOpsMermaidDocinfoProcessor
 import gy.roach.asciidoctor.extension.MermaidIncludeDocinfoProcessor
-import gy.roach.asciidoctor.extension.PlantumlIncludeDocinfoProcessor
 import gy.roach.asciidoctor.extension.PlantumlThemePreprocessor
 import gy.roach.asciidoctor.extension.ReadingTimeDocinfoProcessor
+import gy.roach.asciidoctor.tabs.AsciidoctorTabsLoader
 import gy.roach.asciidoctor.tabs.BlockSwitchDocinfoProcessor
 import org.asciidoctor.Asciidoctor
 import org.asciidoctor.Attributes
@@ -89,7 +89,6 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         asciidoctor.javaExtensionRegistry().docinfoProcessor(BlockSwitchDocinfoProcessor::class.java)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(readingTimeDocinfoProcessor)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(copyToClipboardDocinfoProcessor)
-        asciidoctor.javaExtensionRegistry().docinfoProcessor(PlantumlIncludeDocinfoProcessor::class.java)
         asciidoctor.javaExtensionRegistry().preprocessor(PlantumlThemePreprocessor::class.java)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(DocOpsMermaidDocinfoProcessor::class.java)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(MermaidIncludeDocinfoProcessor::class.java)
@@ -97,6 +96,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         loadRubyExtension(asciidoctor, "/lib/docops-extension.rb")
         loadRubyExtension(asciidoctor, "/lib/reactions_block_processor.rb")
         loadRubyExtension(asciidoctor, "/lib/page_navigation_postprocessor.rb")
+        AsciidoctorTabsLoader.load(asciidoctor)
     }
 
 
@@ -733,7 +733,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
     /**
      * Cleans up files in the target directory that no longer exist in the source using virtual threads.
      * This includes both .adoc files and their corresponding .html files,
-     * as well as any other files that were copied from source to target.
+     * as well as any other files copied from source to target.
      * Handles directory structure preservation.
      * Also removes target directories that don't have corresponding source directories.
      *

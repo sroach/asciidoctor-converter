@@ -148,4 +148,5 @@ class AsciiDoctorConverterDeepIncludesTest {
         assertTrue(resourcesPreview.exists(), "Expected preview html to be copied into test resources")
     }
 
+
 }
