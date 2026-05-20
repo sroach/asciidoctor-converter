@@ -202,6 +202,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .attribute("local-debug", converterSettings.localDebug.toString())
             .attribute("panel-server", converterSettings.panelServer)
             .attribute("panel-webserver", converterSettings.panelWebserver)
+            .attribute("attribute-missing", "warn")
             .dataUri(true)
             .copyCss(true)
             .noFooter(true)
