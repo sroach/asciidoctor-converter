@@ -16,6 +16,14 @@ class MermaidNodeRenderer(private val useDark: Boolean = false) : NodeRenderer {
         )
     }
 
+    private fun escapeHtmlAttr(value: String): String =
+        value
+            .replace("&", "&amp;")
+            .replace("\"", "&quot;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("'", "&#39;")
+
     private fun render(
         node: FencedCodeBlock,
         context: NodeRendererContext,
@@ -32,7 +40,7 @@ class MermaidNodeRenderer(private val useDark: Boolean = false) : NodeRenderer {
 
             // Disable HTML processing temporarily and output everything as one raw block
             val fullContent = buildString {
-                appendLine("<div class=\"docops-media-card\" data-original-content=\"${mermaidContent.replace("\"", "&quot;")}\">")
+                appendLine("<div class=\"docops-media-card\" data-original-content=\"${escapeHtmlAttr(mermaidContent)}\">")
                 appendLine("  <div class='mermaid svg-container' onclick='openModal(this);'>")
                 appendLine(mermaidContent)
                 appendLine("  </div>")

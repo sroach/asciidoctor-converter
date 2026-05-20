@@ -129,9 +129,72 @@ class MarkdownConverterTest {
         val cssTheme = "github-markdown-css.css"
 
         val html = MermaidFlexmark.createFullHtmlWithMermaid(markdownContent, converterSettings, title, cssTheme)
-
+ 
         assertTrue(html.contains("theme: 'base'"), "Mermaid theme should be set to base")
         assertTrue(html.contains("'lineColor': '#007AFF'"), "Mermaid should use iOS light accent color")
         assertTrue(html.contains("'mainBkg': '#F3F6FB'"), "Mermaid should use iOS light background")
+    }
+
+    @Test
+    fun `should render tabs in markdown`() {
+        val converterSettings = ConverterSettings()
+        val markdownContent = """
+            [tabs]
+            [tab:Tab 1]
+            Content 1 with **bold**
+            [/tab]
+            [tab:Tab 2]
+            Content 2 with code block
+            ```kotlin
+            println("Hello")
+            ```
+            [/tab]
+            [/tabs]
+        """.trimIndent()
+        val title = "Tabs Test"
+        val cssTheme = "github-markdown-css.css"
+
+        val html = MermaidFlexmark.createFullHtmlWithMermaid(markdownContent, converterSettings, title, cssTheme)
+ 
+        assertTrue(html.contains("<div class=\"tabs is-loading\">"), "Should contain tabs container")
+        assertTrue(html.contains("<div class=\"tablist\">"), "Should contain tablist")
+        assertTrue(html.contains(">Tab 1</li>"), "Should contain Tab 1 in list")
+        assertTrue(html.contains(">Tab 2</li>"), "Should contain Tab 2 in list")
+        assertTrue(html.contains("class=\"tabpanel\""), "Should contain tabpanel")
+        assertTrue(html.contains("<strong>bold</strong>"), "Should parse markdown inside tab")
+        assertTrue(html.contains("<pre><code class=\"language-kotlin\">"), "Should parse code block inside tab")
+    }
+
+    @Test
+    fun `should include fix script for mermaid in tabs`() {
+        val converterSettings = ConverterSettings()
+        val markdownContent = """
+            [tabs]
+            [tab:Mermaid Tab]
+            ```mermaid
+            graph TD; A-->B;
+            ```
+            [/tab]
+            [/tabs]
+        """.trimIndent()
+        val title = "Mermaid Tabs Test"
+        val cssTheme = "github-markdown-css.css"
+
+        val html = MermaidFlexmark.createFullHtmlWithMermaid(markdownContent, converterSettings, title, cssTheme)
+
+        assertTrue(html.contains("reRenderMermaidInPanel"), "Should contain mermaid-in-tabs fix script")
+        assertTrue(html.contains("MutationObserver"), "Should use MutationObserver in fix script")
+        assertTrue(html.contains("data-original-content"), "Should contain original content for re-rendering")
+    }
+
+    @Test
+    fun `should include improved mermaid re-render logic`() {
+        val converterSettings = ConverterSettings()
+        val markdownContent = "```mermaid\nmindmap\n  root((mindmap))\n```"
+        val html = MermaidFlexmark.createFullHtmlWithMermaid(markdownContent, converterSettings, "Test", "github-markdown-css.css")
+
+        assertTrue(html.contains("const vb = (svg.getAttribute('viewBox') || '').split(/[\\s,]+/);"), "Should contain viewBox parsing")
+        assertTrue(html.contains("const vbWidth = vb.length === 4 ? parseFloat(vb[2]) : null;"), "Should contain vbWidth calculation")
+        assertTrue(html.contains("rect.width < panel.offsetWidth - 10"), "Should contain relative width check")
     }
 }

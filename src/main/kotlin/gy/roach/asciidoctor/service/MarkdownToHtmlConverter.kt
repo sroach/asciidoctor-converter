@@ -21,6 +21,7 @@ import gy.roach.asciidoctor.md.extension.DocOpsMacroExtension
 import gy.roach.asciidoctor.md.extension.GitHubAdmonitionExtension
 import gy.roach.asciidoctor.md.extension.MermaidNodeRendererFactory
 import gy.roach.asciidoctor.md.extension.PlantumlNodeRendererFactory
+import gy.roach.asciidoctor.md.extension.TabsExtension
 import org.openpdf.pdf.ITextRenderer
 import org.openpdf.text.DocumentException
 import org.slf4j.LoggerFactory
@@ -100,6 +101,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings, privat
             TablesExtension.create(),
             SimTocExtension.create(),
             AdmonitionExtension.create(),
+            TabsExtension.create(),
             ))
         set(DocOpsMacroExtension.WEBSERVER, converterSettings.panelWebserver)
         set(DocOpsMacroExtension.DEFAULT_SCALE, "1.0")
@@ -185,7 +187,8 @@ object MermaidFlexmark {
             SuperscriptExtension.create(),
             TablesExtension.create(),
             SimTocExtension.create(),
-            AdmonitionExtension.create()
+            AdmonitionExtension.create(),
+            TabsExtension.create()
         )
 
         // Only add WikiLinkExtension if no docops macros present
@@ -278,6 +281,8 @@ object MermaidFlexmark {
         val modalOverlay = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/modal-overlay.css")?.readAllBytes()?.decodeToString()
         val admonitionCss = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/admonition.css")?.readAllBytes()?.decodeToString()
         val admonitionJs = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/admonition.js")?.readAllBytes()?.decodeToString()
+        val tabsCss = MarkdownConverter::class.java.classLoader.getResourceAsStream("data/css/tabs.css")?.readAllBytes()?.decodeToString()
+        val tabsJs = MarkdownConverter::class.java.classLoader.getResourceAsStream("data/js/tabs.js")?.readAllBytes()?.decodeToString()
         val svgData = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/svgdata.js")?.readAllBytes()?.decodeToString()
 
         val faviconSvg = MarkdownConverter::class.java.classLoader.getResourceAsStream("themes/favicon.svg")?.readAllBytes()
@@ -308,6 +313,9 @@ object MermaidFlexmark {
                 </style>
                 <style>
                 $admonitionCss
+                </style>
+                <style>
+                $tabsCss
                 </style>
                 <style>
                           @media (prefers-color-scheme: dark) {
@@ -811,7 +819,65 @@ object MermaidFlexmark {
                     </script>
                     <script>
                     $admonitionJs
+                    $tabsJs
                     $svgData
+                    </script>
+                    <script>
+                    (function() {
+                        function reRenderMermaidInPanel(panel) {
+                            if (panel.classList.contains('is-hidden') || panel.hasAttribute('hidden')) {
+                                return;
+                            }
+                            const mermaidDivs = panel.querySelectorAll('.mermaid');
+                            mermaidDivs.forEach((div) => {
+                                const svg = div.querySelector('svg');
+                                if (svg) {
+                                    const rect = svg.getBoundingClientRect();
+                                    const vb = (svg.getAttribute('viewBox') || '').split(/[\s,]+/);
+                                    const vbWidth = vb.length === 4 ? parseFloat(vb[2]) : null;
+                                    const isShrunk = rect.width <= 16 || (vbWidth !== null && Math.abs(rect.width - vbWidth) < 1 && rect.width < panel.offsetWidth - 10);
+                                    if (isShrunk && panel.offsetWidth > 16) {
+                                        const card = div.closest('.docops-media-card');
+                                        if (card) {
+                                            const originalContent = card.getAttribute('data-original-content');
+                                            if (originalContent) {
+                                                const decoded = originalContent
+                                                    .replace(/&quot;/g, '"')
+                                                    .replace(/&amp;/g, '&')
+                                                    .replace(/&lt;/g, '<')
+                                                    .replace(/&gt;/g, '>')
+                                                    .replace(/&#39;/g, "'");
+                                                div.innerHTML = decoded;
+                                                div.removeAttribute('data-processed');
+                                                mermaid.run({ nodes: [div] });
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                        const observer = new MutationObserver((mutations) => {
+                            mutations.forEach((mutation) => {
+                                if (mutation.type === 'attributes' && (mutation.attributeName === 'class' || mutation.attributeName === 'hidden')) {
+                                    const panel = mutation.target;
+                                    if (panel.classList.contains('tabpanel') && !panel.classList.contains('is-hidden') && !panel.hasAttribute('hidden')) {
+                                        setTimeout(() => reRenderMermaidInPanel(panel), 100);
+                                    }
+                                }
+                            });
+                        });
+
+                        document.querySelectorAll('.tabpanel').forEach((panel) => {
+                            observer.observe(panel, { attributes: true });
+                        });
+                        
+                        window.addEventListener('load', () => {
+                            setTimeout(() => {
+                                document.querySelectorAll('.tabpanel:not(.is-hidden):not([hidden])').forEach(reRenderMermaidInPanel);
+                            }, 500);
+                        });
+                    })();
                     </script>
                 
                 </body>
