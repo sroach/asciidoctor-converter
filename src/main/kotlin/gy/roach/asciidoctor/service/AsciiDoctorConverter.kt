@@ -1090,12 +1090,16 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
      * Load the AsciiDoc document in "header-only" mode so Asciidoctor builds the attribute table
      * (including attributes from the file header and the attributes provided via buildAttributes()).
      */
-    private fun loadHeaderOnlyDocument(file: File): Document {
+    private fun loadHeaderOnlyDocument(file: File, initialAttributes: Map<String, Any> = emptyMap()): Document {
+        val attrs = buildAttributes()
+        initialAttributes.forEach { (k, v) ->
+            attrs.setAttribute(k, v)
+        }
         val headerOnlyOptions = Options.builder()
             .backend("html")
             .safe(SafeMode.UNSAFE) // match conversion environment; header-only won't execute includes anyway
             .baseDir(file.parentFile)
-            .attributes(buildAttributes())
+            .attributes(attrs)
             .option("parse_header_only", true)
             .build()
 
@@ -1122,7 +1126,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
      * Parses an Asciidoctor file and extracts all include directives.
      * Returns a set of File objects representing the included files.
      */
-    private fun extractIncludes(file: File, visited: MutableSet<File>? = null, depth: Int = 0, maxDepth: Int = MAX_INCLUDE_DEPTH): Set<File> {
+    private fun extractIncludes(file: File, parentAttributes: Map<String, Any> = emptyMap(), visited: MutableSet<File>? = null, depth: Int = 0, maxDepth: Int = MAX_INCLUDE_DEPTH): Set<File> {
         val myVisited = visited ?: mutableSetOf<File>()
         if (myVisited.contains(file) || depth > maxDepth) {
             if (depth > maxDepth) {
@@ -1132,13 +1136,13 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         }
         myVisited.add(file)
         if (!file.exists() || !file.isFile) return emptySet()
-        
+
         val content = file.readText()
         val includes = mutableSetOf<File>()
         val matcher = includePattern.matcher(content)
 
         // Build the attribute table the same way conversion does (but header-only)
-        val headerDoc = loadHeaderOnlyDocument(file)
+        val headerDoc = loadHeaderOnlyDocument(file, parentAttributes)
 
         while (matcher.find()) {
             val rawIncludeTarget = matcher.group(1).trim()
@@ -1150,7 +1154,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             if (includedFile.exists() && includedFile.isFile) {
                 includes.add(includedFile)
                 if (includedFile.extension == "adoc") {
-                    includes.addAll(extractIncludes(includedFile, myVisited, depth + 1, maxDepth))
+                    includes.addAll(extractIncludes(includedFile, headerDoc.attributes, myVisited, depth + 1, maxDepth))
                 }
             } else {
                 logger.warn(

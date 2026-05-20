@@ -82,7 +82,7 @@ class AsciiDoctorConverterDeepIncludesTest {
 
         val visited = mutableSetOf<File>()
         @Suppress("UNCHECKED_CAST")
-        val includes: Set<File> = javaMethod.invoke(converter, rootFile, visited, 0, 50) as Set<File>
+        val includes: Set<File> = javaMethod.invoke(converter, rootFile, emptyMap<String, Any>(), visited, 0, 50) as Set<File>
 
         // With maxDepth=50, should collect levels 1 to 51 (51 files)
         assertEquals(51, includes.size)
@@ -114,7 +114,7 @@ class AsciiDoctorConverterDeepIncludesTest {
 
         val visited = mutableSetOf<File>()
         @Suppress("UNCHECKED_CAST")
-        val includes: Set<File> = javaMethod.invoke(converter, aFile, visited, 0, 50) as Set<File>
+        val includes: Set<File> = javaMethod.invoke(converter, aFile, emptyMap<String, Any>(), visited, 0, 50) as Set<File>
 
         assertEquals(2, includes.size)
         assertTrue(includes.contains(bFile))
