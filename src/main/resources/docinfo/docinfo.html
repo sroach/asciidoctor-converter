@@ -957,7 +957,7 @@
             nav.className = 'slideshow-nav';
             slides.forEach((_, i) => {
                 const dot = document.createElement('div');
-                dot.className = `nav-dot ${i === 0 ? 'active' : ''}`;
+                dot.className = `nav-dot $\{i === 0 ? 'active' : ''}`;
                 dot.onclick = (e) => {
                     e.stopPropagation();
                     goToSlide(i);
@@ -967,14 +967,14 @@
             ss.appendChild(nav);
 
             function updateCounter() {
-                counter.textContent = `${String(currentIndex + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+                counter.textContent = `$\{String(currentIndex + 1).padStart(2, '0')} / $\{String(slides.length).padStart(2, '0')}`;
             }
 
             function resetProgress() {
                 progressBar.style.transition = 'none';
                 progressBar.style.width = '0%';
                 setTimeout(() => {
-                    progressBar.style.transition = `width ${interval}ms linear`;
+                    progressBar.style.transition = `width $\{interval}ms linear`;
                     progressBar.style.width = '100%';
                 }, 50);
             }
@@ -1068,7 +1068,7 @@
             const modalTitle = modal.querySelector('.showcase-modal-title');
             const modalCode = modal.querySelector('.showcase-content-code');
             
-            if (modalTitle) modalTitle.textContent = `${kind.toUpperCase()} SOURCE: ${title}`;
+            if (modalTitle) modalTitle.textContent = `$\{kind.toUpperCase()} SOURCE: $\{title}`;
             if (modalCode) {
                 const decodedContent = decodeURIComponent(content.replace(/\+/g, ' '));
                 modalCode.textContent = decodedContent;
@@ -1090,7 +1090,7 @@
 
             modal.querySelector('.showcase-modal-title').textContent = title;
             modal.querySelector('.showcase-modal-body').innerHTML =
-                `<div class="modal-svg-wrapper">${svgContent}</div>`;
+                `<div class="modal-svg-wrapper">$\{svgContent}</div>`;
 
             this.hideTOC(); // Hide TOC before showing modal
             modal.style.display = 'flex';
@@ -1181,7 +1181,7 @@
         },
 
         toggleControls(id) {
-            const panel = document.getElementById(`controls-panel-${id}`);
+            const panel = document.getElementById(`controls-panel-$\{id}`);
             const isVisible = panel.classList.contains('show');
 
             // Hide all other panels
@@ -1204,7 +1204,7 @@
             let currentZoom = parseFloat(target.dataset.zoom) || 1;
             currentZoom = Math.min(currentZoom * 1.3, 5);
             target.dataset.zoom = currentZoom;
-            target.style.transform = `scale(${currentZoom})`;
+            target.style.transform = `scale($\{currentZoom})`;
             target.style.transformOrigin = "center center";
         },
 
@@ -1216,7 +1216,7 @@
             let currentZoom = parseFloat(svg.dataset.zoom) || 1;
             currentZoom = Math.max(currentZoom / 1.3, 0.2);
             svg.dataset.zoom = currentZoom;
-            svg.style.transform = `scale(${currentZoom})`;
+            svg.style.transform = `scale($\{currentZoom})`;
         },
 
         resetZoom(id) {
@@ -1434,7 +1434,7 @@
             if (existing) existing.remove();
 
             const messageEl = document.createElement('div');
-            messageEl.className = `copy-message ${type === 'error' ? 'error' : ''}`;
+            messageEl.className = `copy-message $\{type === 'error' ? 'error' : ''}`;
 
             // Different background colors for different message types
             if (type === 'info') {
@@ -1451,7 +1451,7 @@
             }, type === 'info' ? 1500 : 2500);
         },
         toggleCsv(id) {
-            const container = document.getElementById(`csv-container-${id}`);
+            const container = document.getElementById(`csv-container-$\{id}`);
             const isVisible = container.style.display !== 'none';
 
             if (isVisible) {
@@ -1463,7 +1463,7 @@
         },
 
         closeCsv(id) {
-            const container = document.getElementById(`csv-container-${id}`);
+            const container = document.getElementById(`csv-container-$\{id}`);
             container.style.display = 'none';
         },
         async loadCsvData(id) {
@@ -1480,7 +1480,7 @@
                 let csvMetadata = svg.querySelector('metadata[type="text/csv"]');
                 if (csvMetadata) {
                     const csvData = JSON.parse(csvMetadata.textContent.trim());
-                    this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData);
+                    this.renderCsvTable(document.getElementById(`csv-content-$\{id}`), csvData);
                     return;
                 }
 
@@ -1488,7 +1488,7 @@
                 csvMetadata = svg.querySelector('metadata csv-data');
                 if (csvMetadata) {
                     const csvData = JSON.parse(csvMetadata.textContent.trim());
-                    this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData, `csv-table-${id}`);
+                    this.renderCsvTable(document.getElementById(`csv-content-$\{id}`), csvData, `csv-table-$\{id}`);
                     return;
                 }
 
@@ -1496,7 +1496,7 @@
                 const csvDataAttr = svg.getAttribute('data-csv');
                 if (csvDataAttr) {
                     const csvData = JSON.parse(decodeURIComponent(csvDataAttr));
-                    this.renderCsvTable(document.getElementById(`csv-content-${id}`), csvData, `csv-table-${id}`);
+                    this.renderCsvTable(document.getElementById(`csv-content-$\{id}`), csvData, `csv-table-$\{id}`);
                     return;
                 }
 
@@ -1513,7 +1513,7 @@
             }
 
             // Generate a unique table ID if not provided or make existing ID unique
-            const uniqueTableId = tableId ? `${tableId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` : `csv-table-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            const uniqueTableId = tableId ? `$\{tableId}-$\{Date.now()}-$\{Math.random().toString(36).substr(2, 9)}` : `csv-table-$\{Date.now()}-$\{Math.random().toString(36).substr(2, 9)}`;
 
             const table = document.createElement('table');
             table.className = 'csv-table';
@@ -1672,7 +1672,7 @@
         setCookie(name, value, days) {
             const expires = new Date();
             expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-            document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+            document.cookie = `$\{name}=$\{value};expires=$\{expires.toUTCString()};path=/;SameSite=Lax`;
         }
 
         getCookie(name) {
@@ -1745,127 +1745,7 @@
 </script>
 
 
-<script>
-    class ThemeToggleTop {
-        constructor() {
-            this.init();
-        }
 
-        init() {
-            this.createToggleButton();
-            this.loadSavedTheme();
-            this.setupEventListeners();
-        }
-
-        createToggleButton() {
-            const button = document.createElement('button');
-            button.className = 'theme-toggle';
-            button.setAttribute('aria-label', 'Toggle theme');
-            button.innerHTML = `
-            <span class="light-icon">☀️</span>
-            <span class="dark-icon">🌙</span>
-        `;
-            document.body.appendChild(button);
-            this.toggleButton = button;
-        }
-
-        setupEventListeners() {
-            this.toggleButton.addEventListener('click', () => this.toggleTheme());
-
-            // Listen for system theme changes only when in auto mode
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-                if (this.getThemePreference() === 'auto') {
-                    this.updateTheme();
-                }
-            });
-        }
-
-        toggleTheme() {
-            const currentTheme = this.getThemePreference();
-            let newTheme;
-
-            switch (currentTheme) {
-                case 'light':
-                    newTheme = 'dark';
-                    break;
-                case 'dark':
-                    newTheme = 'auto';
-                    break;
-                case 'auto':
-                    newTheme = 'light';
-                    break;
-                default:
-                    // Check current state of the document
-                    const root = document.documentElement;
-                    if (root.classList.contains('dark-mode') || root.classList.contains('dark-mode-auto')) {
-                        newTheme = 'light';
-                    } else {
-                        newTheme = 'dark';
-                    }
-            }
-
-            this.setTheme(newTheme);
-        }
-
-        setTheme(theme) {
-            localStorage.setItem('theme', theme);
-            this.updateTheme();
-        }
-
-        getThemePreference() {
-            const saved = localStorage.getItem('theme');
-            if (saved) {
-                return saved;
-            }
-
-            // If no saved preference, detect current state from DOM
-            const root = document.documentElement;
-            if (root.classList.contains('dark-mode')) {
-                return 'dark';
-            } else if (root.classList.contains('dark-mode-auto')) {
-                return 'auto';
-            }
-            return 'light';
-        }
-
-        updateTheme() {
-            const theme = this.getThemePreference();
-            const root = document.documentElement;
-
-            // Remove existing theme classes
-            root.classList.remove('dark-mode', 'dark-mode-auto');
-
-            switch (theme) {
-                case 'dark':
-                    root.classList.add('dark-mode');
-                    break;
-                case 'auto':
-                    root.classList.add('dark-mode-auto');
-                    break;
-                // 'light' theme uses default styles
-            }
-
-            // Update button aria-label
-            const themeNames = {
-                light: 'light',
-                dark: 'dark',
-                auto: 'auto (follows system)'
-            };
-            this.toggleButton.setAttribute('aria-label', `Current theme: ${themeNames[theme]}. Click to change.`);
-        }
-
-        loadSavedTheme() {
-            this.updateTheme();
-        }
-    }
-
-    // Initialize theme toggle when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => new ThemeToggleTop());
-    } else {
-        new ThemeToggleTop();
-    }
-</script>
 <style>
     #footer-navigation {
         display: flex;
@@ -2168,7 +2048,7 @@
         toggle(btn) {
             const card = btn.closest('.docops-media-card');
             const id = card.id;
-            const modal = document.getElementById(`source-modal-${id}`);
+            const modal = document.getElementById(`source-modal-$\{id}`);
 
             if (!modal) {
                 console.error('Source modal not found for', id);
@@ -2187,7 +2067,7 @@
         },
 
         close(id) {
-            const modal = document.getElementById(`source-modal-${id}`);
+            const modal = document.getElementById(`source-modal-$\{id}`);
             if (modal) {
                 modal.classList.remove('active');
                 document.body.style.overflow = '';
@@ -2216,14 +2096,14 @@
 
             container.innerHTML = `
             <div class="source-modal-header">
-                <span class="source-modal-title">${kind.toUpperCase()} Source</span>
+                <span class="source-modal-title">$\{kind.toUpperCase()} Source</span>
                 <div class="source-modal-actions">
-                    <button class="source-action-btn" onclick="docopsSource.copySource('${card.id}')">
+                    <button class="source-action-btn" onclick="docopsSource.copySource('$\{card.id}')">
                         <span class="btn-icon">📋</span> COPY
                     </button>
                 </div>
             </div>
-            <pre class="source-code-pre"><code class="source-code">${this.escapeHtml(decoded)}</code></pre>
+            <pre class="source-code-pre"><code class="source-code">$\{this.escapeHtml(decoded)}</code></pre>
         `;
 
             container.dataset.rendered = 'true';
@@ -2245,7 +2125,7 @@
                 .replace(/&gt;/g, '>');
 
             navigator.clipboard.writeText(decoded).then(() => {
-                const btn = document.querySelector(`#source-modal-${cardId} .source-action-btn`);
+                const btn = document.querySelector(`#source-modal-$\{cardId} .source-action-btn`);
                 if (btn) {
                     const originalHtml = btn.innerHTML;
                     btn.innerHTML = '<span class="btn-icon">✓</span> COPIED!';

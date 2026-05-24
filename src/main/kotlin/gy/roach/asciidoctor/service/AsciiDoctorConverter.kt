@@ -202,7 +202,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .attribute("local-debug", converterSettings.localDebug.toString())
             .attribute("panel-server", converterSettings.panelServer)
             .attribute("panel-webserver", converterSettings.panelWebserver)
-            .attribute("attribute-missing", "warn")
+            .attribute("attribute-missing", "skip")
             .dataUri(true)
             .copyCss(true)
             .noFooter(true)
@@ -564,7 +564,9 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     // Create parent directories if they don't exist
                     targetFile.parentFile?.mkdirs()
 
-                    val options = buildOptions(buildAttributes(cssTheme))
+                    val options = buildOptions(buildAttributes(cssTheme).apply {
+                        collectAllAttributes(file).forEach { (k, v) -> setAttribute(k, v) }
+                    })
                     options.setMkDirs(true)
                     options.setBaseDir(file.parentFile.absolutePath)
 
@@ -1106,15 +1108,15 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         return asciidoctor.loadFile(file, headerOnlyOptions)
     }
     /**
-     * Substitute {attr} tokens using the attribute table produced by Asciidoctor.
-     * (We still do the replacement ourselves; the *values* come from Asciidoctor.)
+     * Substitute {attr} tokens using the attribute table provided.
+     * (We still do the replacement ourselves; the *values* come from the map.)
      */
-    private fun substituteAttributesWithAsciidoctor(input: String, doc: Document, maxPasses: Int = 5): String {
+    private fun substituteAttributes(input: String, attributes: Map<String, Any>, maxPasses: Int = 5): String {
         var out = input
         repeat(maxPasses) {
             val replaced = Regex("\\{([^}]+)\\}").replace(out) { mr ->
                 val key = mr.groupValues[1]
-                val value = doc.getAttribute(key)
+                val value = attributes[key]
                 value?.toString() ?: mr.value
             }
             if (replaced == out) return out
@@ -1122,6 +1124,40 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         }
         return out
     }
+
+    /**
+     * Collects all attributes from a document and its recursively included .adoc files.
+     * This ensures that attributes defined in included files (e.g. _meta.adoc) are
+     * available at the start of conversion for resolving parameterized includes.
+     */
+    private fun collectAllAttributes(file: File, parentAttributes: Map<String, Any> = emptyMap(), visited: MutableSet<File>? = null, depth: Int = 0, maxDepth: Int = MAX_INCLUDE_DEPTH): Map<String, Any> {
+        val myVisited = visited ?: mutableSetOf<File>()
+        if (myVisited.contains(file) || depth > maxDepth) {
+            return emptyMap()
+        }
+        myVisited.add(file)
+        if (!file.exists() || !file.isFile) return emptyMap()
+
+        val currentAttributes = parentAttributes.toMutableMap()
+        val headerDoc = loadHeaderOnlyDocument(file, currentAttributes)
+        currentAttributes.putAll(headerDoc.attributes)
+
+        val content = file.readText()
+        val matcher = includePattern.matcher(content)
+
+        while (matcher.find()) {
+            val rawIncludeTarget = matcher.group(1).trim()
+            val resolvedIncludeTarget = substituteAttributes(rawIncludeTarget, currentAttributes).trim()
+            val parentDir = file.parentFile
+            val includedFile = File(parentDir, resolvedIncludeTarget)
+            if (includedFile.exists() && includedFile.isFile && includedFile.extension == "adoc") {
+                val childAttrs = collectAllAttributes(includedFile, currentAttributes, myVisited, depth + 1, maxDepth)
+                currentAttributes.putAll(childAttrs)
+            }
+        }
+        return currentAttributes
+    }
+
     /**
      * Parses an Asciidoctor file and extracts all include directives.
      * Returns a set of File objects representing the included files.
@@ -1142,11 +1178,13 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         val matcher = includePattern.matcher(content)
 
         // Build the attribute table the same way conversion does (but header-only)
-        val headerDoc = loadHeaderOnlyDocument(file, parentAttributes)
+        val currentAttributes = parentAttributes.toMutableMap()
+        val headerDoc = loadHeaderOnlyDocument(file, currentAttributes)
+        currentAttributes.putAll(headerDoc.attributes)
 
         while (matcher.find()) {
             val rawIncludeTarget = matcher.group(1).trim()
-            val resolvedIncludeTarget = substituteAttributesWithAsciidoctor(rawIncludeTarget, headerDoc).trim()
+            val resolvedIncludeTarget = substituteAttributes(rawIncludeTarget, currentAttributes).trim()
 
             val parentDir = file.parentFile
             val includedFile = File(parentDir, resolvedIncludeTarget)
@@ -1154,7 +1192,14 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             if (includedFile.exists() && includedFile.isFile) {
                 includes.add(includedFile)
                 if (includedFile.extension == "adoc") {
-                    includes.addAll(extractIncludes(includedFile, headerDoc.attributes, myVisited, depth + 1, maxDepth))
+                    // Pull attributes from the included file to support subsequent includes in the same file
+                    val childHeader = loadHeaderOnlyDocument(includedFile, currentAttributes)
+                    val childAttributes = childHeader.attributes.toMutableMap()
+                    
+                    includes.addAll(extractIncludes(includedFile, currentAttributes, myVisited, depth + 1, maxDepth))
+                    
+                    // Propagate child attributes back up for the rest of the current file
+                    currentAttributes.putAll(childAttributes)
                 }
             } else {
                 logger.warn(

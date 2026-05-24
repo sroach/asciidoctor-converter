@@ -27,3 +27,8 @@ replay_pid*
 .kotlin/
 
 .junie
+
+run
+logs
+build
+
