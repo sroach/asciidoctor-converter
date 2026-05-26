@@ -1092,13 +1092,26 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
     }
 
     private fun sanitizeAttributeValue(v: Any?): Any? {
-        return when (v) {
-            null -> null
-            is Boolean -> v
-            is String -> v
-            is Number -> v
-            else -> v.toString()
+        if (v == null) return null
+        if (v is Boolean || v is String || v is Number) return v
+
+        // Handle JRuby objects to avoid 'inspect' strings like #<Symbol:0x...>
+        // and ensure they are converted to standard Java types before being passed back to JRuby.
+        val className = v.javaClass.name
+        if (className.startsWith("org.jruby.")) {
+            try {
+                // asJavaString() is common for RubySymbol, RubyString, etc.
+                val asJavaStringMethod = v.javaClass.methods.find { it.name == "asJavaString" && it.parameterCount == 0 }
+                if (asJavaStringMethod != null) {
+                    val result = asJavaStringMethod.invoke(v)
+                    if (result != null) return result.toString()
+                }
+            } catch (e: Exception) {
+                // ignore and fall through
+            }
         }
+
+        return v.toString()
     }
 
     /**
