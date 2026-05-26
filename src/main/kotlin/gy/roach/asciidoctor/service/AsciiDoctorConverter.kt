@@ -368,7 +368,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         directory.walkTopDown().forEach { file ->
             if (!file.isFile || shouldExcludeFile(file)) return@forEach
 
-            if (file.extension == "adoc" && !file.name.startsWith("_")) {
+            if (file.extension == "adoc") {
                 adocFiles.add(file)
             } else {
                 nonAdocFiles.add(file)
@@ -564,11 +564,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     // Create parent directories if they don't exist
                     targetFile.parentFile?.mkdirs()
 
-                    val attributes = buildAttributes(cssTheme).apply {
-                        collectAllAttributes(file).forEach { (k, v) ->
-                            sanitizeAttributeValue(v)?.let { setAttribute(k, it) }
-                        }
-                    }
+                    val attributes = buildAttributes(cssTheme)
                     val options = buildOptions(attributes)
                     options.setMkDirs(true)
                     options.setBaseDir(file.parentFile.absolutePath)
@@ -1091,106 +1087,13 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .build()
     }
 
-    private fun sanitizeAttributeValue(v: Any?): Any? {
-        if (v == null) return null
-        if (v is Boolean || v is String || v is Number) return v
 
-        // Handle JRuby objects to avoid 'inspect' strings like #<Symbol:0x...>
-        // and ensure they are converted to standard Java types before being passed back to JRuby.
-        val className = v.javaClass.name
-        if (className.startsWith("org.jruby.")) {
-            try {
-                // asJavaString() is common for RubySymbol, RubyString, etc.
-                val asJavaStringMethod = v.javaClass.methods.find { it.name == "asJavaString" && it.parameterCount == 0 }
-                if (asJavaStringMethod != null) {
-                    val result = asJavaStringMethod.invoke(v)
-                    if (result != null) return result.toString()
-                }
-            } catch (e: Exception) {
-                // ignore and fall through
-            }
-        }
-
-        return v.toString()
-    }
-
-    /**
-     * Load the AsciiDoc document in "header-only" mode so Asciidoctor builds the attribute table
-     * (including attributes from the file header and the attributes provided via buildAttributes()).
-     */
-    private fun loadHeaderOnlyDocument(file: File, initialAttributes: Map<String, Any> = emptyMap()): Document {
-        val attrs = buildAttributes()
-        initialAttributes.forEach { (k, v) ->
-            sanitizeAttributeValue(v)?.let { attrs.setAttribute(k, it) }
-        }
-        val headerOnlyOptions = Options.builder()
-            .backend("html")
-            .safe(SafeMode.UNSAFE) // match conversion environment; header-only won't execute includes anyway
-            .baseDir(file.parentFile)
-            .attributes(attrs)
-            .option("parse_header_only", true)
-            .build()
-
-        return asciidoctor.loadFile(file, headerOnlyOptions)
-    }
-    /**
-     * Substitute {attr} tokens using the attribute table provided.
-     * (We still do the replacement ourselves; the *values* come from the map.)
-     */
-    private fun substituteAttributes(input: String, attributes: Map<String, Any>, maxPasses: Int = 5): String {
-        var out = input
-        repeat(maxPasses) {
-            val replaced = Regex("\\{([^}]+)\\}").replace(out) { mr ->
-                val key = mr.groupValues[1]
-                val value = attributes[key]
-                value?.toString() ?: mr.value
-            }
-            if (replaced == out) return out
-            out = replaced
-        }
-        return out
-    }
-
-    /**
-     * Collects all attributes from a document and its recursively included .adoc files.
-     * This ensures that attributes defined in included files (e.g. _meta.adoc) are
-     * available at the start of conversion for resolving parameterized includes.
-     */
-    private fun collectAllAttributes(file: File, parentAttributes: Map<String, Any> = emptyMap(), visited: MutableSet<File>? = null, depth: Int = 0, maxDepth: Int = MAX_INCLUDE_DEPTH): Map<String, Any> {
-        val myVisited = visited ?: mutableSetOf<File>()
-        if (myVisited.contains(file) || depth > maxDepth) {
-            return emptyMap()
-        }
-        myVisited.add(file)
-        if (!file.exists() || !file.isFile) return emptyMap()
-
-        val currentAttributes = parentAttributes.toMutableMap()
-        val headerDoc = loadHeaderOnlyDocument(file, currentAttributes)
-        headerDoc.attributes.forEach { (k, v) ->
-            currentAttributes[k] = sanitizeAttributeValue(v) ?: ""
-        }
-
-        val content = file.readText()
-        val matcher = includePattern.matcher(content)
-
-        while (matcher.find()) {
-            val rawIncludeTarget = matcher.group(1).trim()
-            val resolvedIncludeTarget = substituteAttributes(rawIncludeTarget, currentAttributes).trim()
-            val parentDir = file.parentFile
-            val includedFile = File(parentDir, resolvedIncludeTarget)
-            if (includedFile.exists() && includedFile.isFile && includedFile.extension == "adoc") {
-                val childAttrs = collectAllAttributes(includedFile, currentAttributes, myVisited, depth + 1, maxDepth)
-                currentAttributes.putAll(childAttrs)
-            }
-        }
-        return currentAttributes
-    }
 
     /**
      * Parses an Asciidoctor file and extracts all include directives.
      * Returns a set of File objects representing the included files.
      */
-    private fun extractIncludes(file: File, parentAttributes: Map<String, Any> = emptyMap(), visited: MutableSet<File>? = null, depth: Int = 0, maxDepth: Int = MAX_INCLUDE_DEPTH): Set<File> {
+    private fun extractIncludes(file: File, visited: MutableSet<File>? = null, depth: Int = 0, maxDepth: Int = MAX_INCLUDE_DEPTH): Set<File> {
         val myVisited = visited ?: mutableSetOf<File>()
         if (myVisited.contains(file) || depth > maxDepth) {
             if (depth > maxDepth) {
@@ -1205,35 +1108,19 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         val includes = mutableSetOf<File>()
         val matcher = includePattern.matcher(content)
 
-        // Build the attribute table the same way conversion does (but header-only)
-        val currentAttributes = parentAttributes.toMutableMap()
-        val headerDoc = loadHeaderOnlyDocument(file, currentAttributes)
-        headerDoc.attributes.forEach { (k, v) ->
-            currentAttributes[k] = sanitizeAttributeValue(v) ?: ""
-        }
-
         while (matcher.find()) {
-            val rawIncludeTarget = matcher.group(1).trim()
-            val resolvedIncludeTarget = substituteAttributes(rawIncludeTarget, currentAttributes).trim()
-
+            val includeTarget = matcher.group(1).trim()
             val parentDir = file.parentFile
-            val includedFile = File(parentDir, resolvedIncludeTarget)
+            val includedFile = File(parentDir, includeTarget)
 
             if (includedFile.exists() && includedFile.isFile) {
                 includes.add(includedFile)
                 if (includedFile.extension == "adoc") {
-                    // Pull attributes from the included file to support subsequent includes in the same file
-                    val childHeader = loadHeaderOnlyDocument(includedFile, currentAttributes)
-                    val childAttributes = childHeader.attributes.mapValues { sanitizeAttributeValue(it.value) ?: "" }.toMutableMap()
-                    
-                    includes.addAll(extractIncludes(includedFile, currentAttributes, myVisited, depth + 1, maxDepth))
-                    
-                    // Propagate child attributes back up for the rest of the current file
-                    currentAttributes.putAll(childAttributes)
+                    includes.addAll(extractIncludes(includedFile, myVisited, depth + 1, maxDepth))
                 }
             } else {
                 logger.warn(
-                    "Included file not found: $rawIncludeTarget (resolved to '$resolvedIncludeTarget') in ${file.name}"
+                    "Included file not found: $includeTarget in ${file.name}"
                 )
             }
         }
