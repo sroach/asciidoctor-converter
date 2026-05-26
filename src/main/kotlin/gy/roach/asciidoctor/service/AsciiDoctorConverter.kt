@@ -368,7 +368,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         directory.walkTopDown().forEach { file ->
             if (!file.isFile || shouldExcludeFile(file)) return@forEach
 
-            if (file.extension == "adoc") {
+            if (file.extension == "adoc" && !file.name.startsWith("_")) {
                 adocFiles.add(file)
             } else {
                 nonAdocFiles.add(file)
@@ -564,9 +564,12 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     // Create parent directories if they don't exist
                     targetFile.parentFile?.mkdirs()
 
-                    val options = buildOptions(buildAttributes(cssTheme).apply {
-                        collectAllAttributes(file).forEach { (k, v) -> setAttribute(k, v) }
-                    })
+                    val attributes = buildAttributes(cssTheme).apply {
+                        collectAllAttributes(file).forEach { (k, v) ->
+                            sanitizeAttributeValue(v)?.let { setAttribute(k, it) }
+                        }
+                    }
+                    val options = buildOptions(attributes)
                     options.setMkDirs(true)
                     options.setBaseDir(file.parentFile.absolutePath)
 
@@ -1088,6 +1091,16 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .build()
     }
 
+    private fun sanitizeAttributeValue(v: Any?): Any? {
+        return when (v) {
+            null -> null
+            is Boolean -> v
+            is String -> v
+            is Number -> v
+            else -> v.toString()
+        }
+    }
+
     /**
      * Load the AsciiDoc document in "header-only" mode so Asciidoctor builds the attribute table
      * (including attributes from the file header and the attributes provided via buildAttributes()).
@@ -1095,7 +1108,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
     private fun loadHeaderOnlyDocument(file: File, initialAttributes: Map<String, Any> = emptyMap()): Document {
         val attrs = buildAttributes()
         initialAttributes.forEach { (k, v) ->
-            attrs.setAttribute(k, v)
+            sanitizeAttributeValue(v)?.let { attrs.setAttribute(k, it) }
         }
         val headerOnlyOptions = Options.builder()
             .backend("html")
@@ -1140,7 +1153,9 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
         val currentAttributes = parentAttributes.toMutableMap()
         val headerDoc = loadHeaderOnlyDocument(file, currentAttributes)
-        currentAttributes.putAll(headerDoc.attributes)
+        headerDoc.attributes.forEach { (k, v) ->
+            currentAttributes[k] = sanitizeAttributeValue(v) ?: ""
+        }
 
         val content = file.readText()
         val matcher = includePattern.matcher(content)
@@ -1180,7 +1195,9 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         // Build the attribute table the same way conversion does (but header-only)
         val currentAttributes = parentAttributes.toMutableMap()
         val headerDoc = loadHeaderOnlyDocument(file, currentAttributes)
-        currentAttributes.putAll(headerDoc.attributes)
+        headerDoc.attributes.forEach { (k, v) ->
+            currentAttributes[k] = sanitizeAttributeValue(v) ?: ""
+        }
 
         while (matcher.find()) {
             val rawIncludeTarget = matcher.group(1).trim()
@@ -1194,7 +1211,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                 if (includedFile.extension == "adoc") {
                     // Pull attributes from the included file to support subsequent includes in the same file
                     val childHeader = loadHeaderOnlyDocument(includedFile, currentAttributes)
-                    val childAttributes = childHeader.attributes.toMutableMap()
+                    val childAttributes = childHeader.attributes.mapValues { sanitizeAttributeValue(it.value) ?: "" }.toMutableMap()
                     
                     includes.addAll(extractIncludes(includedFile, currentAttributes, myVisited, depth + 1, maxDepth))
                     
