@@ -1,62 +1,69 @@
-/*! Asciidoctor Tabs | Editorial Light Theme */
+/*! Asciidoctor Tabs | Accent Theme
+ *  Drop-in replacement — swap your existing tabs CSS with this file.
+ *  Accent color is a single CSS variable; change --tabs-accent to any hue.
+ */
+
+/* ── Tokens ─────────────────────────────────────────────────────────── */
 :root {
-  /* Typography */
-  --tabs-font-head: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
-  --tabs-font-ui: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
-  --tabs-font-mono: "JetBrains Mono", "SFMono-Regular", monospace;
+  --tabs-accent:        #4f46e5;   /* indigo — change to any hex */
+  --tabs-accent-hover:  #4338ca;
+  --tabs-accent-rail:   #f5f3ff;
+  --tabs-accent-text:   #ffffff;
+  --tabs-accent-muted:  #4338ca;   /* inactive tab label */
+  --tabs-accent-soft:   rgba(99, 102, 241, 0.12);
 
-  /* Editorial palette (paper + ink + vermilion accent) */
-  --tabs-paper: #f8f5ef;
-  --tabs-paper-elev: #fffdf8;
-  --tabs-ink: #1f2328;
-  --tabs-ink-muted: #616a76;
-  --tabs-rule: #d6cec0;
-  --tabs-rule-strong: #b5aa97;
+  --tabs-bg:            #ffffff;
+  --tabs-rail-border:   #4f46e5;
+  --tabs-border:        #4f46e5;
+  --tabs-text:          #111827;
+  --tabs-text-muted:    #6b7280;
+  --tabs-panel-bg:      #ffffff;
 
-  --tabs-accent: #d9482b;       /* dominant */
-  --tabs-accent-soft: #f3c8b7;  /* subtle fill */
-  --tabs-accent-ink: #fffaf5;
-
-  --tabs-radius-lg: 14px;
-  --tabs-radius-md: 10px;
-  --tabs-gap: 8px;
-  --tabs-shadow: 0 10px 24px rgba(45, 39, 30, 0.11);
-
-  --tabs-focus: #1f7a8c;
+  --tabs-radius-outer:  12px;
+  --tabs-radius-btn:    8px;
+  --tabs-gap:           6px;
+  --tabs-focus:         #6366f1;
 }
 
-/* container */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tabs-accent:        #6366f1;
+    --tabs-accent-hover:  #818cf8;
+    --tabs-accent-rail:   #1e1b4b;
+    --tabs-accent-text:   #ffffff;
+    --tabs-accent-muted:  #a5b4fc;
+    --tabs-accent-soft:   rgba(99, 102, 241, 0.18);
+
+    --tabs-bg:            #0f0f10;
+    --tabs-rail-border:   #4338ca;
+    --tabs-border:        #4338ca;
+    --tabs-text:          #f3f4f6;
+    --tabs-text-muted:    #9ca3af;
+    --tabs-panel-bg:      #111113;
+  }
+}
+
+/* ── Container ───────────────────────────────────────────────────────── */
 .tabs {
   margin: 1.75rem 0;
-  border: 1px solid var(--tabs-rule);
-  border-radius: var(--tabs-radius-lg);
-  box-shadow: var(--tabs-shadow);
+  border: 1px solid var(--tabs-border);
+  border-radius: var(--tabs-radius-outer);
   overflow: hidden;
-  background:
-          radial-gradient(circle at 10% -40%, rgba(217, 72, 43, 0.07), transparent 52%),
-          linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.35)),
-          var(--tabs-paper);
-  color: var(--tabs-ink);
-  animation: tabsEditorialEnter 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  background: var(--tabs-bg);
+  color: var(--tabs-text);
+  animation: tabsAccentEnter 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* tab rail */
+/* ── Tab rail ────────────────────────────────────────────────────────── */
 .tablist > ul {
   display: flex;
   flex-wrap: wrap;
   list-style: none;
   margin: 0;
-  padding: 10px;
+  padding: 8px;
   gap: var(--tabs-gap);
-  border-bottom: 1px solid var(--tabs-rule);
-  background:
-          repeating-linear-gradient(
-                  90deg,
-                  rgba(40, 38, 34, 0.03) 0 1px,
-                  transparent 1px 18px
-          ),
-          linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.28)),
-          var(--tabs-paper-elev);
+  border-bottom: 1px solid var(--tabs-rail-border);
+  background: var(--tabs-accent-rail);
 }
 
 .tablist.ulist,
@@ -68,38 +75,31 @@
   margin-left: 0;
 }
 
-/* tabs */
+/* ── Tab buttons ─────────────────────────────────────────────────────── */
 .tablist > ul li {
-  align-items: center;
   display: inline-flex;
+  align-items: center;
   position: relative;
   cursor: pointer;
 
-  font-family: var(--tabs-font-ui);
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: 0.012em;
+  font-size: 0.8125rem;   /* 13px */
+  font-weight: 500;
+  line-height: 1.2;
 
-  color: var(--tabs-ink-muted);
+  color: var(--tabs-accent-muted);
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 0.5rem 0.95rem;
+  border: none;
+  border-radius: var(--tabs-radius-btn);
+  padding: 0.4rem 1rem;
 
   transition:
-          color 180ms ease,
-          background-color 180ms ease,
-          border-color 180ms ease,
-          transform 180ms ease,
-          box-shadow 180ms ease,
-          opacity 180ms ease;
+          color 130ms ease,
+          background-color 130ms ease;
 }
 
 .tablist > ul li:hover {
-  color: var(--tabs-ink);
-  border-color: var(--tabs-rule);
-  background: rgba(255, 255, 255, 0.72);
-  transform: translateY(-1px);
+  color: var(--tabs-text);
+  background: var(--tabs-accent-soft);
 }
 
 .tablist > ul li:focus-visible {
@@ -107,85 +107,53 @@
   outline-offset: 2px;
 }
 
-/* underline indicator */
-.tabs .tablist li::after {
-  content: "";
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: -7px;
-  height: 2px;
-  border-radius: 99px;
-  background: transparent;
-  transform: scaleX(0.3);
-  opacity: 0;
-  transition: transform 220ms ease, opacity 220ms ease, background-color 220ms ease;
-}
-
-/* active tab */
+/* ── Active tab ──────────────────────────────────────────────────────── */
 .tabs.is-loading .tablist li:first-child,
 .tabs:not(.is-loading) .tablist li.is-selected {
   background: var(--tabs-accent);
-  color: var(--tabs-accent-ink);
-  border-color: transparent;
-  box-shadow: 0 6px 16px rgba(217, 72, 43, 0.28);
-  transform: translateY(-1px);
+  color: var(--tabs-accent-text);
 }
 
-.tabs.is-loading .tablist li:first-child::after,
-.tabs:not(.is-loading) .tablist li.is-selected::after {
-  background: var(--tabs-accent);
-  transform: scaleX(1);
-  opacity: 1;
+/* no underline indicator needed for this style */
+.tabs .tablist li::after {
+  display: none;
 }
 
 /* reduce inactive visual weight */
 .tabs:not(.is-loading) .tablist li:not(.is-selected) {
-  opacity: 0.86;
+  opacity: 0.9;
 }
 
-/* loading/hidden panel behavior */
+/* ── Panel visibility ────────────────────────────────────────────────── */
 .tabs.is-loading .tabpanel + .tabpanel,
 .tabs:not(.is-loading) .tabpanel.is-hidden {
   display: none;
 }
 
-/* panel */
+/* ── Panel ───────────────────────────────────────────────────────────── */
 .tabpanel {
-  padding: 1.2rem 1.3rem;
-  color: var(--tabs-ink);
-  background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.32)),
-          var(--tabs-paper-elev);
-  border: 0;
-  animation: tabPanelReveal 280ms ease;
+  padding: 1.25rem 1.375rem;
+  color: var(--tabs-text);
+  background: var(--tabs-panel-bg);
+  animation: tabPanelReveal 200ms ease;
 }
 
 .tabpanel > :first-child {
   margin-top: 0;
 }
 
-/* subtle editorial heading treatment in panel */
-.tabpanel h2,
-.tabpanel h3,
-.tabpanel h4 {
-  font-family: var(--tabs-font-head);
-  letter-spacing: -0.01em;
-}
-
-/* keep standalone Asciidoctor spacing tidy */
+/* tidy trailing margin in Asciidoctor context */
 #content .tabpanel > :last-child,
 #content .tabpanel > :last-child > :last-child,
 #content .tabpanel > :last-child > :last-child > li:last-child > :last-child {
   margin-bottom: 0;
 }
 
-/* table support */
+/* ── Table support ───────────────────────────────────────────────────── */
 .tablecontainer {
   overflow-x: auto;
-  border: 1px solid var(--tabs-rule);
-  border-radius: var(--tabs-radius-md);
-  background: #fffdf9;
+  border: 1px solid color-mix(in srgb, var(--tabs-border) 30%, transparent);
+  border-radius: 6px;
 }
 
 #content .tablecontainer {
@@ -196,78 +164,22 @@
   margin-bottom: 0;
 }
 
-/* tasteful motion */
-@keyframes tabsEditorialEnter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-    filter: saturate(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: saturate(1);
-  }
+/* ── Motion ──────────────────────────────────────────────────────────── */
+@keyframes tabsAccentEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
 }
 
 @keyframes tabPanelReveal {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0);   }
 }
 
-/* accessibility */
 @media (prefers-reduced-motion: reduce) {
   .tabs,
   .tabpanel,
-  .tablist > ul li,
-  .tabs .tablist li::after {
+  .tablist > ul li {
     animation: none !important;
     transition: none !important;
-  }
-}
-
-/* dark fallback for user preference (keeps editorial identity) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --tabs-paper: #151618;
-    --tabs-paper-elev: #1a1c20;
-    --tabs-ink: #ece8de;
-    --tabs-ink-muted: #a6adba;
-    --tabs-rule: #2d323a;
-    --tabs-rule-strong: #4c5561;
-
-    --tabs-accent: #e05b3f;
-    --tabs-accent-soft: #5b2e24;
-    --tabs-accent-ink: #fff6f0;
-
-    --tabs-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
-    --tabs-focus: #49b5c8;
-  }
-
-  .tabs {
-    background:
-            radial-gradient(circle at 10% -35%, rgba(224, 91, 63, 0.16), transparent 55%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent),
-            var(--tabs-paper);
-  }
-
-  .tablist > ul li:hover {
-    background: rgba(255, 255, 255, 0.04);
-  }
-
-  .tabpanel {
-    background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent),
-            var(--tabs-paper-elev);
-  }
-
-  .tablecontainer {
-    background: #171a1e;
   }
 }
