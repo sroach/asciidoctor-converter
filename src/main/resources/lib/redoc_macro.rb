@@ -13,6 +13,8 @@ class RedocBlockMacro < Asciidoctor::Extensions::BlockMacroProcessor
     hide_hostname = attrs.fetch('hideHostname', 'true').to_s.downcase == 'true'
     required_props_first = attrs.fetch('requiredPropsFirst', 'true').to_s.downcase == 'true'
     primary_color = attrs.fetch('primaryColor', '#32329f')
+    paths_script = attrs['paths'].to_s
+    paths_script_js = paths_script.to_json
 
     config_options = {
       pageTitle: title,
@@ -28,7 +30,6 @@ class RedocBlockMacro < Asciidoctor::Extensions::BlockMacroProcessor
       }
     }
 
-    puts "redoc macro #{title}"
     config_options_js = config_options.to_json
     backend = parent.document.attr('backend') || 'html5'
 
@@ -57,7 +58,8 @@ class RedocBlockMacro < Asciidoctor::Extensions::BlockMacroProcessor
 
       <script>
         const specUrl = #{spec_url_js};
-
+        const pathsScript = #{paths_script_js};
+        
         fetch(specUrl, {
           method: 'GET',
           headers: {
@@ -87,9 +89,20 @@ class RedocBlockMacro < Asciidoctor::Extensions::BlockMacroProcessor
 
           return response.json();
         })
-        .then(openapiSpec => {
+        .then(spec => {
+          if (!spec.info) spec.info = {};
+          spec.info.title = "#{title}";
+          console.log(pathsScript);
+          if (pathsScript && pathsScript.trim().length > 0) {
+            try {
+              new Function('spec', pathsScript)(spec);
+            } catch (e) {
+              console.error('Failed to apply paths script:', e);
+            }
+          }
+          console.log(spec.paths)
           Redoc.init(
-            openapiSpec,
+            spec,
             #{config_options_js},
             document.getElementById('#{container_id}')
           );
