@@ -7,6 +7,29 @@ class RedocBlockMacro < Asciidoctor::Extensions::BlockMacroProcessor
   named :redocly
 
   def process(parent, target, attrs)
+
+    title = attrs['title'] || 'API Documentation'
+    disable_search = attrs.fetch('disableSearch', 'false').to_s.downcase == 'true'
+    hide_hostname = attrs.fetch('hideHostname', 'true').to_s.downcase == 'true'
+    required_props_first = attrs.fetch('requiredPropsFirst', 'true').to_s.downcase == 'true'
+    primary_color = attrs.fetch('primaryColor', '#32329f')
+
+    config_options = {
+      pageTitle: title,
+      disableSearch: disable_search,
+      hideHostname: hide_hostname,
+      requiredPropsFirst: required_props_first,
+      theme: {
+        colors: {
+          primary: {
+            main: primary_color
+          }
+        }
+      }
+    }
+
+    puts "redoc macro #{title}"
+    config_options_js = config_options.to_json
     backend = parent.document.attr('backend') || 'html5'
 
     unless backend.downcase == 'html5'
@@ -67,10 +90,7 @@ class RedocBlockMacro < Asciidoctor::Extensions::BlockMacroProcessor
         .then(openapiSpec => {
           Redoc.init(
             openapiSpec,
-            {
-              disableSearch: #{disable_search},
-              theme: { colors: { primary: { main: '#{escape_javascript(primary_color)}' } } }
-            },
+            #{config_options_js},
             document.getElementById('#{container_id}')
           );
         })
