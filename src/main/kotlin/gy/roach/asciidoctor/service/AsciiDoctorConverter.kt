@@ -6,6 +6,7 @@ import gy.roach.asciidoctor.extension.DocOpsMermaidDocinfoProcessor
 import gy.roach.asciidoctor.extension.MermaidIncludeDocinfoProcessor
 import gy.roach.asciidoctor.extension.PlantumlThemePreprocessor
 import gy.roach.asciidoctor.extension.ReadingTimeDocinfoProcessor
+import gy.roach.asciidoctor.extension.RedoclyIncludeDocinfoProcessor
 import gy.roach.asciidoctor.tabs.AsciidoctorTabsLoader
 import gy.roach.asciidoctor.tabs.BlockSwitchDocinfoProcessor
 import org.asciidoctor.Asciidoctor
@@ -92,10 +93,12 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
         asciidoctor.javaExtensionRegistry().preprocessor(PlantumlThemePreprocessor::class.java)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(DocOpsMermaidDocinfoProcessor::class.java)
         asciidoctor.javaExtensionRegistry().docinfoProcessor(MermaidIncludeDocinfoProcessor::class.java)
+        asciidoctor.javaExtensionRegistry().docinfoProcessor(RedoclyIncludeDocinfoProcessor::class.java)
 
         loadRubyExtension(asciidoctor, "/lib/docops-extension.rb")
         loadRubyExtension(asciidoctor, "/lib/reactions_block_processor.rb")
         loadRubyExtension(asciidoctor, "/lib/page_navigation_postprocessor.rb")
+        loadRubyExtension(asciidoctor, "/lib/redoc_macro.rb")
         AsciidoctorTabsLoader.load(asciidoctor)
     }
 
