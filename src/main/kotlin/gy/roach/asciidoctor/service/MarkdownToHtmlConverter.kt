@@ -21,6 +21,7 @@ import gy.roach.asciidoctor.md.extension.DocOpsMacroExtension
 import gy.roach.asciidoctor.md.extension.GitHubAdmonitionExtension
 import gy.roach.asciidoctor.md.extension.MermaidNodeRendererFactory
 import gy.roach.asciidoctor.md.extension.PlantumlNodeRendererFactory
+import gy.roach.asciidoctor.md.extension.RedoclyMacroExtension
 import gy.roach.asciidoctor.md.extension.TabsExtension
 import org.openpdf.pdf.ITextRenderer
 import org.openpdf.text.DocumentException
@@ -102,6 +103,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings, privat
             SimTocExtension.create(),
             AdmonitionExtension.create(),
             TabsExtension.create(),
+            RedoclyMacroExtension.create()
             ))
         set(DocOpsMacroExtension.WEBSERVER, converterSettings.panelWebserver)
         set(DocOpsMacroExtension.DEFAULT_SCALE, "1.0")
@@ -126,7 +128,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings, privat
 
             // Wrap in full HTML document with styling
             val fullHtml = MermaidFlexmark.createFullHtmlWithMermaid(
-                markdownContent = htmlBody,
+                markdownContent = markdownToRender,
                 converterSettings = converterSettings,
                 title= documentTitle,
                 cssTheme = cssTheme)
@@ -188,7 +190,8 @@ object MermaidFlexmark {
             TablesExtension.create(),
             SimTocExtension.create(),
             AdmonitionExtension.create(),
-            TabsExtension.create()
+            TabsExtension.create(),
+            RedoclyMacroExtension.create()
         )
 
         // Only add WikiLinkExtension if no docops macros present
@@ -492,7 +495,9 @@ object MermaidFlexmark {
                           }
                     </style>
                 <script src="https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.min.js"></script>
-                
+                <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+                <script src ="https://cdn.jsdelivr.net/npm/js-yaml@4.2.0/dist/js-yaml.min.js"></script>        
+
             </head>
             <body>
                     <article class="markdown-body">

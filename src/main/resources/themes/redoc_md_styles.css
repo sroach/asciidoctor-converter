@@ -94,6 +94,8 @@
 
   /* Let long IDs/URLs behave */
   overflow-wrap: anywhere;
+
+
 }
 
 /* Responsive padding (keeps 8px rhythm while respecting smaller screens) */
@@ -417,6 +419,17 @@
   .markdown-body pre {
     box-shadow: none;
   }
+}
+
+/* Keep normal markdown readable */
+.markdown-body {
+  --content-max-width: 980px;
+  --content-pad-x: 24px;
+  max-width: var(--content-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--content-pad-x);
+  padding-right: var(--content-pad-x);
 }
 
 /* Redoc wrapper emitted by macro */
