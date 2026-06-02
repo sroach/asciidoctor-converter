@@ -154,7 +154,7 @@ class RedoclyMacroExtension private constructor() :
                   disableSearch: $disableSearch,
                   hideHostname: $hideHostname,
                   requiredPropsFirst: $requiredPropsFirst,
-                  theme: { colors: { primary: { main: '${jsEsc(primaryColor)}' } } }
+                  theme: { sidebar: { backgroundColor: '#21252b', textColor:       '#abb2bf', activeTextColor: '#61afef', groupItems: { textTransform: 'uppercase', }, }, colors: { primary: { main: '#61afef' }, text: { primary:   '#abb2bf', secondary: '#5c6370', }, background: { main:  '#21252b', light: '#282c34', }, }, logo: { gutter: '16px', }, rightPanel: { backgroundColor: '#282c34', textColor:        '#abb2bf', }, }
                 };
 
                 fetch(specUrl, {

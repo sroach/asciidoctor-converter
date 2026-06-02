@@ -22,11 +22,32 @@ class RedocBlockMacro < Asciidoctor::Extensions::BlockMacroProcessor
       hideHostname: hide_hostname,
       requiredPropsFirst: required_props_first,
       theme: {
+        sidebar: {
+        backgroundColor: '#21252b',
+        textColor:       '#abb2bf',
+          activeTextColor: '#61afef',
+          groupItems: {
+            textTransform: 'uppercase',
+          },
+        },
         colors: {
-          primary: {
-            main: primary_color
-          }
-        }
+          primary: { main: '#61afef' },
+          text: {
+            primary:   '#abb2bf',
+            secondary: '#5c6370',
+          },
+          background: {
+            main:  '#21252b',
+            light: '#282c34',
+          },
+        },
+        logo: {
+          gutter: '16px',
+        },
+        rightPanel: {
+          backgroundColor: '#282c34',
+          textColor:        '#abb2bf',
+        },
       }
     }
 
@@ -100,7 +121,7 @@ class RedocBlockMacro < Asciidoctor::Extensions::BlockMacroProcessor
               console.error('Failed to apply paths script:', e);
             }
           }
-          console.log(spec.paths)
+          
           Redoc.init(
             spec,
             #{config_options_js},
