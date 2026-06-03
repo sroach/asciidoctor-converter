@@ -11,6 +11,7 @@ import com.vladsch.flexmark.parser.Parser
 import com.vladsch.flexmark.parser.block.*
 import com.vladsch.flexmark.util.ast.Block
 import com.vladsch.flexmark.util.data.DataHolder
+import com.vladsch.flexmark.util.data.DataKey
 import com.vladsch.flexmark.util.data.MutableDataHolder
 import com.vladsch.flexmark.util.misc.Extension
 import com.vladsch.flexmark.util.sequence.BasedSequence
@@ -26,15 +27,15 @@ import java.util.regex.Pattern
  * - Single-line macro, no closing tag required.
  * - Renders raw HTML+JS for HTML renderer.
  */
-class RedoclyMacroExtension private constructor() :
+class RedoclyMacroExtension private constructor(private val useDark: Boolean = false) :
     Parser.ParserExtension,
     HtmlRenderer.HtmlRendererExtension {
 
     companion object {
         private val OPEN_PATTERN = Pattern.compile("""^\[redocly:([^\]\s]+)(.*)]\s*$""")
         private val OPTION_PATTERN = Pattern.compile("""(\w+)=(?:"([^"]*)"|'([^']*)'|(\S+))""")
-
-        fun create(): Extension = RedoclyMacroExtension()
+        val DEFAULT_USE_DARK = DocOpsMacroExtension.DEFAULT_USE_DARK
+        fun create(useDark: Boolean = false): Extension = RedoclyMacroExtension(useDark)
 
         private fun parseOptions(optionsStr: String): Map<String, String> {
             if (optionsStr.isBlank()) return emptyMap()
@@ -53,29 +54,34 @@ class RedoclyMacroExtension private constructor() :
     override fun rendererOptions(options: MutableDataHolder) = Unit
 
     override fun extend(parserBuilder: Parser.Builder) {
-        parserBuilder.customBlockParserFactory(RedoclyBlockParserFactory())
+        parserBuilder.customBlockParserFactory(RedoclyBlockParserFactory(useDark))
     }
 
     override fun extend(rendererBuilder: HtmlRenderer.Builder, rendererType: String) {
         if (rendererType == "HTML") {
-            rendererBuilder.nodeRendererFactory(RedoclyNodeRenderer.Factory())
+            rendererBuilder.nodeRendererFactory(RedoclyNodeRenderer.Factory(useDark))
         }
     }
 
-    class RedoclyBlock : Block() {
+    class RedoclyBlock() : Block() {
         var specUrl: String = ""
         var options: Map<String, String> = emptyMap()
+        var useDark: Boolean = false
         override fun getSegments(): Array<BasedSequence> = EMPTY_SEGMENTS
+
+        constructor(chars: BasedSequence) : this() {
+            this.chars = chars
+        }
     }
 
-    class RedoclyBlockParserFactory : CustomBlockParserFactory {
+    class RedoclyBlockParserFactory(private val useDark: Boolean = false) : CustomBlockParserFactory {
         override fun getAfterDependents(): Set<Class<*>>? = null
         override fun getBeforeDependents(): Set<Class<*>>? = null
         override fun affectsGlobalScope(): Boolean = false
 
-        override fun apply(options: DataHolder): BlockParserFactory = Impl(options)
+        override fun apply(options: DataHolder): BlockParserFactory = Impl(options, useDark)
 
-        private class Impl(options: DataHolder) : AbstractBlockParserFactory(options) {
+        private class Impl(options: DataHolder, private val useDark: Boolean) : AbstractBlockParserFactory(options) {
             override fun tryStart(state: ParserState, matchedBlockParser: MatchedBlockParser): BlockStart? {
                 val line = state.line.toString()
                 val m = OPEN_PATTERN.matcher(line)
@@ -87,22 +93,25 @@ class RedoclyMacroExtension private constructor() :
                 val optionsStr = (m.group(2) ?: "").trim()
                 val options = parseOptions(optionsStr)
 
-                val parser = RedoclyBlockParser(specUrl, options)
+                val parser = RedoclyBlockParser(state.line, specUrl, options, useDark)
                 return BlockStart.of(parser).atIndex(state.line.length)
             }
         }
     }
 
     class RedoclyBlockParser(
+        chars: BasedSequence,
         private val specUrl: String,
-        private val options: Map<String, String>
+        private val options: Map<String, String>,
+        private val useDark: Boolean
     ) : AbstractBlockParser() {
 
-        private val block = RedoclyBlock()
+        private val block = RedoclyBlock(chars)
 
         init {
             block.specUrl = specUrl
             block.options = options
+            block.useDark = useDark
         }
 
         override fun getBlock(): Block = block
@@ -117,7 +126,7 @@ class RedoclyMacroExtension private constructor() :
         override fun parseInlines(inlineParser: InlineParser) = Unit
     }
 
-    class RedoclyNodeRenderer(private val options: DataHolder) : NodeRenderer {
+    class RedoclyNodeRenderer(private val dataHolder: DataHolder, private val useDark: Boolean = false) : NodeRenderer {
 
         override fun getNodeRenderingHandlers(): Set<NodeRenderingHandler<*>> {
             return setOf(
@@ -138,9 +147,14 @@ class RedoclyMacroExtension private constructor() :
             val layout = (node.options["layout"] ?: "fullbleed").trim().lowercase()
             val layoutClass = if (layout == "contained") "redocly-wrap redocly-contained" else "redocly-wrap redocly-fullbleed"
 
+            val defaultUseDark = node.useDark || useDark || DEFAULT_USE_DARK[dataHolder]
             val containerId = "redoc-container-${System.currentTimeMillis()}-${(Math.random() * 1000).toInt()}"
             val authHeader = if (token.isNotBlank()) "'Authorization': 'Bearer ${jsEsc(token)}'," else ""
-
+            val theme = if(defaultUseDark) {
+                """theme: { sidebar: { backgroundColor: '#21252b', textColor:       '#abb2bf', activeTextColor: '#61afef', groupItems: { textTransform: 'uppercase', }, }, colors: { primary: { main: '#61afef' }, text: { primary:   '#abb2bf', secondary: '#5c6370', }, background: { main:  '#21252b', light: '#282c34', }, }, logo: { gutter: '16px', }, rightPanel: { backgroundColor: '#282c34', textColor:        '#abb2bf', }, }"""
+            } else {
+                """theme: { sidebar: { backgroundColor: '#f5f6f7', textColor:       '#3d4151', activeTextColor: '#1a56db', groupItems: { textTransform: 'uppercase', }, }, colors: { primary: { main: '#1a56db' }, text: { primary:   '#1a1d2e', secondary: '#6b7280', }, background: { main:  '#ffffff', light: '#f9fafb', }, }, logo: { gutter: '16px', }, rightPanel: { backgroundColor: '#1e2a3a',   textColor:        '#e2e8f0', }, }"""
+            }
             val out = """
             <div class="$layoutClass">
               <div id="$containerId"></div>
@@ -154,7 +168,7 @@ class RedoclyMacroExtension private constructor() :
                   disableSearch: $disableSearch,
                   hideHostname: $hideHostname,
                   requiredPropsFirst: $requiredPropsFirst,
-                  theme: { sidebar: { backgroundColor: '#21252b', textColor:       '#abb2bf', activeTextColor: '#61afef', groupItems: { textTransform: 'uppercase', }, }, colors: { primary: { main: '#61afef' }, text: { primary:   '#abb2bf', secondary: '#5c6370', }, background: { main:  '#21252b', light: '#282c34', }, }, logo: { gutter: '16px', }, rightPanel: { backgroundColor: '#282c34', textColor:        '#abb2bf', }, }
+                  $theme
                 };
 
                 fetch(specUrl, {
@@ -201,8 +215,8 @@ class RedoclyMacroExtension private constructor() :
                 .replace("\r", "\\r")
         }
 
-        class Factory : NodeRendererFactory {
-            override fun apply(options: DataHolder): NodeRenderer = RedoclyNodeRenderer(options)
+        class Factory(private val useDark: Boolean = false) : NodeRendererFactory {
+            override fun apply(options: DataHolder): NodeRenderer = RedoclyNodeRenderer(options, useDark)
         }
     }
 }

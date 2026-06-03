@@ -115,6 +115,11 @@ class MarkdownConverter(private val converterSettings: ConverterSettings, privat
         return try {
             val useDark = cssTheme.contains("dark") || cssTheme.contains("brutalist")
             options.set(DocOpsMacroExtension.DEFAULT_USE_DARK, useDark)
+            val extensions = (options.get(Parser.EXTENSIONS) ?: emptyList<Extension>()).toMutableList()
+            extensions.removeIf { it is RedoclyMacroExtension }
+            extensions.add(RedoclyMacroExtension.create(useDark))
+            options.set(Parser.EXTENSIONS, extensions)
+
             val parser = Parser.builder(options).build()
             val renderer = HtmlRenderer.builder(options)
                 .nodeRendererFactory(MermaidNodeRendererFactory(useDark))
@@ -191,7 +196,7 @@ object MermaidFlexmark {
             SimTocExtension.create(),
             AdmonitionExtension.create(),
             TabsExtension.create(),
-            RedoclyMacroExtension.create()
+            RedoclyMacroExtension.create(useDark)
         )
 
         // Only add WikiLinkExtension if no docops macros present
