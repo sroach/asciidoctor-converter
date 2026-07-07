@@ -189,15 +189,19 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
 
 
 
-    private fun buildAttributes(cssTheme: String = "github-markdown-css.css"): Attributes {
+    private fun buildAttributes(
+        cssTheme: String = "github-markdown-css.css",
+        sourceFile: File? = null
+    ): Attributes {
         // Get the docinfo directory from resources
         val docinfoDir = this::class.java.classLoader.getResource("docinfo")?.path
             ?: "src/main/resources/docinfo"
 
         val useDark = cssTheme.contains("dark") || cssTheme.contains("brutalist")
         val plantumlTheme = if (useDark) "dark" else "light"
+        val metaAttributes = sourceFile?.let { readMetaAttributes(it.parentFile) } ?: emptyMap()
 
-        return Attributes.builder()
+        val builder = Attributes.builder()
             .sourceHighlighter("highlightjs")
             .allowUriRead(true)
             .linkAttrs(true)
@@ -217,8 +221,36 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .attribute("pdf-theme", "uri:classloader:/themes/basic-theme.yml")
             .attribute("pdf-fontsdir", "uri:classloader:/fonts;GEM_FONTS_DIR")
             .attribute("docops-plantuml-theme", plantumlTheme)
-            .build()
+
+        metaAttributes.forEach { (name, value) ->
+            builder.attribute(name, value)
+        }
+
+        return builder.build()
     }
+
+    private fun readMetaAttributes(sourceDir: File?): Map<String, String> {
+        if (sourceDir == null) {
+            return emptyMap()
+        }
+
+        val metaFile = File(sourceDir, "_meta.adoc")
+        if (!metaFile.exists() || !metaFile.isFile) {
+            return emptyMap()
+        }
+
+        return metaFile.readLines()
+            .mapNotNull { line ->
+                val match = Regex("^:([A-Za-z0-9_-]+):\\s*(.*)$").matchEntire(line.trim())
+                if (match == null) {
+                    null
+                } else {
+                    match.groupValues[1] to match.groupValues[2].trim()
+                }
+            }
+            .toMap()
+    }
+
     private fun buildOptions(attrs: Attributes): Options {
         return  Options.builder()
             .backend("html")
@@ -226,6 +258,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
             .safe(SafeMode.UNSAFE)
             .build()
     }
+
 
     private fun buildPdfOptions(attrs: Attributes): Options {
         return Options.builder()
@@ -567,7 +600,7 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
                     // Create parent directories if they don't exist
                     targetFile.parentFile?.mkdirs()
 
-                    val attributes = buildAttributes(cssTheme)
+                    val attributes = buildAttributes(cssTheme, file)
                     val options = buildOptions(attributes)
                     options.setMkDirs(true)
                     options.setBaseDir(file.parentFile.absolutePath)
@@ -1096,38 +1129,98 @@ class AsciiDoctorConverter(private val converterSettings: ConverterSettings,
      * Parses an Asciidoctor file and extracts all include directives.
      * Returns a set of File objects representing the included files.
      */
-    private fun extractIncludes(file: File, visited: MutableSet<File>? = null, depth: Int = 0, maxDepth: Int = MAX_INCLUDE_DEPTH): Set<File> {
+    private fun extractIncludes(
+        file: File,
+        visited: MutableSet<File>? = null,
+        depth: Int = 0,
+        maxDepth: Int = MAX_INCLUDE_DEPTH,
+        inheritedAttributes: Map<String, String> = emptyMap()
+    ): Set<File> {
         val myVisited = visited ?: mutableSetOf<File>()
-        if (myVisited.contains(file) || depth > maxDepth) {
+        val canonicalFile = file.canonicalFile
+
+        if (myVisited.contains(canonicalFile) || depth > maxDepth) {
             if (depth > maxDepth) {
                 logger.warn("Maximum include depth exceeded ($maxDepth) for file: ${file.name}")
             }
             return emptySet()
         }
-        myVisited.add(file)
+
+        myVisited.add(canonicalFile)
+
         if (!file.exists() || !file.isFile) return emptySet()
 
-        val content = file.readText()
         val includes = mutableSetOf<File>()
-        val matcher = includePattern.matcher(content)
+        val attributes = inheritedAttributes.toMutableMap()
+        val parentDir = file.parentFile
 
-        while (matcher.find()) {
-            val includeTarget = matcher.group(1).trim()
-            val parentDir = file.parentFile
-            val includedFile = File(parentDir, includeTarget)
+        file.readLines().forEach { line ->
+            collectAttributeFromLine(line, attributes)
+
+            val matcher = includePattern.matcher(line)
+            if (!matcher.find()) {
+                return@forEach
+            }
+
+            val rawIncludeTarget = matcher.group(1).trim()
+            val includeTarget = substituteAttributes(rawIncludeTarget, attributes)
+            val includedFile = File(parentDir, includeTarget).normalize()
 
             if (includedFile.exists() && includedFile.isFile) {
                 includes.add(includedFile)
+
                 if (includedFile.extension == "adoc") {
-                    includes.addAll(extractIncludes(includedFile, myVisited, depth + 1, maxDepth))
+                    collectAttributesFromFile(includedFile, attributes)
+
+                    includes.addAll(
+                        extractIncludes(
+                            file = includedFile,
+                            visited = myVisited,
+                            depth = depth + 1,
+                            maxDepth = maxDepth,
+                            inheritedAttributes = attributes
+                        )
+                    )
                 }
             } else {
                 logger.warn(
-                    "Included file not found: $includeTarget in ${file.name}"
+                    "Included file not found: $rawIncludeTarget resolved as $includeTarget in ${file.name}"
                 )
             }
         }
 
         return includes
     }
+
+    private fun collectAttributesFromFile(file: File, attributes: MutableMap<String, String>) {
+        if (!file.exists() || !file.isFile || file.extension != "adoc") {
+            return
+        }
+
+        file.readLines().forEach { line ->
+            collectAttributeFromLine(line, attributes)
+        }
+    }
+
+    private fun collectAttributeFromLine(line: String, attributes: MutableMap<String, String>) {
+        val trimmed = line.trim()
+        val match = Regex("^:([A-Za-z0-9_-]+):\\s*(.*)$").matchEntire(trimmed)
+
+        if (match != null) {
+            val name = match.groupValues[1]
+            val value = match.groupValues[2].trim()
+            attributes[name] = value
+        }
+    }
+
+    private fun substituteAttributes(value: String, attributes: Map<String, String>): String {
+        return Regex("\\{([A-Za-z0-9_-]+)}").replace(value) { match ->
+            val attributeName = match.groupValues[1]
+            attributes[attributeName] ?: match.value
+        }
+    }
+
+    private fun File.normalize(): File = this.toPath().normalize().toFile()
+
 }
+
