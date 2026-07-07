@@ -72,7 +72,12 @@ class PlantumlThemePreprocessor : Preprocessor() {
                 }
 
                 // Handle theme injection at @startuml
-                if (trimmed == "@startuml" && !themeInjected) {
+                if (!themeInjected && (
+                            trimmed == "@startuml" ||
+                                    trimmed == "@startmindmap" ||
+                                    trimmed == "@startwbs"
+                            )
+                ){
                     processed.add(line)
                     themeContent.lines().filter { it.isNotBlank() }.forEach { themeLine ->
                         processed.add(themeLine)
@@ -82,7 +87,7 @@ class PlantumlThemePreprocessor : Preprocessor() {
                 }
 
                 // Handle end of un-delimited block
-                if (trimmed == "@enduml") {
+                if (trimmed == "@enduml" || trimmed=="@endmindmap" || trimmed == "@endwbs") {
                     if (activeDelimiter == null) {
                         insidePlantumlBlock = false
                     }

@@ -97,3 +97,54 @@ skinparam actor {
     FontColor        #000000
     FontSize         13
 }
+
+<style>
+mindmapDiagram {
+  node {
+    BackGroundColor #FFFFFF
+    LineColor #D7DFEA
+    LineThickness 1.2
+    FontColor #0F172A
+    FontName Helvetica
+    RoundCorner 16
+    Padding 8
+  }
+  rootNode {
+    BackGroundColor #EEF4FF
+    LineColor #A8C7FF
+    FontColor #0F172A
+    FontStyle bold
+  }
+  leafNode {
+    BackGroundColor #FFFFFF
+    LineColor #D7DFEA
+    FontColor #1E293B
+  }
+  arrow {
+    LineColor #007AFF
+    FontColor #0F172A
+  }
+}
+
+wbsDiagram {
+  node {
+    BackGroundColor #FFFFFF
+    LineColor #D7DFEA
+    LineThickness 1.2
+    FontColor #0F172A
+    FontName Helvetica
+    RoundCorner 14
+    Padding 8
+  }
+  rootNode {
+    BackGroundColor #EEF4FF
+    LineColor #A8C7FF
+    FontColor #0F172A
+    FontStyle bold
+  }
+  arrow {
+    LineColor #007AFF
+    FontColor #0F172A
+  }
+}
+</style>
