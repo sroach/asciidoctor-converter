@@ -1,33 +1,198 @@
+# ==========================================================================
+# Docs Design System — pdf-theme.yml
+# For asciidoctor-pdf. Mirrors docs.css: same indigo accent, slate neutrals.
+# Fonts must be embedded (PDF can't pull web fonts) — see notes at bottom.
+# ==========================================================================
 extends: default
-page:
-  margin: [0.5in, 0.67in, 0.67in, 0.67in]
-  margin-inner: 0.75in
-  margin-outer: 0.59in
 
-title-page:
-  text-align: right
-  font-size: 24
-  background-image: cover-page.svg
-  title:
-    font_size: $heading_h1_font_size
-    font_color: #aaaaaa
-    font_style: bold
-    line_height: 1.2
-    top: 65%
-
-footer:
-  border-color: #DDDDDD
-  border-style: solid
-  height: 0.75in
-  recto:
-    right:
-      content: '{section-or-chapter-title} | *{page-number} of {page-count}*'
-  verso:
-    left:
-      content: '*{page-number} of {page-count}* | {section-or-chapter-title}'
-
+font:
+  catalog:
+    Inter:
+      normal: static/Inter_18pt-Regular.ttf
+      bold: static/Inter_18pt-SemiBold.ttf
+      italic: static/Inter_18pt-Italic.ttf
+      bold_italic: static/Inter_18pt-SemiBoldItalic.ttf
+    JetBrains Mono:
+      normal: static/JetBrainsMono-Regular.ttf
+      bold: static/JetBrainsMono-Bold.ttf
+      italic: static/JetBrainsMono-Italic.ttf
+      bold_italic: static/JetBrainsMono-BoldItalic.ttf
+#  fallbacks: [Noto Emoji]
 
 base:
-  font-family: Helvetica
-  font-size: 11
-  line-height: 1.5
+  font_family: Inter
+  font_size: 10.5
+  font_color: '1A1D23'
+  line_height: 1.4
+
+page:
+  background_color: 'FFFFFF'
+  layout: portrait
+  margin: [1.5cm, 2cm, 2cm, 2cm]
+  margin_inner: 2cm
+  margin_outer: 1.5cm
+  size: Letter
+
+link:
+  font_color: '4F46E5'
+
+heading:
+  font_color: '1A1D23'
+  font_style: bold
+  line_height: 1.3
+  h1:
+    font_size: 24
+    margin_top: 0
+    margin_bottom: 12
+  h2:
+    font_size: 17
+    margin_top: 24
+    border_bottom_width: 0.5
+    border_bottom_color: 'E3E5E8'
+    padding_bottom: 4
+  h3:
+    font_size: 13.5
+    margin_top: 18
+  h4:
+    font_size: 11.5
+    margin_top: 14
+
+
+
+
+title_page:
+  align: left
+  logo:
+    top: 8%
+  title:
+    font_size: 30
+    font_style: bold
+    font_color: 'FCFCFC'
+    top: 40%
+  subtitle:
+    font_size: 14
+    font_color: 'E2E8F0'
+  authors:
+    font_color: 'CBD5E1'
+    margin_top: 6
+
+header:
+  height: 1.5cm
+  font_size: 9
+  font_color: '5B616E'
+  recto:
+    right:
+      content: '{section-title}'
+  verso:
+    left:
+      content: '{section-title}'
+  border_color: 'E3E5E8'
+  border_width: 0.5
+
+footer:
+  height: 1.5cm
+  font_size: 9
+  font_color: '5B616E'
+  recto:
+    right:
+      content: '{page-number}'
+  verso:
+    left:
+      content: '{page-number}'
+
+code:
+  font_family: JetBrains Mono
+  font_size: 9.25
+  font_color: '1A1D23'
+  background_color: 'F3F4F6'
+  border_color: 'E3E5E8'
+  border_width: 0.5
+  border_radius: 4
+  padding: [8, 12, 8, 12]
+  line_height: 1.35
+
+codespan:
+  font_family: JetBrains Mono
+  font_color: '1A1D23'
+  background_color: 'F3F4F6'
+
+admonition:
+  column_rule_color: transparent
+  padding: [8, 12, 8, 12]
+  label:
+    text_transform: uppercase
+    font_style: bold
+    font_size: 8.5
+  icon:
+    note:
+      name: fas-info-circle
+      stroke_color: '2563EB'
+    tip:
+      name: fas-lightbulb
+      stroke_color: '059669'
+    important:
+      name: fas-exclamation-circle
+      stroke_color: 'DC2626'
+    warning:
+      name: fas-exclamation-triangle
+      stroke_color: 'D97706'
+    caution:
+      name: fas-fire
+      stroke_color: 'DB2777'
+  note:
+    background_color: 'F6F7F9'
+    border_color: '2563EB'
+  tip:
+    background_color: 'F6F7F9'
+    border_color: '059669'
+  important:
+    background_color: 'F6F7F9'
+    border_color: 'DC2626'
+  warning:
+    background_color: 'F6F7F9'
+    border_color: 'D97706'
+  caution:
+    background_color: 'F6F7F9'
+    border_color: 'DB2777'
+
+sidebar:
+  background_color: 'F6F7F9'
+  border_color: 'E3E5E8'
+  border_radius: 4
+  padding: [12, 14, 12, 14]
+
+example:
+  background_color: 'F6F7F9'
+  border_color: 'E3E5E8'
+  border_radius: 4
+  padding: [12, 14, 12, 14]
+
+table:
+  background_color: 'FFFFFF'
+  border_color: 'E3E5E8'
+  border_width: 0.5
+  head:
+    background_color: 'F6F7F9'
+    font_style: bold
+  body:
+    stripe_background_color: 'FAFAFB'
+
+blockquote:
+  border_color: '4F46E5'
+  border_width: 3
+  font_color: '5B616E'
+  padding: [4, 0, 4, 16]
+
+toc:
+  font_color: '1A1D23'
+  dot_leader:
+    font_color: 'E3E5E8'
+
+# ------------------------------------------------------------------------
+# NOTE: Download the actual font files and place them under theme/fonts/:
+#   Inter:          https://fonts.google.com/specimen/Inter
+#   JetBrains Mono: https://www.jetbrains.com/lp/mono/
+# Build with:
+#   asciidoctor-pdf -a pdf-theme=theme/pdf-theme.yml \
+#     -a pdf-fontsdir=theme/fonts index.adoc -o index.pdf
+# ------------------------------------------------------------------------
