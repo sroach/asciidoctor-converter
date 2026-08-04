@@ -111,7 +111,7 @@ class MarkdownConverter(private val converterSettings: ConverterSettings, privat
 
     }
 
-    fun convertMarkdownToHtml(sourceFile: File, outputDir: String, cssTheme: String = "github-markdown-css.css"): Boolean {
+    fun convertMarkdownToHtml(sourceFile: File, outputDir: String, cssTheme: String = "premium.css"): Boolean {
         return try {
             val useDark = cssTheme.contains("dark") || cssTheme.contains("brutalist")
             options.set(DocOpsMacroExtension.DEFAULT_USE_DARK, useDark)

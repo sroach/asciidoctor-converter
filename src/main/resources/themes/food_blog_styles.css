@@ -1,104 +1,93 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Jost:wght@400;500;600&family=Jost:ital@1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* Guyana Food Blog — "Golden Arrowhead" Markdown Theme
-   Palette: rainforest green · Demerara gold · pepper pot red · cassava cream
-   Scoped to .markdown-body — mirrors docops_md_styles.css architecture. */
+/* Premium Food Blog — Modern Markdown Theme
+   Apple-inspired aesthetic with precise spacing and refined typography.
+   Scoped to .markdown-body. */
 
 .markdown-body {
   /* -------------------------------------------------------
-     1) Core brand tokens — Golden Arrowhead palette
+     1) Core brand tokens — Premium Palette
      ------------------------------------------------------- */
-  --gy-jungle:      #1b4332;   /* deep Essequibo rainforest */
-  --gy-canopy:      #2d6a4f;   /* mid-canopy green          */
-  --gy-demerara:    #b8730a;   /* raw Demerara cane sugar   */
-  --gy-gold:        #e9a11a;   /* flag gold / ripe mango    */
-  --gy-pepper:      #8c1a1e;   /* pepper pot / flag red     */
-  --gy-charcoal:    #1a110a;   /* burnt wood, dark base     */
-  --gy-cream:       #faf3e2;   /* coconut milk canvas       */
-  --gy-parchment:   #f0e4c8;   /* old recipe card surface   */
-  --gy-tamarind:    #6b5437;   /* muted tamarind brown      */
-  --gy-border:      rgba(27, 67, 50, 0.14);
+  --p-primary:      #3B82F6;
+  --p-secondary:    #8B5CF6;
+  --p-success:      #16A34A;
+  --p-warning:      #D97706;
+  --p-danger:       #DC2626;
+  --p-surface:      #FFFFFF;
+  --p-text:         #111827;
+  --p-neutral:      #F9FAFB;
+  --p-border:       rgba(0, 0, 0, 0.1);
 
-  /* Semantic roles (keep consistent with docops pattern) */
-  --gy-surface-1:   #ffffff;
-  --gy-surface-2:   #f5ece0;
+  /* Semantic roles */
+  --p-surface-1:   var(--p-surface);
+  --p-surface-2:   var(--p-neutral);
 
-  --gy-text-primary:   var(--gy-charcoal);
-  --gy-text-secondary: #3a2710;
-  --gy-text-tertiary:  var(--gy-tamarind);
+  --p-text-primary:   var(--p-text);
+  --p-text-secondary: #374151;
+  --p-text-tertiary:  #6B7280;
 
-  --gy-accent:      var(--gy-gold);
+  --p-accent:      var(--p-primary);
 
   /* -------------------------------------------------------
      2) Markdown-specific roles
      ------------------------------------------------------- */
-  --md-max-width:   900px;
-  --md-pad-x:       48px;
-  --md-pad-y:       48px;
+  --md-max-width:   840px;
+  --md-pad-x:       32px;
+  --md-pad-y:       32px;
 
-  --md-prose:       var(--gy-text-secondary);
-  --md-heading:     var(--gy-jungle);
-  --md-muted:       var(--gy-text-tertiary);
+  --md-prose:       var(--p-text-secondary);
+  --md-heading:     var(--p-text-primary);
+  --md-muted:       var(--p-text-tertiary);
 
-  --md-link:              var(--gy-canopy);
-  --md-link-underline:    rgba(45, 106, 79, 0.30);
-  --md-link-hover-bg:     rgba(45, 106, 79, 0.09);
+  --md-link:              var(--p-primary);
+  --md-link-underline:    rgba(59, 130, 246, 0.2);
+  --md-link-hover-bg:     rgba(59, 130, 246, 0.05);
 
-  --md-inline-code-bg:     rgba(184, 115, 10, 0.10);
-  --md-inline-code-border: rgba(184, 115, 10, 0.22);
+  --md-inline-code-bg:     rgba(0, 0, 0, 0.04);
+  --md-inline-code-border: rgba(0, 0, 0, 0.08);
 
-  --md-code-bg:    var(--gy-charcoal);
-  --md-code-fg:    #f5ecd8;
-  --md-code-border: rgba(27, 67, 50, 0.22);
+  --md-code-bg:    #1F2937;
+  --md-code-fg:    #F9FAFB;
+  --md-code-border: rgba(0, 0, 0, 0.2);
 
-  --md-table-stripe: rgba(27, 67, 50, 0.04);
+  --md-table-stripe: rgba(0, 0, 0, 0.02);
 
   /* Radii */
-  --gy-radius-sm:  6px;
-  --gy-radius-md:  12px;
-  --gy-radius-lg:  18px;
-  --gy-radius-pill: 999px;
+  --p-radius-sm:  4px;
+  --p-radius-md:  8px;
+  --p-radius-lg:  12px;
+  --p-radius-pill: 999px;
 
   /* Shadows */
-  --gy-shadow-sm: 0 4px 18px rgba(27, 67, 50, 0.10);
-  --gy-shadow-md: 0 12px 36px rgba(26, 17, 10, 0.16);
+  --p-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --p-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --p-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
   /* Motion */
-  --gy-dur-fast:    120ms;
-  --gy-dur-base:    220ms;
-  --gy-dur-slow:    420ms;
-  --gy-ease:        cubic-bezier(0.16, 1, 0.3, 1);
+  --p-dur-fast:    100ms;
+  --p-dur-base:    200ms;
+  --p-dur-slow:    300ms;
+  --p-ease:        cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Focus */
-  --gy-focus-glow: 0 0 0 4px rgba(233, 161, 26, 0.28);
+  --p-focus-glow: 0 0 0 3px rgba(59, 130, 246, 0.4);
 
   /* -------------------------------------------------------
-     Atmosphere — warm cassava-cream with chevron depth
-     Echoes the diagonal arrow of the Golden Arrowhead flag.
+     Atmosphere — Clean, minimal surface
      ------------------------------------------------------- */
-  background:
-          radial-gradient(820px 340px at 8% 0%,   rgba(27,  67,  50, 0.07), transparent 58%),
-          radial-gradient(680px 300px at 94% 14%,  rgba(233,161, 26, 0.09), transparent 60%),
-          repeating-linear-gradient(
-                  135deg,
-                  rgba(184, 115, 10, 0.025) 0px,  rgba(184, 115, 10, 0.025) 1px,
-                  transparent 1px, transparent 18px
-          ),
-          linear-gradient(180deg, rgba(255,255,255,0.70), rgba(255,255,255,0.55)),
-          var(--gy-cream);
-
+  background: var(--p-surface);
   color: var(--md-prose);
-  font-family: "Jost", ui-sans-serif, system-ui, "Helvetica Neue", Arial, sans-serif;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   font-size: 16px;
-  line-height: 26px;
+  line-height: 1.625;
 
   max-width: var(--md-max-width);
-  margin: 40px auto;
+  margin: 32px auto;
   padding: var(--md-pad-y) var(--md-pad-x);
 
-  border-radius: 22px;
-  border: 1px solid var(--gy-border);
-  box-shadow: var(--gy-shadow-sm);
+  border-radius: var(--p-radius-lg);
+  border: 1px solid var(--p-border);
+  box-shadow: var(--p-shadow-md);
 
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -109,22 +98,24 @@
 @media (max-width: 768px) {
   .markdown-body {
     --md-pad-x: 20px;
-    --md-pad-y: 28px;
-    margin: 16px;
-    border-radius: 16px;
+    --md-pad-y: 24px;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
   }
 }
 
 /* -------------------------------------------------------
    3) Page-load reveal
    ------------------------------------------------------- */
-@keyframes gy-reveal {
-  from { opacity: 0; transform: translateY(10px); }
+@keyframes p-reveal {
+  from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 .markdown-body {
-  animation: gy-reveal var(--gy-dur-slow) var(--gy-ease) both;
+  animation: p-reveal var(--p-dur-slow) var(--p-ease) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -141,83 +132,59 @@
 .markdown-body h4,
 .markdown-body h5,
 .markdown-body h6 {
-  font-family: "Cormorant Garamond", Georgia, serif;
+  font-family: "Inter", sans-serif;
   color: var(--md-heading);
   font-weight: 700;
-  letter-spacing: -0.3px;
-  line-height: 1.2;
-  margin-top: 32px;
-  margin-bottom: 12px;
-  scroll-margin-top: 96px;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  scroll-margin-top: 2rem;
 }
 
 .markdown-body h1 {
-  font-size: 42px;
-  line-height: 50px;
-  letter-spacing: -0.8px;
+  font-size: 2.25rem;
   margin-top: 0;
-  padding-bottom: 12px;
-  border-bottom: 2px solid var(--gy-demerara);  /* Demerara gold rule */
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--p-border);
 }
 
 .markdown-body h2 {
-  font-size: 30px;
-  line-height: 36px;
-  letter-spacing: -0.4px;
-  padding-top: 8px;
-  /* Subtle left tick — echoes the arrow motif */
-  padding-left: 14px;
-  border-left: 4px solid var(--gy-gold);
+  font-size: 1.875rem;
+  padding-top: 0.5rem;
 }
 
 .markdown-body h3 {
-  font-size: 22px;
-  line-height: 28px;
-  letter-spacing: -0.2px;
-  font-style: italic;
-  color: var(--gy-canopy);
+  font-size: 1.5rem;
 }
 
 .markdown-body h4 {
-  font-size: 16px;
-  line-height: 24px;
-  font-family: "Jost", sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--gy-tamarind);
+  font-size: 1.25rem;
 }
 
 .markdown-body p {
-  margin: 0 0 16px 0;
+  margin: 0 0 1.25rem 0;
 }
 
 .markdown-body strong {
-  color: var(--gy-text-primary);
+  color: var(--p-text-primary);
   font-weight: 600;
 }
 
 .markdown-body em {
-  font-family: "Cormorant Garamond", Georgia, serif;
   font-style: italic;
-  color: var(--gy-jungle);
 }
 
 .markdown-body small {
   color: var(--md-muted);
-  font-size: 12px;
-  line-height: 18px;
+  font-size: 0.875rem;
 }
 
-/* Drop-cap on first paragraph — editorial touch */
+/* Editorial touch — subtle drop-cap */
 .markdown-body > p:first-of-type::first-letter {
-  font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: 3.6em;
+  font-size: 1.25em;
   font-weight: 700;
-  float: left;
-  line-height: 0.82;
-  margin: 0.05em 0.09em 0 0;
-  color: var(--gy-pepper);
+  color: var(--p-text-primary);
 }
 
 /* -------------------------------------------------------
@@ -226,29 +193,24 @@
 .markdown-body a {
   color: var(--md-link);
   text-decoration: none;
-  font-weight: 600;
-  border-bottom: 2px solid var(--md-link-underline);
-  transition:
-          background-color var(--gy-dur-fast) var(--gy-ease),
-          border-color     var(--gy-dur-fast) var(--gy-ease),
-          color            var(--gy-dur-fast) var(--gy-ease);
-  padding: 0 2px;
-  border-radius: 4px;
+  font-weight: 500;
+  transition: all var(--p-dur-fast) var(--p-ease);
+  border-bottom: 1px solid var(--md-link-underline);
 }
 
 .markdown-body a:hover {
-  background: var(--md-link-hover-bg);
-  border-bottom-color: var(--gy-canopy);
+  border-bottom-color: var(--p-primary);
+  background-color: var(--md-link-hover-bg);
 }
 
 .markdown-body a:focus-visible {
-  outline: 2px solid var(--gy-gold);
-  box-shadow: var(--gy-focus-glow);
-  border-bottom-color: transparent;
+  outline: none;
+  box-shadow: var(--p-focus-glow);
+  border-radius: 2px;
 }
 
 .markdown-body ::selection {
-  background: rgba(233, 161, 26, 0.22);
+  background: rgba(59, 130, 246, 0.2);
 }
 
 /* -------------------------------------------------------
@@ -256,61 +218,55 @@
    ------------------------------------------------------- */
 .markdown-body ul,
 .markdown-body ol {
-  margin: 0 0 16px 0;
-  padding-left: 24px;
+  margin: 0 0 1.25rem 0;
+  padding-left: 1.5rem;
 }
 
 .markdown-body li {
-  margin: 6px 0;
+  margin: 0.5rem 0;
 }
 
-/* Custom bullet — small diamond, Demerara gold */
 .markdown-body ul li::marker {
-  color: var(--gy-demerara);
+  color: var(--p-text-tertiary);
 }
 
 .markdown-body ol li::marker {
-  color: var(--gy-pepper);
-  font-family: "Cormorant Garamond", serif;
-  font-weight: 700;
+  color: var(--p-text-secondary);
+  font-weight: 600;
 }
 
 .markdown-body hr {
   border: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gy-demerara) 30%, var(--gy-gold) 50%, var(--gy-demerara) 70%, transparent);
-  margin: 32px 0;
+  background: var(--p-border);
+  margin: 2.5rem 0;
 }
 
 /* -------------------------------------------------------
    7) Inline code + code blocks
    ------------------------------------------------------- */
 .markdown-body code {
-  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.93em;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
 }
 
 .markdown-body :not(pre) > code {
   background: var(--md-inline-code-bg);
   border: 1px solid var(--md-inline-code-border);
-  color: var(--gy-pepper);
-  padding: 2px 8px;
-  border-radius: 8px;
-  white-space: break-spaces;
+  color: var(--p-danger);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--p-radius-sm);
 }
 
 .markdown-body pre {
   background: var(--md-code-bg);
   color: var(--md-code-fg);
-  border: 1px solid var(--md-code-border);
-  box-shadow: var(--gy-shadow-sm);
-  padding: 18px 20px;
-  border-radius: var(--gy-radius-lg);
+  padding: 1.25rem;
+  border-radius: var(--p-radius-md);
   overflow: auto;
-  margin: 0 0 24px 0;
-  line-height: 1.6;
-  /* Savannah-flag stripe on top of code blocks */
-  border-top: 4px solid var(--gy-demerara);
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
+  border: 1px solid var(--md-code-border);
 }
 
 .markdown-body pre code {
@@ -318,30 +274,20 @@
   background: transparent;
   border: 0;
   padding: 0;
-  border-radius: 0;
-  font-size: 13px;
-  white-space: pre;
+  font-size: 0.8125rem;
 }
 
 /* -------------------------------------------------------
-   8) Blockquote / pull quote
+   8) Blockquote
    ------------------------------------------------------- */
 .markdown-body blockquote {
-  margin: 28px 0;
-  padding: 18px 20px 18px 22px;
-
-  background:
-          linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0.52)),
-          var(--gy-surface-2);
-
-  border: 1px solid var(--gy-border);
-  border-left: 5px solid var(--gy-pepper);   /* pepper pot red = attention */
-  border-radius: var(--gy-radius-lg);
-
-  font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: 1.15em;
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  background: var(--p-neutral);
+  border-left: 4px solid var(--p-primary);
+  border-radius: var(--p-radius-sm);
+  color: var(--p-text-secondary);
   font-style: italic;
-  color: var(--gy-jungle);
 }
 
 .markdown-body blockquote > :first-child { margin-top: 0; }
@@ -352,48 +298,27 @@
    ------------------------------------------------------- */
 .markdown-body table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  margin: 0 0 24px 0;
-
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid var(--gy-border);
-  border-radius: var(--gy-radius-lg);
-  overflow: hidden;
+  border-collapse: collapse;
+  margin: 0 0 1.5rem 0;
+  font-size: 0.875rem;
 }
 
 .markdown-body thead th {
   text-align: left;
-  font-family: "Jost", sans-serif;
   font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--gy-surface-1);
-  background: linear-gradient(180deg, var(--gy-jungle), var(--gy-canopy));
-  border-bottom: 2px solid var(--gy-demerara);
-  padding: 12px 16px;
-  line-height: 20px;
+  color: var(--p-text-primary);
+  border-bottom: 2px solid var(--p-border);
+  padding: 0.75rem 1rem;
 }
 
 .markdown-body tbody td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--gy-border);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--p-border);
   color: var(--md-prose);
-  vertical-align: top;
 }
 
 .markdown-body tbody tr:nth-child(even) td {
   background: var(--md-table-stripe);
-}
-
-.markdown-body tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.markdown-body td code,
-.markdown-body th code {
-  font-size: 0.90em;
 }
 
 /* -------------------------------------------------------
@@ -402,33 +327,24 @@
 .markdown-body img {
   max-width: 100%;
   height: auto;
-  border-radius: var(--gy-radius-lg);
-  border: 1px solid var(--gy-border);
-  background: var(--gy-surface-1);
-  box-shadow: var(--gy-shadow-sm);
+  border-radius: var(--p-radius-md);
+  box-shadow: var(--p-shadow-sm);
 }
 
 .markdown-body kbd {
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--gy-text-primary);
-
-  background: rgba(255, 255, 255, 0.80);
-  border: 1px solid rgba(27, 67, 50, 0.22);
-  border-bottom-color: rgba(27, 67, 50, 0.36);
-  border-radius: 8px;
-
-  padding: 2px 8px;
-  box-shadow: 0 1px 0 rgba(27, 67, 50, 0.12);
+  font-family: inherit;
+  font-size: 0.75rem;
+  background: var(--p-neutral);
+  border: 1px solid var(--p-border);
+  border-radius: var(--p-radius-sm);
+  padding: 0.125rem 0.375rem;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.1);
 }
 
-/* Gold highlight — like marking a key ingredient */
 .markdown-body mark {
-  background: rgba(233, 161, 26, 0.25);
-  color: var(--gy-text-primary);
-  padding: 0 3px;
-  border-radius: 4px;
+  background: rgba(217, 119, 6, 0.2);
+  color: var(--p-text-primary);
+  padding: 0 0.125rem;
 }
 
 /* -------------------------------------------------------
@@ -439,14 +355,7 @@
 }
 
 .markdown-body .task-list-item input[type="checkbox"] {
-  transform: translateY(1px);
-  accent-color: var(--gy-canopy);
-}
-
-.markdown-body a.anchor {
-  border-bottom: 0;
-  padding: 0;
-  border-radius: 0;
+  accent-color: var(--p-primary);
 }
 
 /* -------------------------------------------------------
@@ -460,21 +369,5 @@
     margin: 0;
     max-width: none;
     padding: 0;
-    border-radius: 0;
-  }
-
-  .markdown-body h2 {
-    border-left-color: #000;
-    padding-left: 10px;
-  }
-
-  .markdown-body a {
-    color: var(--gy-text-primary);
-    border-bottom-color: rgba(27, 67, 50, 0.28);
-  }
-
-  .markdown-body pre {
-    box-shadow: none;
-    border-top-color: #000;
   }
 }

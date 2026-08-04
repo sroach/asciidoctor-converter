@@ -1,0 +1,373 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Premium Food Blog — Modern Markdown Theme
+   Apple-inspired aesthetic with precise spacing and refined typography.
+   Scoped to .markdown-body. */
+
+.markdown-body {
+    /* -------------------------------------------------------
+       1) Core brand tokens — Premium Palette
+       ------------------------------------------------------- */
+    --p-primary:      #3B82F6;
+    --p-secondary:    #8B5CF6;
+    --p-success:      #16A34A;
+    --p-warning:      #D97706;
+    --p-danger:       #DC2626;
+    --p-surface:      #FFFFFF;
+    --p-text:         #111827;
+    --p-neutral:      #F9FAFB;
+    --p-border:       rgba(0, 0, 0, 0.1);
+
+    /* Semantic roles */
+    --p-surface-1:   var(--p-surface);
+    --p-surface-2:   var(--p-neutral);
+
+    --p-text-primary:   var(--p-text);
+    --p-text-secondary: #374151;
+    --p-text-tertiary:  #6B7280;
+
+    --p-accent:      var(--p-primary);
+
+    /* -------------------------------------------------------
+       2) Markdown-specific roles
+       ------------------------------------------------------- */
+    --md-max-width:   840px;
+    --md-pad-x:       32px;
+    --md-pad-y:       32px;
+
+    --md-prose:       var(--p-text-secondary);
+    --md-heading:     var(--p-text-primary);
+    --md-muted:       var(--p-text-tertiary);
+
+    --md-link:              var(--p-primary);
+    --md-link-underline:    rgba(59, 130, 246, 0.2);
+    --md-link-hover-bg:     rgba(59, 130, 246, 0.05);
+
+    --md-inline-code-bg:     rgba(0, 0, 0, 0.04);
+    --md-inline-code-border: rgba(0, 0, 0, 0.08);
+
+    --md-code-bg:    #1F2937;
+    --md-code-fg:    #F9FAFB;
+    --md-code-border: rgba(0, 0, 0, 0.2);
+
+    --md-table-stripe: rgba(0, 0, 0, 0.02);
+
+    /* Radii */
+    --p-radius-sm:  4px;
+    --p-radius-md:  8px;
+    --p-radius-lg:  12px;
+    --p-radius-pill: 999px;
+
+    /* Shadows */
+    --p-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --p-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --p-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+    /* Motion */
+    --p-dur-fast:    100ms;
+    --p-dur-base:    200ms;
+    --p-dur-slow:    300ms;
+    --p-ease:        cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Focus */
+    --p-focus-glow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+
+    /* -------------------------------------------------------
+       Atmosphere — Clean, minimal surface
+       ------------------------------------------------------- */
+    background: var(--p-surface);
+    color: var(--md-prose);
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.625;
+
+    max-width: var(--md-max-width);
+    margin: 32px auto;
+    padding: var(--md-pad-y) var(--md-pad-x);
+
+    border-radius: var(--p-radius-lg);
+    border: 1px solid var(--p-border);
+    box-shadow: var(--p-shadow-md);
+
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-wrap: anywhere;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .markdown-body {
+        --md-pad-x: 20px;
+        --md-pad-y: 24px;
+        margin: 0;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+    }
+}
+
+/* -------------------------------------------------------
+   3) Page-load reveal
+   ------------------------------------------------------- */
+@keyframes p-reveal {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.markdown-body {
+    animation: p-reveal var(--p-dur-slow) var(--p-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .markdown-body { animation: none; }
+    .markdown-body * { scroll-behavior: auto; transition: none !important; }
+}
+
+/* -------------------------------------------------------
+   4) Typography
+   ------------------------------------------------------- */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+    font-family: "Inter", sans-serif;
+    color: var(--md-heading);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    scroll-margin-top: 2rem;
+}
+
+.markdown-body h1 {
+    font-size: 2.25rem;
+    margin-top: 0;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--p-border);
+}
+
+.markdown-body h2 {
+    font-size: 1.875rem;
+    padding-top: 0.5rem;
+}
+
+.markdown-body h3 {
+    font-size: 1.5rem;
+}
+
+.markdown-body h4 {
+    font-size: 1.25rem;
+}
+
+.markdown-body p {
+    margin: 0 0 1.25rem 0;
+}
+
+.markdown-body strong {
+    color: var(--p-text-primary);
+    font-weight: 600;
+}
+
+.markdown-body em {
+    font-style: italic;
+}
+
+.markdown-body small {
+    color: var(--md-muted);
+    font-size: 0.875rem;
+}
+
+/* Editorial touch — subtle drop-cap */
+.markdown-body > p:first-of-type::first-letter {
+    font-size: 1.25em;
+    font-weight: 700;
+    color: var(--p-text-primary);
+}
+
+/* -------------------------------------------------------
+   5) Links + focus
+   ------------------------------------------------------- */
+.markdown-body a {
+    color: var(--md-link);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all var(--p-dur-fast) var(--p-ease);
+    border-bottom: 1px solid var(--md-link-underline);
+}
+
+.markdown-body a:hover {
+    border-bottom-color: var(--p-primary);
+    background-color: var(--md-link-hover-bg);
+}
+
+.markdown-body a:focus-visible {
+    outline: none;
+    box-shadow: var(--p-focus-glow);
+    border-radius: 2px;
+}
+
+.markdown-body ::selection {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+/* -------------------------------------------------------
+   6) Lists, rules, spacing
+   ------------------------------------------------------- */
+.markdown-body ul,
+.markdown-body ol {
+    margin: 0 0 1.25rem 0;
+    padding-left: 1.5rem;
+}
+
+.markdown-body li {
+    margin: 0.5rem 0;
+}
+
+.markdown-body ul li::marker {
+    color: var(--p-text-tertiary);
+}
+
+.markdown-body ol li::marker {
+    color: var(--p-text-secondary);
+    font-weight: 600;
+}
+
+.markdown-body hr {
+    border: 0;
+    height: 1px;
+    background: var(--p-border);
+    margin: 2.5rem 0;
+}
+
+/* -------------------------------------------------------
+   7) Inline code + code blocks
+   ------------------------------------------------------- */
+.markdown-body code {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.875em;
+}
+
+.markdown-body :not(pre) > code {
+    background: var(--md-inline-code-bg);
+    border: 1px solid var(--md-inline-code-border);
+    color: var(--p-danger);
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--p-radius-sm);
+}
+
+.markdown-body pre {
+    background: var(--md-code-bg);
+    color: var(--md-code-fg);
+    padding: 1.25rem;
+    border-radius: var(--p-radius-md);
+    overflow: auto;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.5;
+    border: 1px solid var(--md-code-border);
+}
+
+.markdown-body pre code {
+    color: inherit;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    font-size: 0.8125rem;
+}
+
+/* -------------------------------------------------------
+   8) Blockquote
+   ------------------------------------------------------- */
+.markdown-body blockquote {
+    margin: 1.5rem 0;
+    padding: 1rem 1.25rem;
+    background: var(--p-neutral);
+    border-left: 4px solid var(--p-primary);
+    border-radius: var(--p-radius-sm);
+    color: var(--p-text-secondary);
+    font-style: italic;
+}
+
+.markdown-body blockquote > :first-child { margin-top: 0; }
+.markdown-body blockquote > :last-child  { margin-bottom: 0; }
+
+/* -------------------------------------------------------
+   9) Tables
+   ------------------------------------------------------- */
+.markdown-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 1.5rem 0;
+    font-size: 0.875rem;
+}
+
+.markdown-body thead th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--p-text-primary);
+    border-bottom: 2px solid var(--p-border);
+    padding: 0.75rem 1rem;
+}
+
+.markdown-body tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--p-border);
+    color: var(--md-prose);
+}
+
+.markdown-body tbody tr:nth-child(even) td {
+    background: var(--md-table-stripe);
+}
+
+/* -------------------------------------------------------
+   10) Media, kbd, mark
+   ------------------------------------------------------- */
+.markdown-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--p-radius-md);
+    box-shadow: var(--p-shadow-sm);
+}
+
+.markdown-body kbd {
+    font-family: inherit;
+    font-size: 0.75rem;
+    background: var(--p-neutral);
+    border: 1px solid var(--p-border);
+    border-radius: var(--p-radius-sm);
+    padding: 0.125rem 0.375rem;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.1);
+}
+
+.markdown-body mark {
+    background: rgba(217, 119, 6, 0.2);
+    color: var(--p-text-primary);
+    padding: 0 0.125rem;
+}
+
+/* -------------------------------------------------------
+   11) Task lists + anchor links
+   ------------------------------------------------------- */
+.markdown-body .task-list-item {
+    list-style: none;
+}
+
+.markdown-body .task-list-item input[type="checkbox"] {
+    accent-color: var(--p-primary);
+}
+
+/* -------------------------------------------------------
+   12) Print
+   ------------------------------------------------------- */
+@media print {
+    .markdown-body {
+        background: #ffffff;
+        box-shadow: none;
+        border: 0;
+        margin: 0;
+        max-width: none;
+        padding: 0;
+    }
+}
