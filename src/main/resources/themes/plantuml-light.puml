@@ -1,15 +1,15 @@
 ' iOS PlantUML Theme — Light
-!$ACCENT  = "#007AFF"
-!$SUCCESS = "#34C759"
-!$WARNING = "#FF9F0A"
-!$DANGER  = "#FF3B30"
+!$ACCENT  = "#3B82F6"
+!$SUCCESS = "#16A34A"
+!$WARNING = "#D97706"
+!$DANGER  = "#DC2626"
 
-skinparam backgroundColor #F3F6FB
-skinparam shadowing true
-skinparam roundcorner 20
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
 skinparam dpi 160
-skinparam defaultFontName Helvetica
-skinparam titleFontColor #1e1e1e
+skinparam defaultFontName Inter
+skinparam titleFontColor #111827
 skinparam actorStyle awesome
 
 skinparam ArrowColor $ACCENT
@@ -17,84 +17,84 @@ skinparam ArrowThickness 1.5
 skinparam HyperlinkColor $ACCENT
 
 skinparam note {
-  BackgroundColor #FFF7E8
+  BackgroundColor #FFFBEB
   BorderColor $WARNING
-  FontColor #3B2F00
-  FontName Helvetica
-  RoundCorner 14
+  FontColor #92400E
+  FontName Inter
+  RoundCorner 8
 }
 
 skinparam activity {
-  FontName Helvetica
-  FontColor #0F172A
+  FontName Inter
+  FontColor #111827
   FontSize 15
   StartColor $SUCCESS
   EndColor $DANGER
   BackgroundColor #FFFFFF
-  BorderColor #D7DFEA
+  BorderColor #E5E7EB
   ArrowColor $ACCENT
-  DiamondBackgroundColor #EEF4FF
-  DiamondBorderColor #A8C7FF
-  DiamondFontColor #0F172A
+  DiamondBackgroundColor #F0F9FF
+  DiamondBorderColor #BAE6FD
+  DiamondFontColor #111827
 }
 
 skinparam sequence {
   ParticipantBackgroundColor #FFFFFF
-  ParticipantBorderColor #D7DFEA
-  ParticipantFontColor #0F172A
-  LifeLineBackgroundColor #F8FAFF
-  LifeLineBorderColor #C9D6EA
+  ParticipantBorderColor #E5E7EB
+  ParticipantFontColor #111827
+  LifeLineBackgroundColor #F9FAFB
+  LifeLineBorderColor #D1D5DB
   ArrowColor $ACCENT
-  ArrowFontColor #0F172A
+  ArrowFontColor #111827
   GroupBackgroundColor #FFFFFF
-  GroupBorderColor #D7DFEA
-  GroupHeaderFontColor #0F172A
+  GroupBorderColor #E5E7EB
+  GroupHeaderFontColor #111827
 }
 
 skinparam class {
   BackgroundColor #FFFFFF
-  BorderColor #D7DFEA
-  FontColor #0F172A
-  HeaderBackgroundColor #EEF4FF
-  HeaderFontColor #0F172A
-  AttributeFontColor #1E293B
-  MethodFontColor #1E293B
+  BorderColor #E5E7EB
+  FontColor #111827
+  HeaderBackgroundColor #F0F9FF
+  HeaderFontColor #111827
+  AttributeFontColor #374151
+  MethodFontColor #374151
   ArrowColor $ACCENT
 }
 
 skinparam component {
   BackgroundColor #FFFFFF
-  BorderColor #D7DFEA
-  FontColor #0F172A
+  BorderColor #E5E7EB
+  FontColor #111827
   ArrowColor $ACCENT
 }
 
 skinparam usecase {
   BackgroundColor #FFFFFF
-  BorderColor #D7DFEA
-  FontColor #0F172A
+  BorderColor #E5E7EB
+  FontColor #111827
   ArrowColor $ACCENT
 }
 
 skinparam state {
   BackgroundColor #FFFFFF
-  BorderColor #D7DFEA
-  FontColor #0F172A
+  BorderColor #E5E7EB
+  FontColor #111827
   StartColor $SUCCESS
   EndColor $DANGER
   ArrowColor $ACCENT
 }
 
 skinparam package {
-  BackgroundColor #F8FAFF
-  BorderColor #C9D6EA
-  FontColor #0F172A
+  BackgroundColor #F9FAFB
+  BorderColor #D1D5DB
+  FontColor #111827
 }
 
 skinparam actor {
     BackgroundColor  #FFFFFF
-    BorderColor      #007AFF
-    FontColor        #000000
+    BorderColor      $ACCENT
+    FontColor        #111827
     FontSize         13
 }
 
@@ -102,49 +102,49 @@ skinparam actor {
 mindmapDiagram {
   node {
     BackGroundColor #FFFFFF
-    LineColor #D7DFEA
+    LineColor #E5E7EB
     LineThickness 1.2
-    FontColor #0F172A
-    FontName Helvetica
-    RoundCorner 16
+    FontColor #111827
+    FontName Inter
+    RoundCorner 12
     Padding 8
   }
   rootNode {
-    BackGroundColor #EEF4FF
-    LineColor #A8C7FF
-    FontColor #0F172A
+    BackGroundColor #F0F9FF
+    LineColor #3B82F6
+    FontColor #111827
     FontStyle bold
   }
   leafNode {
     BackGroundColor #FFFFFF
-    LineColor #D7DFEA
-    FontColor #1E293B
+    LineColor #E5E7EB
+    FontColor #374151
   }
   arrow {
-    LineColor #007AFF
-    FontColor #0F172A
+    LineColor #3B82F6
+    FontColor #111827
   }
 }
 
 wbsDiagram {
   node {
     BackGroundColor #FFFFFF
-    LineColor #D7DFEA
+    LineColor #E5E7EB
     LineThickness 1.2
-    FontColor #0F172A
-    FontName Helvetica
-    RoundCorner 14
+    FontColor #111827
+    FontName Inter
+    RoundCorner 12
     Padding 8
   }
   rootNode {
-    BackGroundColor #EEF4FF
-    LineColor #A8C7FF
-    FontColor #0F172A
+    BackGroundColor #F0F9FF
+    LineColor #3B82F6
+    FontColor #111827
     FontStyle bold
   }
   arrow {
-    LineColor #007AFF
-    FontColor #0F172A
+    LineColor #3B82F6
+    FontColor #111827
   }
 }
 </style>
