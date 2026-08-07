@@ -5,47 +5,47 @@
 
 /* ── Tokens ─────────────────────────────────────────────────────────── */
 :root {
-  --tabs-accent:        #4f46e5;   /* indigo — change to any hex */
-  --tabs-accent-hover:  #4338ca;
-  --tabs-accent-rail:   #f5f3ff;
+  --tabs-accent:        #3B82F6;   /* premium blue */
+  --tabs-accent-hover:  #2563EB;
+  --tabs-accent-rail:   #F3F8FF;
   --tabs-accent-text:   #ffffff;
-  --tabs-accent-muted:  #4338ca;   /* inactive tab label */
-  --tabs-accent-soft:   rgba(99, 102, 241, 0.12);
+  --tabs-accent-muted:  #374151;   /* p-text-secondary */
+  --tabs-accent-soft:   rgba(59, 130, 246, 0.08);
 
   --tabs-bg:            #ffffff;
-  --tabs-rail-border:   #4f46e5;
-  --tabs-border:        #4f46e5;
+  --tabs-rail-border:   rgba(0, 0, 0, 0.08);
+  --tabs-border:        rgba(0, 0, 0, 0.1);
   --tabs-text:          #111827;
-  --tabs-text-muted:    #6b7280;
+  --tabs-text-muted:    #6B7280;
   --tabs-panel-bg:      #ffffff;
 
   --tabs-radius-outer:  12px;
   --tabs-radius-btn:    8px;
-  --tabs-gap:           6px;
-  --tabs-focus:         #6366f1;
+  --tabs-gap:           8px;
+  --tabs-focus:         rgba(59, 130, 246, 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --tabs-accent:        #6366f1;
-    --tabs-accent-hover:  #818cf8;
-    --tabs-accent-rail:   #1e1b4b;
+    --tabs-accent:        #3B82F6;
+    --tabs-accent-hover:  #60A5FA;
+    --tabs-accent-rail:   #1F2937;
     --tabs-accent-text:   #ffffff;
-    --tabs-accent-muted:  #a5b4fc;
-    --tabs-accent-soft:   rgba(99, 102, 241, 0.18);
+    --tabs-accent-muted:  #9CA3AF;
+    --tabs-accent-soft:   rgba(59, 130, 246, 0.15);
 
-    --tabs-bg:            #0f0f10;
-    --tabs-rail-border:   #4338ca;
-    --tabs-border:        #4338ca;
-    --tabs-text:          #f3f4f6;
-    --tabs-text-muted:    #9ca3af;
-    --tabs-panel-bg:      #111113;
+    --tabs-bg:            #111827;
+    --tabs-rail-border:   rgba(255, 255, 255, 0.1);
+    --tabs-border:        rgba(255, 255, 255, 0.1);
+    --tabs-text:          #F9FAFB;
+    --tabs-text-muted:    #9CA3AF;
+    --tabs-panel-bg:      #111827;
   }
 }
 
 /* ── Container ───────────────────────────────────────────────────────── */
 .tabs {
-  margin: 1.75rem 0;
+  margin: 2rem 0;
   border: 1px solid var(--tabs-border);
   border-radius: var(--tabs-radius-outer);
   overflow: hidden;
@@ -82,7 +82,8 @@
   position: relative;
   cursor: pointer;
 
-  font-size: 0.8125rem;   /* 13px */
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-size: 0.875rem;   /* 14px */
   font-weight: 500;
   line-height: 1.2;
 
@@ -90,7 +91,7 @@
   background: transparent;
   border: none;
   border-radius: var(--tabs-radius-btn);
-  padding: 0.4rem 1rem;
+  padding: 0.5rem 1rem;
 
   transition:
           color 130ms ease,
@@ -132,7 +133,7 @@
 
 /* ── Panel ───────────────────────────────────────────────────────────── */
 .tabpanel {
-  padding: 1.25rem 1.375rem;
+  padding: 2rem;
   color: var(--tabs-text);
   background: var(--tabs-panel-bg);
   animation: tabPanelReveal 200ms ease;
